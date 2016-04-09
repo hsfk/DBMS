@@ -1,0 +1,10 @@
+object DBForm: TDBForm
+  Left = 141
+  Height = 240
+  Top = 180
+  Width = 320
+  Caption = 'DBForm'
+  OnClose = FormClose
+  OnCreate = FormCreate
+  LCLVersion = '1.4.4.0'
+end

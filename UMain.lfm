@@ -1,0 +1,75 @@
+object MainForm: TMainForm
+  Left = 438
+  Height = 240
+  Top = 231
+  Width = 320
+  ClientHeight = 220
+  ClientWidth = 320
+  Menu = MainMenu
+  OnCreate = FormCreate
+  LCLVersion = '1.4.4.0'
+  object FStatusBar: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 197
+    Width = 320
+    Panels = <>
+  end
+  object MainMenu: TMainMenu
+    left = 24
+    top = 20
+    object FileMenu: TMenuItem
+      Caption = 'Файл'
+      object OpenMenuItem: TMenuItem
+        Caption = 'Открыть'
+        OnClick = OpenMenuItemClick
+      end
+    end
+    object DirectoryMenu: TMenuItem
+      Caption = 'Справочник'
+      object TimeTable: TMenuItem
+        Caption = 'Расписание'
+        OnClick = DirectoryMenuItemClick
+      end
+      object Groups: TMenuItem
+        Tag = 1
+        Caption = 'Группы'
+        OnClick = DirectoryMenuItemClick
+      end
+      object Lessons: TMenuItem
+        Tag = 2
+        Caption = 'Предметы'
+        OnClick = DirectoryMenuItemClick
+      end
+      object Teachers: TMenuItem
+        Tag = 3
+        Caption = 'Преподаватели'
+        OnClick = DirectoryMenuItemClick
+      end
+      object ClassRooms: TMenuItem
+        Tag = 4
+        Caption = 'Аудитории'
+        OnClick = DirectoryMenuItemClick
+      end
+      object LessonTimes: TMenuItem
+        Tag = 5
+        Caption = 'Времена занятий'
+        OnClick = DirectoryMenuItemClick
+      end
+      object WeekDays: TMenuItem
+        Tag = 6
+        Caption = 'Дни недели'
+        OnClick = DirectoryMenuItemClick
+      end
+      object LessonTypes: TMenuItem
+        Tag = 7
+        Caption = 'Виды предметов'
+        OnClick = DirectoryMenuItemClick
+      end
+    end
+    object AboutMenu: TMenuItem
+      Caption = 'О программе'
+      OnClick = AboutMenuClick
+    end
+  end
+end

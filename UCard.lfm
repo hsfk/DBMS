@@ -1,0 +1,38 @@
+inherited Card: TCard
+  Left = 439
+  Height = 339
+  Top = 309
+  Width = 411
+  Caption = 'Card'
+  ClientHeight = 339
+  ClientWidth = 411
+  OnClose = FormClose
+  OnCreate = FormCreate
+  object FApplyBtn: TButton[0]
+    Left = 32
+    Height = 25
+    Top = 285
+    Width = 118
+    Anchors = [akLeft, akBottom]
+    Caption = 'Применить'
+    OnClick = FApplyBtnClick
+    TabOrder = 0
+  end
+  object FCancelBtn: TButton[1]
+    Left = 264
+    Height = 25
+    Top = 285
+    Width = 118
+    Anchors = [akRight, akBottom]
+    Caption = 'Отмена'
+    OnClick = FCancelBtnClick
+    TabOrder = 1
+  end
+  object FStatusBar: TStatusBar[2]
+    Left = 0
+    Height = 23
+    Top = 316
+    Width = 411
+    Panels = <>
+  end
+end

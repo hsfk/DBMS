@@ -1,0 +1,165 @@
+inherited Directory: TDirectory
+  Left = 438
+  Height = 563
+  Top = 279
+  Width = 569
+  Caption = 'Directory'
+  ClientHeight = 563
+  ClientWidth = 569
+  OnClose = FormClose
+  OnCreate = FormCreate
+  object FDBGrid: TDBGrid[0]
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FTableGroupBox
+    Left = 0
+    Height = 319
+    Top = 0
+    Width = 569
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Bottom = 1
+    Color = clWindow
+    Columns = <>
+    Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgCancelOnExit]
+    ReadOnly = True
+    TabOrder = 0
+    TabStop = False
+    OnDblClick = FDBGridDblClick
+  end
+  object FStatusBar: TStatusBar[1]
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 0
+    Height = 23
+    Top = 540
+    Width = 569
+    Panels = <>
+  end
+  object FFiltersGroupBox: TGroupBox[2]
+    AnchorSideLeft.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FStatusBar
+    Left = 5
+    Height = 172
+    Top = 368
+    Width = 559
+    Anchors = [akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Right = 5
+    Caption = 'Фильтры'
+    ClientHeight = 152
+    ClientWidth = 555
+    TabOrder = 2
+    object FFiltersScrollBox: TScrollBox
+      AnchorSideLeft.Control = FFiltersGroupBox
+      AnchorSideTop.Control = FFiltersGroupBox
+      AnchorSideRight.Control = FFiltersGroupBox
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = FFiltersGroupBox
+      AnchorSideBottom.Side = asrBottom
+      Left = 0
+      Height = 122
+      Top = 30
+      Width = 555
+      HorzScrollBar.Page = 1
+      VertScrollBar.Page = 1
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Top = 30
+      TabOrder = 0
+    end
+    object FDelFilterBtn: TButton
+      AnchorSideRight.Side = asrBottom
+      Left = 120
+      Height = 25
+      Top = 0
+      Width = 118
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Right = 25
+      Caption = 'Удалить фильтр'
+      ParentBidiMode = False
+      OnClick = FDelFilterBtnClick
+      TabOrder = 1
+    end
+    object FApplyFilterBtn: TButton
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Side = asrBottom
+      Left = 240
+      Height = 25
+      Top = 0
+      Width = 118
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Top = 10
+      BorderSpacing.Right = 25
+      Caption = 'Применить'
+      OnClick = FApplyFilterBtnClick
+      TabOrder = 2
+    end
+    object FAddFilterBtn: TButton
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 25
+      Top = 0
+      Width = 118
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 25
+      Caption = 'Добавить фильтр'
+      OnClick = FAddFilterBtnClick
+      TabOrder = 3
+    end
+  end
+  object FTableGroupBox: TGroupBox[3]
+    AnchorSideLeft.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FFiltersGroupBox
+    Left = 5
+    Height = 48
+    Top = 320
+    Width = 559
+    Anchors = [akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Right = 5
+    Caption = 'Таблица'
+    ClientHeight = 28
+    ClientWidth = 555
+    TabOrder = 3
+    object FAddElement: TButton
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 25
+      Top = 0
+      Width = 118
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 25
+      Caption = 'Добавить элемент'
+      OnClick = FAddElementClick
+      TabOrder = 0
+    end
+    object FDelElement: TButton
+      AnchorSideRight.Side = asrBottom
+      Left = 120
+      Height = 25
+      Top = 0
+      Width = 118
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 25
+      Caption = 'Удалить элемент'
+      OnClick = FDelElementClick
+      TabOrder = 1
+    end
+  end
+end
