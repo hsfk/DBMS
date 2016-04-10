@@ -20,6 +20,7 @@ type
     end;
     TOperators = array of TOperator;
   private
+    FIndex: integer;
     FFilter: TDBFilter;
     FFieldsCBox: TComboBox;
     FOpsCBox: TComboBox;
@@ -39,9 +40,11 @@ type
     procedure OnFieldsCBoxChange(Sender: TObject);
   public
     constructor Create(Table: TDBTable; AParent: TWinControl; ATop, ALeft: integer);
+    function Correct: boolean;
   published
     property OnChange: TEvent write FOnChangeEvent;
     property Filter: TDBFilter read FFilter;
+    property Index: integer read FIndex write FIndex;
   end;
 
 implementation
@@ -57,6 +60,13 @@ begin
   FFilter.Assign(Table.Fields[0]);
   InitOperators;
   Load(Table);
+end;
+
+function TFilterPanel.Correct: boolean;
+begin
+  if FEdit.Text <> '' then
+    Exit(True);
+  Exit(False);
 end;
 
 procedure TFilterPanel.InitGUI(AParent: TWinControl; ATop, ALeft: integer);
