@@ -5,7 +5,7 @@ unit UDirectory;
 interface
 
 uses
-  Forms, DBGrids, ComCtrls, UAbout, UFilter, StdCtrls, UCard, UDBForm,
+  Forms, DBGrids, ComCtrls, UAbout, UFilterPanel, StdCtrls, UCard, UDBForm,
   UDB, DB, UDBObjects, UVector, Dialogs;
 
 type

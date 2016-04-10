@@ -68,7 +68,7 @@
         <ResourceBaseClass Value="Form"/>
       </Unit4>
       <Unit5>
-        <Filename Value="UFilter.pas"/>
+        <Filename Value="ufilterpanel.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
