@@ -6,12 +6,16 @@ interface
 
 uses
   Forms, DBGrids, ComCtrls, UAbout, UFilter, StdCtrls, UCard, UDBForm,
-  UDB, DB, UDBObjects;
+  UDB, DB, UDBObjects, UVector, Dialogs;
 
 type
   {TODO: Focus}
   TDirectory = class(TDBForm)
   private
+    type
+    TFilterPanels = specialize TVector<TFilterPanel>;
+  private
+    FFilterPanels: TFilterPanels;
     procedure OnFiltersChange;
     procedure UpdateColumns;
     procedure CreateCard(CardType: TDBFormType);
@@ -48,6 +52,7 @@ implementation
 procedure TDirectory.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
+  FFilterPanels := TFilterPanels.Create;
   Constraints.MinHeight := Self.Height;
   Constraints.MinWidth := Self.Width;
   FApplyFilterBtn.Enabled := False;
@@ -56,12 +61,15 @@ end;
 
 procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
 var
-  Counter: integer;
-  Filter: TFilterPanel;
+  FilterPanel: TFilterPanel;
 begin
-  Counter := FFiltersScrollBox.ControlCount;
-  Filter := TFilterPanel.Create(Table, FFiltersScrollBox, 5 + Counter * 25, 5);
-  Filter.OnChange := @OnFiltersChange;
+  FilterPanel := TFilterPanel.Create
+  (
+    Table, FFiltersScrollBox, 5 + FFilterPanels.Size * 25, 5
+  );
+  FilterPanel.OnChange := @OnFiltersChange;
+  FilterPanel.Index := FFilterPanels.Size;
+  FFilterPanels.PushBack(FilterPanel);
   FApplyFilterBtn.Enabled := True;
 end;
 
@@ -70,20 +78,33 @@ var
   Filters: TDBFilters;
   i: integer;
 begin
+  for i := 0 to FFilterPanels.Size - 1 do
+    if not FFilterPanels.Items[i].Correct then begin
+      ShowMessage('Нужно заполнить все фильтры');
+      Exit;
+    end;
   Filters := TDBFilters.Create;
-  for i := 0 to FFiltersScrollBox.ControlCount - 1 do
-    Filters.PushBack(TFilterPanel(FFiltersScrollBox.Controls[i]).Filter);
+  for i := 0 to FFilterPanels.Size - 1 do
+    Filters.PushBack(FFilterPanels.Items[i].Filter);
   PerformQuery(Table.Select(Filters));
 end;
 
 procedure TDirectory.FDelFilterBtnClick(Sender: TObject);
 begin
-  if FFiltersScrollBox.ControlCount > 0 then begin
-    FFiltersScrollBox.Controls[FFiltersScrollBox.ControlCount - 1].Free;
+  if FFilterPanels.Size > 0 then begin
+    FFilterPanels.Back.Free;
+    FFilterPanels.DeleteInd(FFilterPanels.Size - 1);
+    //FFilterPanels.Delete(FFilterPanels.Back);
     FApplyFilterBtn.Enabled := True;
   end;
-  if FFiltersScrollBox.ControlCount = 0 then
+  if FFilterPanels.Size = 0 then
     FApplyFilterBtn.Enabled := False;
+  //if FFiltersScrollBox.ControlCount > 0 then begin
+  //  FFiltersScrollBox.Controls[FFiltersScrollBox.ControlCount - 1].Free;
+  //  FApplyFilterBtn.Enabled := True;
+  //end;
+  //if FFiltersScrollBox.ControlCount = 0 then
+  //  FApplyFilterBtn.Enabled := False;
 end;
 
 procedure TDirectory.FDelElementClick(Sender: TObject);
