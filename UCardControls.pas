@@ -12,6 +12,7 @@ type
   TControls = specialize TVector<TDBControl>;
 
   { Control.Assign(...) -> CreateGUI -> LoadData }
+  {TODO: Notifications from UDirectory}
   TDBEditControl = class(TDBControl)
   private
     FID: integer;
@@ -54,14 +55,12 @@ implementation
 
 function TDBEditControl.UpdateTable: TQueryContainer;
 var
-  Params: TParams;
+  NewData: TParam;
 begin
-  Params := TParams.Create;
-  Params.CreateParam(ftInteger, 'ID', ptInput);
-  Params.CreateParam(DataType, 'VAL', ptInput);
-  Params.ParamByName('ID').Value := FID;
-  Params.ParamByName('VAL').Value := FEdit.Text;
-  Exit(Update(Params));
+  NewData := TParam.Create(nil, ptInput);
+  NewData.DataType := DataType;
+  NewData.Value := FEdit.Text;
+  Exit(Query.Update(FID, NewData));
 end;
 
 procedure TDBEditControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
@@ -124,14 +123,12 @@ end;
 
 function TDBCBoxControl.UpdateTable: TQueryContainer;
 var
-  Params: TParams;
+  NewData: TParam;
 begin
-  Params := TParams.Create;
-  Params.CreateParam(ftInteger, 'ID', ptInput);
-  Params.CreateParam(DataType, 'VAL', ptInput);
-  Params.ParamByName('ID').Value := FData[FCBox.ItemIndex].Data;
-  Params.ParamByName('VAL').Value := FData[FCBox.ItemIndex].ID;
-  Exit(Update(Params));
+  NewData := TParam.Create(nil, ptInput);
+  NewData.DataType := DataType;
+  NewData.Value := FData[FCBox.ItemIndex].Data;
+  Exit(Query.Update(FData[FCBox.ItemIndex].ID, NewData));
 end;
 
 procedure TDBCBoxControl.OnNotificationRecieve(Sender: TObject);

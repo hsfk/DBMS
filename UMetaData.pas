@@ -8,13 +8,14 @@ uses DB, UVector;
 
 type
 
-  TPrimaryObject = class
+  TPrimaryObject = class(TInterfacedObject)
   private
     FIndex: integer;
     FName: string;
     FNativeName: string;
   public
     constructor Create(AName, ANativeName: string; AIndex: integer = -1);
+    procedure Assign(PObject: TPrimaryObject);
   published
     property Index: integer read FIndex write FIndex;
     property Name: string read FName write FName;
@@ -28,6 +29,7 @@ type
   public
     constructor Create(AName, ANativeName: string; AWidth: integer;
       DataType: TFieldType);
+    procedure Assign(Field: TField);
   published
     property DataType: TFieldType read FDataType write FDataType;
     property Width: integer read FWidth write FWidth;
@@ -53,6 +55,7 @@ type
     procedure SetItems(AItems: array of T); virtual;
     procedure Add(Item: T); virtual;
     constructor Create(AName, ANativeName: string; AIndex: integer = -1); overload;
+    procedure Assign(Data: TGenericData);
   end;
 
 implementation
@@ -64,12 +67,26 @@ begin
   FIndex := AIndex;
 end;
 
+procedure TPrimaryObject.Assign(PObject: TPrimaryObject);
+begin
+  FIndex := PObject.FIndex;
+  FName := PObject.FName;
+  FNativeName := PObject.FNativeName;
+end;
+
 constructor TField.Create(AName, ANativeName: string; AWidth: integer;
   DataType: TFieldType);
 begin
   inherited Create(AName, ANativeName);
   FWidth := AWidth;
   FDataType := DataType;
+end;
+
+procedure TField.Assign(Field: TField);
+begin
+  inherited Assign(Field);
+  FDataType := Field.DataType;
+  FWidth := Field.Width;
 end;
 
 function TGenericData.CmpItemName(AItem: T; AName: string): boolean;
@@ -136,8 +153,14 @@ end;
 
 constructor TGenericData.Create(AName, ANativeName: string; AIndex: integer = -1);
 begin
-  FItems:= TItems.Create;
+  FItems := TItems.Create;
   inherited Create(AName, ANativeName, AIndex);
+end;
+
+procedure TGenericData.Assign(Data: TGenericData);
+begin
+  inherited Assign(Data);
+  FItems := Data.FItems;
 end;
 
 end.

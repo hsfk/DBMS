@@ -43,7 +43,7 @@ type
     property OnPerformQuery: TEvent write FOnPerform;
     property OnExecQuery: TEvent write FOnExec;
     property ThisSubscriber: TSubscriber read FThisSubscriber write FThisSubscriber;
-    property Query: TSQLQuery read FQuery;
+    property FormQuery: TSQLQuery read FQuery;
     property Table: TDBTable read FTable write FTable;
     property DataSource: TDataSource read FDataSource;
     procedure FormCreate(Sender: TObject); virtual;

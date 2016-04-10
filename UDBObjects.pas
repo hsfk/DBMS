@@ -5,7 +5,7 @@ unit UDBObjects;
 interface
 
 uses
-  Classes, SysUtils, DBGrids, DB, UMetaData, UStringUtils, UVector, UNotifications,
+  Classes, SysUtils, DBGrids, DB, UMetaData, UVector, UNotifications,
   StdCtrls, Controls;
 
 type
@@ -23,35 +23,49 @@ type
     Params: TParams;
   end;
 
-  TDBField = class(TField)
-  private
-    FParentTable: TDBTable;
-    function RealName: string; virtual;
-    function InnerJoin: string; virtual;
+  IFieldConstructor = interface
+    function RealName: string;
+    function InnerJoin: string;
     function SelectedFields: string;
+  end;
+
+  IFieldQuery = interface
+    function Update(RecordID: integer; Data: TParam): TQueryContainer;
+    function QConstructor: IFieldConstructor;  //< incapsulation needed
+  end;
+
+  ITableQuery = interface
+    function Insert(Values: TParams): TQueryContainer;
+    function Delete(RecordID: integer): TQueryContainer;
+    function Select(Filters: TDBFilters): TQueryContainer;
+  end;
+
+  TDBField = class(TField)
+  protected
+    FQuery: IFieldQuery;
+    FParentTable: TDBTable;
   public
     constructor Create(AName, ANativeName: string; AWidth: integer;
       ADataType: TFieldType; AParentTable: TDBTable = nil);
     procedure Load(Column: TColumn);
     function CreateControl: TDBControl; virtual;
-    function Update(Params: TParams): TQueryContainer; virtual;
+    procedure Assign(Field: TDBField);
   published
     property ParentTable: TDBTable read FParentTable write FParentTable;
+    property Query: IFieldQuery read FQuery;
   end;
 
   TDBReferenceField = class(TDBField)
-  private
+  protected
     FJoinOn: string;
     FJoinedOnField: TDBField;
     FRefFieldName: string;
     FRefTable: TDBTable;
-    function RealName: string; override;
-    function InnerJoin: string; override;
   public
     constructor Create(RefTable, RefFieldName: string; JoinedTable: TDBTable;
       JoinedOnFieldName, FieldName: string);
     function CreateControl: TDBControl; override;
-    function Update(Params: TParams): TQueryContainer; override;
+    procedure Assign(Field: TDBReferenceField);
   end;
 
   TDBFieldData = class(TDBField)
@@ -65,8 +79,8 @@ type
     FParam: string;
     FOperator: string;
   public
-    property Param: string write FParam;
-    property ConditionalOperator: string write FOperator;
+    property Param: string read FParam write FParam;
+    property ConditionalOperator: string read FOperator write FOperator;
     procedure Assign(Field: TDBField); override;
     constructor Create; overload;
     constructor Create(AField: TDBField; COperator, AParam: string); overload;
@@ -104,6 +118,7 @@ type
 
   TDBTable = class(TGenericTable)
   protected
+    FQuery: ITableQuery;
     function CmpItemName(AField: TDBField; AName: string): boolean; override;
   public
     property Back: TDBField read GetBack write SetBack;
@@ -112,11 +127,10 @@ type
     property FieldsByName[AName: string]: TDBField read GetItemByName;
     procedure SetItems(AFields: array of TDBField); override;
     constructor Create(AName, ANativeName: string; AIndex: integer = -1);
-    function Insert(Values: TParams): TQueryContainer;
-    function Delete(ID: integer): TQueryContainer;
-    function Select(Filters: TDBFilters): TQueryContainer; overload;
+    procedure Assign(Table: TDBTable);
   published
     property Count: integer read GetLength;
+    property Query: ITableQuery read FQuery;
   end;
 
   TGenericMetaData = specialize TGenericData<TDBTable>;
@@ -139,28 +153,13 @@ var
 
 implementation
 
-uses UCardControls;
-
-function TDBField.RealName: string;
-begin
-  Exit(NativeName);
-end;
-
-function TDBField.InnerJoin: string;
-begin
-  Exit('');
-end;
-
-function TDBField.SelectedFields: string;
-begin
-  Exit(
-    Format('%s.%s, ', [FParentTable.NativeName, NativeName]));
-end;
+uses UCardControls, UQuery;
 
 constructor TDBField.Create(AName, ANativeName: string; AWidth: integer;
   ADataType: TFieldType; AParentTable: TDBTable = nil);
 begin
   inherited Create(AName, ANativeName, AWidth, ADataType);
+  FQuery := TDBFieldQuery.Create(Self);
 end;
 
 procedure TDBField.Load(Column: TColumn);
@@ -173,34 +172,14 @@ end;
 function TDBField.CreateControl: TDBControl;
 begin
   Result := TDBEditControl.Create;
-  Result.Subscriber := TSubscriber.Create(false);
+  Result.Subscriber := TSubscriber.Create(False);
   Result.Assign(Self);
 end;
 
-{ Params['ID'] = Record id, Params['VAL'] = value }
-function TDBField.Update(Params: TParams): TQueryContainer;
-var
-  ID: string;
+procedure TDBField.Assign(Field: TDBField);
 begin
-  ID := Params.ParamByName('ID').AsString;
-  Result.Query := Format('Update %s Set %s.%s = :Param0 Where %s.Id = %s ',
-    [FParentTable.NativeName, FParentTable.NativeName, NativeName,
-    FParentTable.NativeName, ID]);
-  Result.Params := TParams.Create;
-  Result.Params.AddParam(Params.ParamByName('VAL'));
-  Result.Params.Items[0].Name := 'Param0';
-end;
-
-function TDBReferenceField.RealName: string;
-begin
-  Exit(FRefFieldName);
-end;
-
-function TDBReferenceField.InnerJoin: string;
-begin
-  Exit(
-    Format('Inner Join %s On %s.%s = %s.%s ', [FParentTable.NativeName,
-    FParentTable.NativeName, FJoinOn, FRefTable.NativeName, FRefFieldName]));
+  inherited Assign(Field);
+  FParentTable := Field.ParentTable;
 end;
 
 constructor TDBReferenceField.Create(RefTable, RefFieldName: string;
@@ -218,28 +197,24 @@ begin
     JoinedField.Width, JoinedField.DataType);
   FParentTable := JoinedField.ParentTable;
   FJoinedOnField := JoinedOnField;
+  FQuery := TDBRefFieldQuery.Create(Self);
 end;
 
 { Create Self-Assigned Control }
 function TDBReferenceField.CreateControl: TDBControl;
 begin
   Result := TDBCBoxControl.Create;
-  Result.Subscriber := TSubscriber.Create(false);
+  Result.Subscriber := TSubscriber.Create(False);
   Result.Assign(Self);
 end;
 
-{ Params['ID'] = Record id, Params['VAL'] = value }
-function TDBReferenceField.Update(Params: TParams): TQueryContainer;
-var
-  ID: string;
+procedure TDBReferenceField.Assign(Field: TDBReferenceField);
 begin
-  ID := Params.ParamByName('ID').AsString;
-  Result.Query := Format('Update %s Set %s.%s = :Param0 Where %s.Id = %s ',
-    [FRefTable.NativeName, FRefTable.NativeName, FRefFieldName,
-    FRefTable.NativeName, ID]);
-  Result.Params := TParams.Create;
-  Result.Params.AddParam(Params.ParamByName('VAL'));
-  Result.Params.Items[0].Name := 'Param0';
+  inherited Assign(Field);
+  FJoinOn := Field.FJoinOn;
+  FJoinedOnField := Field.FJoinedOnField;
+  FRefFieldName := Field.FRefFieldName;
+  FRefTable := Field.FRefTable;
 end;
 
 constructor TDBFieldData.Create;
@@ -317,61 +292,12 @@ end;
 constructor TDBTable.Create(AName, ANativeName: string; AIndex: integer = -1);
 begin
   inherited Create(AName, ANativeName, AIndex);
+  FQuery := TDBTableQuery.Create(Self);
 end;
 
-{ Values.Items[].Name must be the same with relevant field(NativeName) }
-function TDBTable.Insert(Values: TParams): TQueryContainer;
-var
-  i: integer;
+procedure TDBTable.Assign(Table: TDBTable);
 begin
-  Result.Query := Format('Insert Into %s Values(0, ', [NativeName]);
-  Result.Params := TParams.Create;
-  for i := 1 to Count - 1 do begin
-    Result.Query += Format(':%s, ', [Param(i)]);
-    Result.Params.AddParam(Values.ParamByName(Fields[i].NativeName));
-    Result.Params.ParamByName(Fields[i].NativeName).Name := Param(i);
-  end;
-  DeleteLastSymbols(Result.Query, 2);
-  Result.Query += ') ';
-end;
-
-function TDBTable.Delete(ID: integer): TQueryContainer;
-begin
-  Result.Params := nil;
-  Result.Query := Format('Delete From %s Where %s = %s ',
-    [NativeName, Fields[0].NativeName, IntToStr(ID)]);
-end;
-
-function TDBTable.Select(Filters: TDBFilters): TQueryContainer;
-var
-  i: integer;
-begin
-  Result.Query := 'Select ';
-  Result.Params := nil;
-  for i := 0 to Count - 1 do
-    Result.Query += Format('%s.%s, ', [Fields[i].ParentTable.NativeName,
-      Fields[i].NativeName]);
-  DeleteLastSymbols(Result.Query, 2);
-  Result.Query += Format(' From %s ', [NativeName]);
-
-  for i := 1 to Count - 1 do
-    if (Fields[i].InnerJoin <> Fields[i - 1].InnerJoin) then
-      Result.Query += Fields[i].InnerJoin;
-
-  if Filters <> nil then begin
-    Result.Params := TParams.Create;
-    Result.Query += 'Where ';
-    for i := 0 to Filters.Size - 1 do begin
-      with Filters do begin
-        Result.Query += Format('%s.%s %s :%s And ',
-          [Items[i].ParentTable.NativeName, Items[i].NativeName,
-          Items[i].FOperator, Param(i)]);
-        Result.Params.CreateParam(Items[i].DataType, Param(i), ptInput);
-        Result.Params.ParamByName(Param(i)).Value := Items[i].FParam;
-      end;
-    end;
-    DeleteLastSymbols(Result.Query, 4);
-  end;
+  inherited Assign(Table);
 end;
 
 function TDBMetaData.CmpItemName(ATable: TDBTable; AName: string): boolean;

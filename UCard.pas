@@ -77,7 +77,7 @@ begin
   Recreate;
   FRecordIndex := Params.ParamByName('Target').AsInteger;
   inherited Load(ANotificationClass, ATable);
-  FSelectAll := Table.Select
+  FSelectAll := Table.Query.Select//Select
   (
     TDBFilters.Create
     (
@@ -119,7 +119,7 @@ begin
   with Table do
     for i := 1 to Count - 1 do begin
       Control := Fields[i].CreateControl;
-      PerformQuery(Fields[i].ParentTable.Select(nil));
+      PerformQuery(Fields[i].ParentTable.Query.Select(nil));
       SameFieldLeft := Fields[i - 1].ParentTable = Fields[i].ParentTable;
 
       if SameFieldLeft then
@@ -128,13 +128,13 @@ begin
         FieldIndex := 2;
 
       Control.CreateGUI(Self, FTop, FLeft);
-      while not Query.EOF do begin
+      while not FormQuery.EOF do begin
         Control.LoadData
         (
-          Query.Fields.FieldByNumber(FieldIndex).Value,
-          Query.Fields.FieldByNumber(1).Value
+          FormQuery.Fields.FieldByNumber(FieldIndex).Value,
+          FormQuery.Fields.FieldByNumber(1).Value
         );
-        Query.Next;
+        FormQuery.Next;
       end;
       FControls.PushBack(Control);
       FTop += 25;
@@ -196,7 +196,7 @@ var
 begin
   PerformQuery(FSelectAll);
   for i := 0 to FControls.Size - 1 do
-    FControls.Items[i].Caption := Query.Fields[i + 1].Value;
+    FControls.Items[i].Caption := FormQuery.Fields[i + 1].Value;
 end;
 
 procedure TEditCard.FApplyBtnClick(Sender: TObject);
@@ -218,7 +218,7 @@ begin
    Values := TParams.Create;
    for i := 0 to FControls.Size - 1 do
      Values.AddParam(FControls.Items[i].Data);
-   ExecQuery(Table.Insert(Values));
+   ExecQuery(Table.Query.Insert(Values));
 end;
 
 procedure TInsertCard.LoadInterface;

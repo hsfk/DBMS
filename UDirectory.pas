@@ -59,6 +59,16 @@ begin
   OnPerformQuery := @UpdateColumns;
 end;
 
+procedure TDirectory.Load(ANotificationClass: TNotificationClass;
+  ATable: TDBTable; Params: TParams = nil);
+begin
+  inherited Load(ANotificationClass, ATable);
+  ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
+  Self.Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
+  FSelectAll := Table.Query.Select(nil);
+  PerformQuery(FSelectAll);
+end;
+
 procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
 var
   FilterPanel: TFilterPanel;
@@ -86,7 +96,7 @@ begin
   Filters := TDBFilters.Create;
   for i := 0 to FFilterPanels.Size - 1 do
     Filters.PushBack(FFilterPanels.Items[i].Filter);
-  PerformQuery(Table.Select(Filters));
+  PerformQuery(Table.Query.Select(Filters));
 end;
 
 procedure TDirectory.FDelFilterBtnClick(Sender: TObject);
@@ -94,25 +104,18 @@ begin
   if FFilterPanels.Size > 0 then begin
     FFilterPanels.Back.Free;
     FFilterPanels.DeleteInd(FFilterPanels.Size - 1);
-    //FFilterPanels.Delete(FFilterPanels.Back);
     FApplyFilterBtn.Enabled := True;
   end;
   if FFilterPanels.Size = 0 then
     FApplyFilterBtn.Enabled := False;
-  //if FFiltersScrollBox.ControlCount > 0 then begin
-  //  FFiltersScrollBox.Controls[FFiltersScrollBox.ControlCount - 1].Free;
-  //  FApplyFilterBtn.Enabled := True;
-  //end;
-  //if FFiltersScrollBox.ControlCount = 0 then
-  //  FApplyFilterBtn.Enabled := False;
 end;
 
 procedure TDirectory.FDelElementClick(Sender: TObject);
 var
   Index: integer;
 begin
-  Index := Query.Fields[0].Value;
-  ExecQuery(Table.Delete(Index));
+  Index := FormQuery.Fields[0].Value;
+  ExecQuery(Table.Query.Delete(Index));
   ThisSubscriber.CreateNotification(nil, ThisSubscriber.NotificationClass);
 end;
 
@@ -144,7 +147,7 @@ var
   TargetIndex: integer;
   Params: TParams;
 begin
-  TargetIndex := Query.Fields[0].Value;
+  TargetIndex := FormQuery.Fields[0].Value;
   Params := TParams.Create;
   Params.CreateParam(ftInteger, 'Target', ptUnknown);
   Params.ParamByName('Target').AsInteger := TargetIndex;
@@ -163,16 +166,6 @@ begin
   FDBGrid.ReadOnly := True;
   FStatusBar.SimpleText := 'USER: ' + DbConnection.Connection.UserName +
     ' | ' + DbConnection.Connection.DatabaseName;
-end;
-
-procedure TDirectory.Load(ANotificationClass: TNotificationClass;
-  ATable: TDBTable; Params: TParams = nil);
-begin
-  inherited Load(ANotificationClass, ATable);
-  ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
-  Self.Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
-  FSelectAll := Table.Select(nil);
-  PerformQuery(FSelectAll);
 end;
 
 end.
