@@ -18,18 +18,23 @@ type
     procedure SetItem(Index: integer; const Item: T);
     procedure ChangeSize(Amount: integer);
   public
-    property Size: integer read GetLength;
     property Back: T read GetBack write SetBack;
     property Front: T read GetFront write SetFront;
     constructor Create; overload;
     constructor Create(FirstItem: T); overload;
+    procedure Resize(Size: integer);
     function Containing(Item: T): boolean;
     function Find(Item: T): T;
+    function FindInd(Item: T): integer;
     procedure PushBack(Item: T);
     procedure APushBack(Items: array of T);
-    procedure PushFront(Item: T);
+    procedure PushFrontS(Item: T);
     procedure Delete(Item: T);
+    procedure DeleteInd(Index: integer);
+    procedure DeleteS(Item: T);
+    procedure DeleteIndS(Index: integer);
     procedure Swap(IndexA, IndexB: integer);
+    property Size: integer read GetLength;
     property Items[Index: integer]: T read GetItem write SetItem;
   end;
 
@@ -45,13 +50,15 @@ begin
   PushBack(FirstItem);
 end;
 
-function TVector.Containing(Item: T): boolean;
-var
-  i: integer;
+procedure TVector.Resize(Size: integer);
 begin
-  for i := 0 to High(FItems) do
-    if Item = FItems[i] then
-      Exit(True);
+  SetLength(FItems, Size);
+end;
+
+function TVector.Containing(Item: T): boolean;
+begin
+  if FindInd(Item) <> -1 then
+    Exit(True);
   Exit(False);
 end;
 
@@ -62,6 +69,16 @@ begin
   for i := 0 to High(FItems) do
     if Item = FItems[i] then
       Exit(FItems[i]);
+end;
+
+function TVector.FindInd(Item: T): integer;
+var
+  i: integer;
+begin
+  for i := 0 to High(FItems) do
+    if Item = FItems[i] then
+      Exit(i);
+  Exit(-1);
 end;
 
 procedure TVector.PushBack(Item: T);
@@ -78,7 +95,7 @@ begin
     PushBack(Items[i]);
 end;
 
-procedure TVector.PushFront(Item: T);
+procedure TVector.PushFrontS(Item: T);
 var
   i: integer;
 begin
@@ -90,13 +107,35 @@ end;
 
 procedure TVector.Delete(Item: T);
 var
+  Index: integer;
+begin
+  Index := FindInd(Item);
+  if Index <> -1 then
+    DeleteInd(Index);
+end;
+
+procedure TVector.DeleteInd(Index: integer);
+begin
+  Swap(Index, High(FItems));
+  ChangeSize(-1);
+end;
+
+procedure TVector.DeleteS(Item: T);
+var
+  Index: integer;
+begin
+  Index := FindInd(Item);
+  if Index <> -1 then
+    DeleteIndS(Index);
+end;
+
+procedure TVector.DeleteIndS(Index: integer);
+var
   i: integer;
 begin
-  for i := 0 to High(FItems) do
-    if FItems[i] = Item then begin
-      Swap(i, High(FItems));
-      ChangeSize(-1);
-    end;
+  for i := Index to High(FItems) - 1 do
+    Swap(i, i + 1);
+  ChangeSize(-1);
 end;
 
 procedure TVector.Swap(IndexA, IndexB: integer);
