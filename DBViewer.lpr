@@ -6,7 +6,7 @@ uses {$IFDEF UNIX} {$IFDEF UseCThreads}
   cthreads, {$ENDIF} {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms,
-  UMain, UDBForm, UStringUtils, UMetaData, udbobjects;
+  UMain, UDBForm, UStringUtils, UMetaData, udbobjects, UQuery;
 
 {$R *.res}
 

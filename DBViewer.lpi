@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="14">
+    <Units Count="15">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -68,7 +68,7 @@
         <ResourceBaseClass Value="Form"/>
       </Unit4>
       <Unit5>
-        <Filename Value="ufilterpanel.pas"/>
+        <Filename Value="UFilterPanel.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
@@ -109,6 +109,11 @@
         <Filename Value="UDBObjects.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit13>
+      <Unit14>
+        <Filename Value="uquery.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UQuery"/>
+      </Unit14>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
