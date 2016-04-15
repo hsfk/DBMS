@@ -35,7 +35,7 @@ type
     procedure DeleteIndS(Index: integer);
     procedure Swap(IndexA, IndexB: integer);
     property Size: integer read GetLength;
-    property Items[Index: integer]: T read GetItem write SetItem;
+    property Items[Index: integer]: T read GetItem write SetItem; default;
   end;
 
 implementation
