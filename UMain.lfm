@@ -7,7 +7,7 @@ object MainForm: TMainForm
   ClientWidth = 320
   Menu = MainMenu
   OnCreate = FormCreate
-  LCLVersion = '1.4.4.0'
+  LCLVersion = '1.6.0.4'
   object FStatusBar: TStatusBar
     Left = 0
     Height = 23

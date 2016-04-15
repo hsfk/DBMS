@@ -110,9 +110,8 @@
         <IsPartOfProject Value="True"/>
       </Unit13>
       <Unit14>
-        <Filename Value="uquery.pas"/>
+        <Filename Value="UQuery.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UQuery"/>
       </Unit14>
     </Units>
   </ProjectOptions>
