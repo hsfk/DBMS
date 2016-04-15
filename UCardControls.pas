@@ -11,8 +11,6 @@ type
 
   TControls = specialize TVector<TDBControl>;
 
-  { Control.Assign(...) -> CreateGUI -> LoadData }
-  {TODO: Notifications from UDirectory}
   TDBEditControl = class(TDBControl)
   private
     FID: integer;
@@ -36,6 +34,7 @@ type
       ID: integer;
     end;
   private
+    FID: integer;
     FCBox: TComboBox;
     FData: array of TCBoxData;
     procedure OnChange(Sender: TObject);
@@ -72,7 +71,6 @@ begin
   FEdit.Left := ALeft + 100;
   FEdit.Width := 250;
   FEdit.Anchors := [akRight, akLeft];
-  //FEdit.OnChange := @OnChange;
   if DataType = ftInteger then
     FEdit.NumbersOnly := True;
 end;
@@ -92,7 +90,8 @@ end;
 procedure TDBEditControl.LoadData(AData: string; ID: integer);
 begin
   FEdit.Text := AData;
-  FID := ID;
+  if FID = 0 then
+    FID := ID;
 end;
 
 function TDBEditControl.GetData: TParam;
@@ -118,7 +117,7 @@ end;
 
 procedure TDBCBoxControl.OnChange(Sender: TObject);
 begin
-  Subscriber.CreateNotification(FCBox, Subscriber.NotificationClass);
+  Subscriber.CreateNotification(FCBox, Subscriber.NClass);
 end;
 
 function TDBCBoxControl.UpdateTable: TQueryContainer;
@@ -126,9 +125,9 @@ var
   NewData: TParam;
 begin
   NewData := TParam.Create(nil, ptInput);
-  NewData.DataType := DataType;
-  NewData.Value := FData[FCBox.ItemIndex].Data;
-  Exit(Query.Update(FData[FCBox.ItemIndex].ID, NewData));
+  NewData.DataType := ftInteger;
+  NewData.Value := FData[FCBox.ItemIndex].ID;
+  Exit(Query.Update(FID, NewData));
 end;
 
 procedure TDBCBoxControl.OnNotificationRecieve(Sender: TObject);
@@ -177,6 +176,7 @@ begin
   for i := 0 to High(FData) do
     if AData = FData[i].Data then begin
       FCBox.ItemIndex := i;
+      FId := FData[FCBox.ItemIndex].ID;
       Exit;
     end;
 end;
