@@ -5,47 +5,48 @@ unit UNotifications;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, Dialogs, UVector;
 
 type
 
-  TEvent = procedure() of object;
+  TEvent = procedure of object;
   TNotificationEvent = procedure(Sender: TObject) of object;
-  TNotificationClass = array of integer;   //< Class???   //<= Vector
+  //Notification class
+  TNClass = array of integer;
   TSubscriber = class;
 
   TSubscriber = class
   private
+    type
+    __TSubsribers = specialize TVector<TSubscriber>;
+  private
     FRecieveAll: boolean;
     FRecieveEnable: boolean;
     FSendEnable: boolean;
-    FNotificationClass: TNotificationClass;
+    FNClass: TNClass;
     FParent: TSubscriber;
-    FSubscribers: array of TSubscriber;     //<= Vector
-    FOnNotificationRecieve: TNotificationEvent;
-    function Containing(ANotificationClass: TNotificationClass): boolean;
-    procedure NotificationRecieve(Sender: TObject;
-      ANotificationClass: TNotificationClass);
-    procedure NotifySubscribers(Sender: TObject; ANotificationClass: TNotificationClass);
+    FSubscribers: __TSubsribers;
+    FOnRecieve: TNotificationEvent;
+    function Containing(ANotificationClass: TNClass): boolean;
+    procedure NotificationRecieve(Sender: TObject; ANClass: TNClass);
+    procedure NotifySubscribers(Sender: TObject; ANClass: TNClass);
   public
     constructor Create(RecieveAll: boolean = False);
     destructor Destroy;
     procedure Subscribe(Subscriber: TSubscriber);
     procedure UnSubscribe(Subscriber: TSubscriber);
-    procedure CreateNotification(Sender: TObject;
-      ANotificationClass: TNotificationClass);
+    procedure CreateNotification(Sender: TObject; ANClass: TNClass);
   published
-    property OnNotificationRecieve: TNotificationEvent write FOnNotificationRecieve;
+    property OnNotificationRecieve: TNotificationEvent write FOnRecieve;
     property Parent: TSubscriber read FParent write FParent;
-    property NotificationClass: TNotificationClass
-      read FNotificationClass write FNotificationClass;
+    property NClass: TNClass read FNClass write FNClass;
   end;
 
-function ToNotificationClass(A: array of integer): TNotificationClass;
+function ToNClass(A: array of integer): TNClass;
 
 implementation
 
-function ToNotificationClass(A: array of integer): TNotificationClass;
+function ToNClass(A: array of integer): TNClass;
 var
   i: integer;
 begin
@@ -57,7 +58,7 @@ end;
 constructor TSubscriber.Create(RecieveAll: boolean = False);
 begin
   FParent := nil;
-  SetLength(FSubscribers, 0);
+  FSubscribers := __TSubsribers.Create;
   FRecieveAll := RecieveAll;
   FSendEnable := True;
   FRecieveEnable := True;
@@ -69,11 +70,11 @@ var
 begin
   if FParent <> nil then
     FParent.UnSubscribe(Self);
-  for i := 0 to High(FSubscribers) do
+  for i := 0 to FSubscribers.Size - 1 do
     FSubscribers[i].Destroy;
 end;
 
-function TSubscriber.Containing(ANotificationClass: TNotificationClass): boolean;
+function TSubscriber.Containing(ANotificationClass: TNClass): boolean;
 var
   i: integer;
   j: integer;
@@ -82,65 +83,56 @@ begin
     Exit(True);
   if not FRecieveEnable then
     Exit(False);
-  for i := 0 to Length(FNotificationClass) - 1 do
+  for i := 0 to Length(FNClass) - 1 do
     for j := 0 to Length(ANotificationClass) - 1 do
-      if (FNotificationClass[i] = ANotificationClass[j]) then
+      if (FNClass[i] = ANotificationClass[j]) then
         Exit(True);
   Exit(False);
 end;
 
 procedure TSubscriber.Subscribe(Subscriber: TSubscriber);
 begin
-  SetLength(FSubscribers, Length(FSubscribers) + 1);
-  FSubscribers[High(FSubscribers)] := Subscriber;
+  FSubscribers.PushBack(Subscriber);
   Subscriber.Parent := Self;
 end;
 
 procedure TSubscriber.UnSubscribe(Subscriber: TSubscriber);
 var
-  i: integer;
-  Temp: TSubscriber;
+  Index: integer;
 begin
-  for i := 0 to High(FSubscribers) do
-    if Subscriber = FSubscribers[i] then begin
-      Temp := FSubscribers[High(FSubscribers)];
-      FSubscribers[High(FSubscribers)] := FSubscribers[i];
-      FSubscribers[i] := Temp;
-      FSubscribers[High(FSubscribers)].Free;
-      SetLength(FSubscribers, Length(FSubscribers) - 1);
-      Exit;
-    end;
+  Index := FSubscribers.FindInd(Subscriber);
+  if Index <> -1 then begin
+    FSubscribers[Index].Free;
+    FSubscribers.DeleteInd(Index);
+  end;
 end;
 
-procedure TSubscriber.CreateNotification(Sender: TObject;
-  ANotificationClass: TNotificationClass);
+procedure TSubscriber.CreateNotification(Sender: TObject; ANClass: TNClass);
 var
   Iterator: TSubscriber;
 begin
   Iterator := Self;
-  while (Iterator.FParent <> nil) and (Iterator.FParent.Containing(NotificationClass)) do
+  while (Iterator.FParent <> nil) and (Iterator.FParent.Containing(NClass)) do
     Iterator := Iterator.FParent;
-  Iterator.NotifySubscribers(Sender, ANotificationClass);
+  Iterator.NotifySubscribers(Sender, ANClass);
 end;
 
-procedure TSubscriber.NotificationRecieve(Sender: TObject;
-  ANotificationClass: TNotificationClass);
+procedure TSubscriber.NotificationRecieve(Sender: TObject; ANClass: TNClass);
 begin
   if not FRecieveEnable then
     Exit;
-  if FOnNotificationRecieve <> nil  then
-    FOnNotificationRecieve(Sender);
-  NotifySubscribers(Sender, ANotificationClass);
+  if FOnRecieve <> nil then
+    FOnRecieve(Sender);
+  NotifySubscribers(Sender, ANClass);
 end;
 
-procedure TSubscriber.NotifySubscribers(Sender: TObject;
-  ANotificationClass: TNotificationClass);
+procedure TSubscriber.NotifySubscribers(Sender: TObject; ANClass: TNClass);
 var
   i: integer;
 begin
-  for i := 0 to High(FSubscribers) do
-    if FSubscribers[i].Containing(ANotificationClass) then
-      FSubscribers[i].NotificationRecieve(Sender, ANotificationClass);
+  for i := 0 to FSubscribers.Size - 1 do
+    if FSubscribers[i].Containing(ANClass) then
+      FSubscribers[i].NotificationRecieve(Sender, ANClass);
 end;
 
 end.
