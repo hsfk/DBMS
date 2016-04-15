@@ -10,6 +10,11 @@ uses
 
 type
 
+  {TODO: refactor RefFields
+  tdbfielddata ???
+  refactor Tgenericdata
+  }
+
   TDBField = class;
   TDBReferenceField = class;
   TDBFilter = class;
@@ -31,7 +36,7 @@ type
 
   IFieldQuery = interface
     function Update(RecordID: integer; Data: TParam): TQueryContainer;
-    function QConstructor: IFieldConstructor;  //< incapsulation needed
+    function __QConstructor: IFieldConstructor;
   end;
 
   ITableQuery = interface
@@ -66,6 +71,11 @@ type
       JoinedOnFieldName, FieldName: string);
     function CreateControl: TDBControl; override;
     procedure Assign(Field: TDBReferenceField);
+  published
+    property JoinOn: string read FJoinOn;
+    property JoinedOnField: TDBField read FJoinedOnField;
+    property RefFieldName: string read FRefFieldName;
+    property RefTable: TDBTable read FRefTable;
   end;
 
   TDBFieldData = class(TDBField)
@@ -185,18 +195,18 @@ end;
 constructor TDBReferenceField.Create(RefTable, RefFieldName: string;
   JoinedTable: TDBTable; JoinedOnFieldName, FieldName: string);
 var
-  JoinedField: TDBField;
-  JoinedOnField: TDBField;
+  AJoinedField: TDBField;
+  AJoinedOnField: TDBField;
 begin
   FRefTable := DBData.TablesByName[RefTable];
   FRefFieldName := RefFieldName;
-  JoinedField := JoinedTable.FieldsByName[FieldName];
-  JoinedOnField := JoinedTable.FieldsByName[JoinedOnFieldName];
-  FJoinOn := JoinedOnField.NativeName;
-  inherited Create(JoinedField.Name, JoinedField.NativeName,
-    JoinedField.Width, JoinedField.DataType);
-  FParentTable := JoinedField.ParentTable;
-  FJoinedOnField := JoinedOnField;
+  AJoinedField := JoinedTable.FieldsByName[FieldName];
+  AJoinedOnField := JoinedTable.FieldsByName[JoinedOnFieldName];
+  FJoinOn := AJoinedOnField.NativeName;
+  with AJoinedField do
+    inherited Create(Name, NativeName, Width, DataType);
+  FParentTable := AJoinedField.ParentTable;
+  FJoinedOnField := AJoinedOnField;
   FQuery := TDBRefFieldQuery.Create(Self);
 end;
 
@@ -228,6 +238,7 @@ begin
   Name := Field.Name;
   ParentTable := Field.ParentTable;
   DataType := Field.DataType;
+  FQuery := Field.Query;
 end;
 
 procedure TDBFilter.Assign(Field: TDBField);
@@ -318,14 +329,14 @@ initialization
 
   DBData := TDBMetaData.Create('MetaData', 'MetaData');
   with DBData do begin
-    Add(TDBTable.Create('Расписание', 'Time_Table'));
-    Add(TDBTable.Create('Группы', 'Groups'));
-    Add(TDBTable.Create('Предметы', 'Lessons'));
-    Add(TDBTable.Create('Преподаватели', 'Teachers'));
-    Add(TDBTable.Create('Аудитории', 'Class_Rooms'));
+    Add(TDBTable.Create('Расписание',      'Time_Table'));
+    Add(TDBTable.Create('Группы',          'Groups'));
+    Add(TDBTable.Create('Предметы',        'Lessons'));
+    Add(TDBTable.Create('Преподаватели',   'Teachers'));
+    Add(TDBTable.Create('Аудитории',       'Class_Rooms'));
     Add(TDBTable.Create('Времена занятий', 'Lessons_Times'));
-    Add(TDBTable.Create('Дни недели', 'Week_Days'));
-    Add(TDBTable.Create('Виды предметов', 'Lessons_Types'));
+    Add(TDBTable.Create('Дни недели',      'Week_Days'));
+    Add(TDBTable.Create('Виды предметов',  'Lessons_Types'));
 
     TablesByName['Groups'].SetItems([
       TDBField.Create('ID',     'Id',   40,  ftInteger),
