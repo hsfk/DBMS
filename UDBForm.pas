@@ -14,7 +14,7 @@ type
   TDBTable = UDBObjects.TDBTable;
   TDbConnection = UDB.TDbConnection;
   TDBFormType = class of TDBForm;
-  TNotificationClass = UNotifications.TNotificationClass;
+  TNClass = UNotifications.TNClass;
   TParams = DB.TParams;
 
   {TODO: Child forms}
@@ -33,12 +33,11 @@ type
     FSelectAll: TQueryContainer;
     function PerformQuery(QContainer: TQueryContainer): boolean; virtual;
     function ExecQuery(QContainer: TQueryContainer): boolean; virtual;
-    function CreateChildForm(ANotificationClass: TNotificationClass;
-      ATable: TDBTable; FormType: TDBFormType; Params: TParams = nil): TDBForm;
+    function CreateChildForm(ANotificationClass: TNClass; ATable: TDBTable;
+      FormType: TDBFormType; Params: TParams = nil): TDBForm;
   public
     procedure InitConnection(DBConnection: TDbConnection); virtual;
-    procedure Load(ANotificationClass: TNotificationClass; ATable: TDBTable;
-      Params: TParams = nil); virtual;
+    procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
   published
     property OnPerformQuery: TEvent write FOnPerform;
     property OnExecQuery: TEvent write FOnExec;
@@ -50,13 +49,13 @@ type
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); virtual;
   end;
 
-function ToNotificationClass(A: array of integer): TNotificationClass;
+function ToNClass(A: array of integer): TNClass;
 
 implementation
 
 {$R *.lfm}
 
-function ToNotificationClass(A: array of integer): TNotificationClass;
+function ToNClass(A: array of integer): TNClass;
 var
   i: integer;
 begin
@@ -95,12 +94,11 @@ begin
   FDataSource.DataSet := FQuery;
 end;
 
-procedure TDBForm.Load(ANotificationClass: TNotificationClass;
-  ATable: TDBTable; Params: TParams = nil);
+procedure TDBForm.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   FTable := ATable;
   FThisSubscriber := TSubscriber.Create;
-  FThisSubscriber.NotificationClass := ANotificationClass;
+  FThisSubscriber.NClass := ANClass;
 end;
 
 function TDBForm.PerformQuery(QContainer: TQueryContainer): boolean;
@@ -136,7 +134,7 @@ begin
   end;
 end;
 
-function TDBForm.CreateChildForm(ANotificationClass: TNotificationClass;
+function TDBForm.CreateChildForm(ANotificationClass: TNClass;
   ATable: TDBTable; FormType: TDBFormType; Params: TParams = nil): TDBForm;
 begin
   Application.CreateForm(FormType, Result);
