@@ -26,7 +26,7 @@ type
     procedure Recreate;
     procedure OnNotificationRecieve(Sender: TObject);
   public
-    procedure Load(ANotificationClass: TNotificationClass; ATable: TDBTable;
+    procedure Load(ANotificationClass: TNClass; ATable: TDBTable;
       Params: TParams = nil); override;
   published
     FStatusBar: TStatusBar;
@@ -69,7 +69,7 @@ begin
   FLeft := 32;
 end;
 
-procedure TCard.Load(ANotificationClass: TNotificationClass; ATable: TDBTable;
+procedure TCard.Load(ANotificationClass: TNClass; ATable: TDBTable;
   Params: TParams = nil);
 begin
   Table := ATable;
@@ -77,7 +77,8 @@ begin
   Recreate;
   FRecordIndex := Params.ParamByName('Target').AsInteger;
   inherited Load(ANotificationClass, ATable);
-  FSelectAll := Table.Query.Select//Select
+  ThisSubscriber.OnNotificationRecieve := @OnNotificationRecieve;
+  FSelectAll := Table.Query.Select
   (
     TDBFilters.Create
     (
@@ -94,12 +95,13 @@ var
   NClass: integer = 1;
   i: integer = 1;
 begin
-  With Table do
+  with Table do
     while i < Count - 1 do begin
       if Fields[i].ParentTable = Fields[i + 1].ParentTable then begin
         SameTable := Fields[i].ParentTable;
         while (i < Count) and (Fields[i].ParentTable = SameTable) do begin
-          FControls.Items[i - 1].Subscriber.NotificationClass := ToNotificationClass([NClass]);
+          FControls.Items[i - 1].Subscriber.NClass :=
+            ToNClass([NClass]);
           FCboxNotifications.Subscribe(FControls.Items[i - 1].Subscriber);
           i += 1;
         end;
@@ -121,12 +123,10 @@ begin
       Control := Fields[i].CreateControl;
       PerformQuery(Fields[i].ParentTable.Query.Select(nil));
       SameFieldLeft := Fields[i - 1].ParentTable = Fields[i].ParentTable;
-
       if SameFieldLeft then
         FieldIndex += 1
       else
         FieldIndex := 2;
-
       Control.CreateGUI(Self, FTop, FLeft);
       while not FormQuery.EOF do begin
         Control.LoadData
@@ -173,7 +173,7 @@ begin
   Params := TParams.Create;
   Params.CreateParam(ftInteger, 'Target', ptUnknown);
   Params.ParamByName('Target').AsInteger := FRecordIndex;
-  Self.Load(ThisSubscriber.NotificationClass, Table, Params);
+  Self.Load(ThisSubscriber.NClass, Table, Params);
 end;
 
 procedure TCard.FCancelBtnClick(Sender: TObject);
@@ -206,7 +206,7 @@ begin
     Exit;
   end;
   UpdateTable;
-  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NotificationClass);
+  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
   Close;
 end;
 
@@ -215,10 +215,10 @@ var
   Values: TParams;
   i: integer;
 begin
-   Values := TParams.Create;
-   for i := 0 to FControls.Size - 1 do
-     Values.AddParam(FControls.Items[i].Data);
-   ExecQuery(Table.Query.Insert(Values));
+  Values := TParams.Create;
+  for i := 0 to FControls.Size - 1 do
+    Values.AddParam(FControls.Items[i].Data);
+  ExecQuery(Table.Query.Insert(Values));
 end;
 
 procedure TInsertCard.LoadInterface;
@@ -236,7 +236,7 @@ begin
     Exit;
   end;
   TableInsert;
-  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NotificationClass);
+  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
   Close;
 end;
 
