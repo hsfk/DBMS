@@ -22,7 +22,7 @@ type
     procedure NotificationRecieve(Sender: TObject);
   public
     procedure InitConnection(DBConnection: TDbConnection); override;
-    procedure Load(ANotificationClass: TNotificationClass; ATable: TDBTable;
+    procedure Load(ANotificationClass: TNClass; ATable: TDBTable;
       Params: TParams = nil); override;
   published
     FFiltersGroupBox: TGroupBox;
@@ -59,12 +59,12 @@ begin
   OnPerformQuery := @UpdateColumns;
 end;
 
-procedure TDirectory.Load(ANotificationClass: TNotificationClass;
+procedure TDirectory.Load(ANotificationClass: TNClass;
   ATable: TDBTable; Params: TParams = nil);
 begin
   inherited Load(ANotificationClass, ATable);
   ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
-  Self.Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
+  Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
   FSelectAll := Table.Query.Select(nil);
   PerformQuery(FSelectAll);
 end;
@@ -116,7 +116,7 @@ var
 begin
   Index := FormQuery.Fields[0].Value;
   ExecQuery(Table.Query.Delete(Index));
-  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NotificationClass);
+  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
 end;
 
 procedure TDirectory.FAddElementClick(Sender: TObject);
@@ -151,7 +151,7 @@ begin
   Params := TParams.Create;
   Params.CreateParam(ftInteger, 'Target', ptUnknown);
   Params.ParamByName('Target').AsInteger := TargetIndex;
-  CreateChildForm(ThisSubscriber.NotificationClass, Table, CardType, Params);
+  CreateChildForm(ThisSubscriber.NClass, Table, CardType, Params);
 end;
 
 procedure TDirectory.NotificationRecieve(Sender: TObject);

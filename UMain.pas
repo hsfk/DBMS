@@ -60,7 +60,7 @@ end;
 procedure TMainForm.CreateDirectoryForm(Table: TDBTable);
 var
   Directory: TDirectory;
-  NotificationClass: TNotificationClass;
+  NotificationClass: TNClass;
   i: integer;
 begin
   SetLength(NotificationClass, 0);

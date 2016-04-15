@@ -26,9 +26,9 @@ type
     FOpsCBox: TComboBox;
     FEdit: TEdit;
     FTable: TDBTable;
-    FCurrentOperators: TOperators;
-    FNumOperators: TOperators;
-    FStrOperators: TOperators;
+    FCurOps: TOperators;
+    FNumOps: TOperators;
+    FStrOps: TOperators;
     FOnChangeEvent: TEvent;
     procedure InitGUI(AParent: TWinControl; ATop, ALeft: integer);
     procedure Init(Component, AParent: TWinControl; ATop, ALeft, AWidth: integer);
@@ -94,12 +94,12 @@ end;
 
 procedure TFilterPanel.InitOperators;
 begin
-  AddOperator(FNumOperators, 'Равно', ' = ');
-  AddOperator(FNumOperators, 'Больше', ' > ');
-  AddOperator(FNumOperators, 'Меньше', ' < ');
-  AddOperator(FStrOperators, 'Содержит', ' Containing ');
-  AddOperator(FStrOperators, 'Не содержит', ' Not Containing ');
-  AddOperator(FStrOperators, 'Начинается с', ' Starting With ');
+  AddOperator(FNumOps, 'Равно',        ' = ');
+  AddOperator(FNumOps, 'Больше',       ' > ');
+  AddOperator(FNumOps, 'Меньше',       ' < ');
+  AddOperator(FStrOps, 'Содержит',     ' Containing ');
+  AddOperator(FStrOps, 'Не содержит',  ' Not Containing ');
+  AddOperator(FStrOps, 'Начинается с', ' Starting With ');
 end;
 
 procedure TFilterPanel.Init(Component, AParent: TWinControl;
@@ -119,7 +119,7 @@ begin
   for i := 0 to FTable.Count - 1 do
     FFieldsCBox.Items.Add(FTable.Fields[i].Name);
   FFieldsCBox.ItemIndex := 0;
-  LoadOperators(FNumOperators);
+  LoadOperators(FNumOps);
 end;
 
 procedure TFilterPanel.LoadOperators(Operators: TOperators);
@@ -129,7 +129,7 @@ begin
   FOpsCBox.Items.Clear;
   for i := 0 to High(Operators) do
     FOpsCBox.Items.Add(Operators[i].Name);
-  FCurrentOperators := Operators;
+  FCurOps := Operators;
   FOpsCBox.ItemIndex := 0;
   FEdit.NumbersOnly := True;
 end;
@@ -137,7 +137,7 @@ end;
 procedure TFilterPanel.OnChangeEvent(Sender: TObject);
 begin
   FFilter.Assign(FTable.Fields[FFieldsCBox.ItemIndex]);
-  FFilter.ConditionalOperator := FCurrentOperators[FOpsCBox.ItemIndex].COperator;
+  FFilter.ConditionalOperator := FCurOps[FOpsCBox.ItemIndex].COperator;
   FFilter.Param := FEdit.Text;
   if FOnChangeEvent <> nil then
     FOnChangeEvent;
@@ -147,11 +147,11 @@ procedure TFilterPanel.OnFieldsCBoxChange(Sender: TObject);
 begin
   with FTable.Fields[FFieldsCBox.ItemIndex] do begin
     if DataType = ftInteger then begin
-      LoadOperators(FNumOperators);
+      LoadOperators(FNumOps);
       FEdit.NumbersOnly := True;
     end;
     if DataType = ftString then begin
-      LoadOperators(FStrOperators);
+      LoadOperators(FStrOps);
       FEdit.NumbersOnly := False;
     end;
   end;
