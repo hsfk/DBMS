@@ -26,6 +26,7 @@ inherited Directory: TDirectory
     ReadOnly = True
     TabOrder = 0
     TabStop = False
+    OnCellClick = FDBGridCellClick
     OnDblClick = FDBGridDblClick
   end
   object FStatusBar: TStatusBar[1]
