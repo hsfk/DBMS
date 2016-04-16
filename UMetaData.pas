@@ -35,6 +35,7 @@ type
     property Width: integer read FWidth write FWidth;
   end;
 
+  {TODO Refactor \|/ }
   generic TGenericData<T> = class(TPrimaryObject)
   private
     type
