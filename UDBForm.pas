@@ -31,6 +31,7 @@ type
   protected
     //FChildForms //<= Vector
     FSelectAll: TQueryContainer;
+    procedure ShowQuery(QContainer: TQueryContainer);
     function PerformQuery(QContainer: TQueryContainer): boolean; virtual;
     function ExecQuery(QContainer: TQueryContainer): boolean; virtual;
     function CreateChildForm(ANotificationClass: TNClass; ATable: TDBTable;
@@ -66,6 +67,20 @@ end;
 
 procedure TDBForm.EmptyEvent;
 begin
+end;
+
+procedure TDBForm.ShowQuery(QContainer: TQueryContainer);
+var
+  Str: string;
+  i: integer;
+begin
+  Str := QContainer.Query + #13#10 + '__________' + #13#10;
+  with QContainer do
+    if Params <> nil then
+      for i := 0 to Params.Count - 1 do begin
+        Str += Params.Items[i].Name + ' ' + Params.Items[i].AsString + #13#10;
+      end;
+  ShowMessage(Str);
 end;
 
 procedure TDBForm.FormCreate(Sender: TObject);
