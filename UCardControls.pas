@@ -21,6 +21,7 @@ type
     function UpdateTable: TQueryContainer; override;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure Clear; override;
+    procedure Deselect; override;
     function Correct: boolean; override;
     procedure LoadData(AData: string; ID: integer); override;
   end;
@@ -44,6 +45,7 @@ type
     function UpdateTable: TQueryContainer; override;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure Clear; override;
+    procedure Deselect; override;
     function Correct: boolean; override;
     procedure LoadData(AData: string; ID: integer); override;
   end;
@@ -74,6 +76,11 @@ begin
 end;
 
 procedure TDBEditControl.Clear;
+begin
+  Deselect;
+end;
+
+procedure TDBEditControl.Deselect;
 begin
   FEdit.Text := '';
 end;
@@ -153,6 +160,11 @@ begin
 end;
 
 procedure TDBCBoxControl.Clear;
+begin
+  FCBox.Items.Clear;
+end;
+
+procedure TDBCBoxControl.Deselect;
 begin
   FCBox.ItemIndex := -1;
 end;

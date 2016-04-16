@@ -26,7 +26,6 @@ type
     FDataSource: TDataSource;
     FTable: TDBTable;
     FThisSubscriber: TSubscriber;
-    //FLastSuccesfulQuery <-
     procedure EmptyEvent;
   protected
     //FChildForms //<= Vector

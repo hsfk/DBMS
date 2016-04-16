@@ -103,6 +103,7 @@ type
     constructor Create(RecID: integer);
     function UpdateTable: TQueryContainer; virtual; abstract;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); virtual;
+    procedure Deselect; virtual; abstract;
     procedure Clear; virtual; abstract;
     function Correct: boolean; virtual; abstract;
     procedure LoadData(Data: string; ID: integer); virtual; abstract;
