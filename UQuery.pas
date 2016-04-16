@@ -25,13 +25,13 @@ type
 
   TDBRefFieldQuery = class(TInterfacedObject, IFieldQuery, IFieldConstructor)
   private
-    FField: TDBReferenceField;
+    FField: TDBRefField;
     function RealName: string;
     function InnerJoin: string;
     function SelectedFields: string;
   public
     function Update(RecordID: integer; Data: TParam): TQueryContainer;
-    constructor Create(Field: TDBReferenceField);
+    constructor Create(Field: TDBRefField);
     function __QConstructor: IFieldConstructor;
   end;
 
@@ -93,8 +93,9 @@ begin
   with FField do
     Exit(
       Format('Inner Join %s On %s.%s = %s.%s ',
-      [ParentTable.NativeName, ParentTable.NativeName, JoinOn,
-      RefTable.NativeName, RefFieldName]));
+      [ParentTable.NativeName, ParentTable.NativeName,
+      ParentTable.IDField.NativeName, RefTable.NativeName,
+      RefFieldName]));
 end;
 
 function TDBRefFieldQuery.SelectedFields: string;
@@ -114,7 +115,7 @@ begin
   Result.Params.Items[0].Name := 'Param0';
 end;
 
-constructor TDBRefFieldQuery.Create(Field: TDBReferenceField);
+constructor TDBRefFieldQuery.Create(Field: TDBRefField);
 begin
   FField := Field;
 end;
@@ -126,15 +127,21 @@ end;
 
 function TDBTableQuery.Insert(Values: TParams): TQueryContainer;
 var
-  i: integer;
+  i: integer = 1;
+  SameTable: TDBTable = nil;
 begin
   with FTable do begin
     Result.Query := Format('Insert Into %s Values(0, ', [NativeName]);
     Result.Params := TParams.Create;
-    for i := 1 to Count - 1 do begin
-      Result.Query += Format(':%s, ', [Param(i)]);
-      Result.Params.AddParam(Values.ParamByName(Fields[i].NativeName));
-      Result.Params.ParamByName(Fields[i].NativeName).Name := Param(i);
+
+    while i < Count do begin
+      if SameTable <> Fields[i].ParentTable then begin
+        Result.Query += Format(':%s, ', [Param(i)]);
+        Result.Params.AddParam(Values.ParamByName(Fields[i].NativeName));
+        Result.Params.ParamByName(Fields[i].NativeName).Name := Param(i);
+        SameTable := Fields[i].ParentTable;
+      end;
+      i += 1;
     end;
     DeleteLastSymbols(Result.Query, 2);
     Result.Query += ') ';

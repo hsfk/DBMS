@@ -13,7 +13,6 @@ type
 
   TDBEditControl = class(TDBControl)
   private
-    FID: integer;
     FEdit: TEdit;
   protected
     function GetData: TParam; override;
@@ -34,7 +33,6 @@ type
       ID: integer;
     end;
   private
-    FID: integer;
     FCBox: TComboBox;
     FData: array of TCBoxData;
     procedure OnChange(Sender: TObject);
@@ -59,7 +57,7 @@ begin
   NewData := TParam.Create(nil, ptInput);
   NewData.DataType := DataType;
   NewData.Value := FEdit.Text;
-  Exit(Query.Update(FID, NewData));
+  Exit(Query.Update(FRecID, NewData));
 end;
 
 procedure TDBEditControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
@@ -90,8 +88,6 @@ end;
 procedure TDBEditControl.LoadData(AData: string; ID: integer);
 begin
   FEdit.Text := AData;
-  if FID = 0 then
-    FID := ID;
 end;
 
 function TDBEditControl.GetData: TParam;
@@ -127,7 +123,7 @@ begin
   NewData := TParam.Create(nil, ptInput);
   NewData.DataType := ftInteger;
   NewData.Value := FData[FCBox.ItemIndex].ID;
-  Exit(Query.Update(FID, NewData));
+  Exit(Query.Update(FRecID, NewData));
 end;
 
 procedure TDBCBoxControl.OnNotificationRecieve(Sender: TObject);
@@ -176,7 +172,6 @@ begin
   for i := 0 to High(FData) do
     if AData = FData[i].Data then begin
       FCBox.ItemIndex := i;
-      FId := FData[FCBox.ItemIndex].ID;
       Exit;
     end;
 end;

@@ -120,7 +120,7 @@ var
 begin
   with Table do
     for i := 1 to Count - 1 do begin
-      Control := Fields[i].CreateControl;
+      Control := Fields[i].CreateControl(FRecordIndex);
       PerformQuery(Fields[i].ParentTable.Query.Select(nil));
       SameFieldLeft := Fields[i - 1].ParentTable = Fields[i].ParentTable;
       if SameFieldLeft then
