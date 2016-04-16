@@ -26,8 +26,7 @@ type
     procedure LoadInterface; virtual; abstract;
     procedure OnNotificationRecieve(Sender: TObject);
   public
-    procedure Load(ANotificationClass: TNClass; ATable: TDBTable;
-      Params: TParams = nil); override;
+    procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
     FStatusBar: TStatusBar;
     FApplyBtn: TButton;
@@ -67,8 +66,7 @@ begin
   Self.Constraints.MinWidth := Self.Width;
 end;
 
-procedure TCard.Load(ANotificationClass: TNClass; ATable: TDBTable;
-  Params: TParams = nil);
+procedure TCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   Table := ATable;
   Self.Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
@@ -76,12 +74,11 @@ begin
   FLeft := 32;
   FControls := TControls.Create;
   FRecordIndex := Params.ParamByName('Target').AsInteger;
-  inherited Load(ANotificationClass, ATable);
+  inherited Load(ANClass, ATable);
   ThisSubscriber.OnNotificationRecieve := @OnNotificationRecieve;
   FSelectAll := Table.Query.Select(
     TDBFilters.Create(
-      TDBFilter.Create(Table.Front, ' = ', IntToStr(FRecordIndex))
-  ));
+      TDBFilter.Create(Table.Front, ' = ', IntToStr(FRecordIndex))));
   CreateGUIControls;
   LoadGUIData;
   SubscribeCBoxes;
@@ -143,9 +140,9 @@ begin
       FieldIndex := 2;
     while not FormQuery.EOF do begin
       FControls[i].LoadData(
-        FormQuery.Fields.FieldByNumber(FieldIndex).AsString
-       ,FormQuery.Fields.FieldByNumber(1).AsInteger
-      );
+         FormQuery.Fields.FieldByNumber(FieldIndex).AsString
+        ,FormQuery.Fields.FieldByNumber(1).AsInteger
+        );
       FormQuery.Next;
     end;
   end;
@@ -170,9 +167,9 @@ end;
 procedure TCard.FCancelBtnClick(Sender: TObject);
 begin
   if Correct then
-    if MessageDlg('Вы действительно хотите выйти?', mtConfirmation, mbOKCancel, 0)
-      = mrCancel then
-        Exit;
+    if MessageDlg('Вы действительно хотите выйти?', mtConfirmation, mbOKCancel, 0) =
+      mrCancel then
+      Exit;
   ThisSubscriber.Parent.UnSubscribe(ThisSubscriber);
   Close;
 end;
