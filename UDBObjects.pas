@@ -329,59 +329,62 @@ initialization
 
   DBData := TDBMetaData.Create('MetaData', 'MetaData');
   with DBData do begin
-    Add(TDBTable.Create('Расписание',      'Time_Table'));
-    Add(TDBTable.Create('Группы',          'Groups'));
-    Add(TDBTable.Create('Предметы',        'Lessons'));
-    Add(TDBTable.Create('Преподаватели',   'Teachers'));
-    Add(TDBTable.Create('Аудитории',       'Class_Rooms'));
-    Add(TDBTable.Create('Времена занятий', 'Lessons_Times'));
-    Add(TDBTable.Create('Дни недели',      'Week_Days'));
-    Add(TDBTable.Create('Виды предметов',  'Lessons_Types'));
+    Add(TDBTable.Create( 'Расписание'     ,'Time_Table'    ));
+    Add(TDBTable.Create( 'Группы'         ,'Groups'        ));
+    Add(TDBTable.Create( 'Предметы'       ,'Lessons'       ));
+    Add(TDBTable.Create( 'Преподаватели'  ,'Teachers'      ));
+    Add(TDBTable.Create( 'Аудитории'      ,'Class_Rooms'   ));
+    Add(TDBTable.Create( 'Времена занятий','Lessons_Times' ));
+    Add(TDBTable.Create( 'Дни недели'     ,'Week_Days'     ));
+    Add(TDBTable.Create( 'Виды предметов' ,'Lessons_Types' ));
 
-    TablesByName['Groups'].SetItems([
-      TDBField.Create('ID',     'Id',   40,  ftInteger),
-      TDBField.Create('Группа', 'Name', 100, ftString)
-    ]);
-    TablesByName['Lessons'].SetItems([
-      TDBField.Create('ID',      'Id',   40,  ftInteger),
-      TDBField.Create('Предмет', 'Name', 300, ftString)
-    ]);
-    TablesByName['Teachers'].SetItems([
-      TDBField.Create('ID',       'Id',          40,  ftInteger),
-      TDBField.Create('Фамилия',  'Last_Name',   100, ftString),
-      TDBField.Create('Имя',      'First_Name',  100, ftString),
-      TDBField.Create('Отчество', 'Middle_Name', 100, ftString)
-    ]);
-    TablesByName['Class_Rooms'].SetItems([
-      TDBField.Create('ID',        'Id',   40,  ftInteger),
-      TDBField.Create('Аудитория', 'Name', 100, ftString)
-    ]);
-    TablesByName['Lessons_Times'].SetItems([
-      TDBField.Create('ID',     'Id',     40,  ftInteger),
-      TDBField.Create('Начало', 'Begin_', 100, ftString),
-      TDBField.Create('Конец',  'End_',   100, ftString)
-    ]);
-    TablesByName['Week_Days'].SetItems([
-      TDBField.Create('ID',          'Id',   40,  ftInteger),
-      TDBField.Create('День недели', 'Name', 100, ftString)
-    ]);
-    TablesByName['Lessons_Types'].SetItems([
-      TDBField.Create('ID',  'Id',   40,  ftInteger),
-      TDBField.Create('Тип', 'Name', 130, ftString)
-    ]);
+    with TDBField do begin
+      TablesByName['Groups'].SetItems([
+         Create( 'ID'     ,'Id'   ,40  ,ftInteger )
+        ,Create( 'Группа' ,'Name' ,100 ,ftString  )
+      ]);
+      TablesByName['Lessons'].SetItems([
+         Create( 'ID'      ,'Id'   ,40  ,ftInteger )
+        ,Create( 'Предмет' ,'Name' ,300 ,ftString  )
+      ]);
+      TablesByName['Teachers'].SetItems([
+         Create( 'ID'       ,'Id'          ,40  ,ftInteger )
+        ,Create( 'Фамилия'  ,'Last_Name'   ,100 ,ftString  )
+        ,Create( 'Имя'      ,'First_Name'  ,100 ,ftString  )
+        ,Create( 'Отчество' ,'Middle_Name' ,100 ,ftString  )
+      ]);
+      TablesByName['Class_Rooms'].SetItems([
+         Create( 'ID'        ,'Id'   ,40  ,ftInteger )
+        ,Create( 'Аудитория' ,'Name' ,100 ,ftString  )
+      ]);
+      TablesByName['Lessons_Times'].SetItems([
+         Create( 'ID'     ,'Id'     ,40  ,ftInteger )
+        ,Create( 'Начало' ,'Begin_' ,100 ,ftString  )
+        ,Create( 'Конец'  ,'End_'   ,100 ,ftString  )
+      ]);
+      TablesByName['Week_Days'].SetItems([
+         Create( 'ID'          ,'Id'   ,40  ,ftInteger )
+        ,Create( 'День недели' ,'Name' ,100 ,ftString  )
+      ]);
+      TablesByName['Lessons_Types'].SetItems([
+         Create( 'ID'  ,'Id'   ,40  ,ftInteger )
+        ,Create( 'Тип' ,'Name' ,130 ,ftString  )
+      ]);
+    end;
+
     With TDBReferenceField do begin
       TablesByName['Time_Table'].SetItems([
-        TDBField.Create('ID', 'Id', 40, ftInteger),
-        Create('Time_Table', 'Lesson_Id',      TablesByName['Lessons'],       'Id', 'Name'),
-        Create('Time_Table', 'Lesson_Type_Id', TablesByName['Lessons_Types'], 'Id', 'Name'),
-        Create('Time_Table', 'Teacher_Id',     TablesByName['Teachers'],      'Id', 'Last_Name'),
-        Create('Time_Table', 'Teacher_Id',     TablesByName['Teachers'],      'Id', 'First_Name'),
-        Create('Time_Table', 'Teacher_Id',     TablesByName['Teachers'],      'Id', 'Middle_Name'),
-        Create('Time_Table', 'Group_Id',       TablesByName['Groups'],        'Id', 'Name'),
-        Create('Time_Table', 'Class_Room_Id',  TablesByName['Class_Rooms'],   'Id', 'Name'),
-        Create('Time_Table', 'Week_Day_Id',    TablesByName['Week_Days'],     'Id', 'Name'),
-        Create('Time_Table', 'Lesson_Time_Id', TablesByName['Lessons_Times'], 'Id', 'Begin_'),
-        Create('Time_Table', 'Lesson_Time_Id', TablesByName['Lessons_Times'], 'Id', 'End_')
+        TDBField.Create('ID','Id', 40, ftInteger),
+        Create('Time_Table' ,'Lesson_Id'      ,TablesByName['Lessons'],       'Id', 'Name'),
+        Create('Time_Table' ,'Lesson_Type_Id' ,TablesByName['Lessons_Types'], 'Id', 'Name'),
+        Create('Time_Table' ,'Teacher_Id'     ,TablesByName['Teachers'],      'Id', 'Last_Name'),
+        Create('Time_Table' ,'Teacher_Id'     ,TablesByName['Teachers'],      'Id', 'First_Name'),
+        Create('Time_Table' ,'Teacher_Id'     ,TablesByName['Teachers'],      'Id', 'Middle_Name'),
+        Create('Time_Table' ,'Group_Id'       ,TablesByName['Groups'],        'Id', 'Name'),
+        Create('Time_Table' ,'Class_Room_Id'  ,TablesByName['Class_Rooms'],   'Id', 'Name'),
+        Create('Time_Table' ,'Week_Day_Id'    ,TablesByName['Week_Days'],     'Id', 'Name'),
+        Create('Time_Table' ,'Lesson_Time_Id' ,TablesByName['Lessons_Times'], 'Id', 'Begin_'),
+        Create('Time_Table' ,'Lesson_Time_Id' ,TablesByName['Lessons_Times'], 'Id', 'End_')
       ]);
     end;
   end;
