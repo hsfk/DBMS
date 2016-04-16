@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
-  UNotifications, sqldb, DB, UDB, UDBObjects;
+  UNotifications, sqldb, DB, UDB, UDBObjects, UVector;
 
 type
 
@@ -20,21 +20,29 @@ type
   {TODO: Child forms}
   TDBForm = class(TForm)
   private
+    type
+    TDBForms = specialize TVector<TDBForm>;
+  private
+    FID: integer;
     FOnPerform: TEvent;
     FOnExec: TEvent;
     FQuery: TSQLQuery;
     FDataSource: TDataSource;
     FTable: TDBTable;
     FThisSubscriber: TSubscriber;
+    FParentForm: TDBForm;
+    procedure RemoveChildForm(Form: TDBForm);
     procedure EmptyEvent;
   protected
-    //FChildForms //<= Vector
+    FCForms: TDBForms;
     FSelectAll: TQueryContainer;
     procedure ShowQuery(QContainer: TQueryContainer);
     function PerformQuery(QContainer: TQueryContainer): boolean; virtual;
     function ExecQuery(QContainer: TQueryContainer): boolean; virtual;
-    function CreateChildForm(ANotificationClass: TNClass; ATable: TDBTable;
+    function CreateForm(ANClass: TNClass; ATable: TDBTable;
       FormType: TDBFormType; Params: TParams = nil): TDBForm;
+    function CreateChildForm(ANClass: TNClass; ATable: TDBTable;
+      FormType: TDBFormType; Params: TParams; ID: integer): TDBForm;
   public
     procedure InitConnection(DBConnection: TDbConnection); virtual;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
@@ -64,6 +72,15 @@ begin
     Result[i] := A[i];
 end;
 
+procedure TDBForm.RemoveChildForm(Form: TDBForm);
+var
+  Index: integer;
+begin
+  Index := FCForms.FindInd(Form);
+  if Index <> -1 then
+    FCForms.DeleteInd(Index);
+end;
+
 procedure TDBForm.EmptyEvent;
 begin
 end;
@@ -90,6 +107,8 @@ begin
   FThisSubscriber := nil;
   FOnExec := @EmptyEvent;
   FOnPerform := @EmptyEvent;
+  FCForms := TDBForms.Create;
+  FParentForm := nil;
 end;
 
 procedure TDBForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -97,6 +116,8 @@ begin
   if FThisSubscriber <> nil then
     if FThisSubscriber.Parent <> nil then
       FThisSubscriber.Parent.UnSubscribe(FThisSubscriber);
+  if FParentForm <> nil then
+    FParentForm.RemoveChildForm(Self);
 end;
 
 procedure TDBForm.InitConnection(DBConnection: TDbConnection);
@@ -148,14 +169,31 @@ begin
   end;
 end;
 
-function TDBForm.CreateChildForm(ANotificationClass: TNClass;
-  ATable: TDBTable; FormType: TDBFormType; Params: TParams = nil): TDBForm;
+function TDBForm.CreateForm(ANClass: TNClass; ATable: TDBTable; FormType: TDBFormType;
+  Params: TParams = nil): TDBForm;
 begin
   Application.CreateForm(FormType, Result);
   Result.InitConnection(DbConnection);
-  Result.Load(ANotificationClass, ATable, Params);
+  Result.Load(ANClass, ATable, Params);
   ThisSubscriber.Subscribe(Result.ThisSubscriber);
   Result.Show;
+end;
+
+function TDBForm.CreateChildForm(ANClass: TNClass; ATable: TDBTable;
+  FormType: TDBFormType; Params: TParams; ID: integer): TDBForm;
+var
+  i: integer;
+begin
+  for i := 0 to FCForms.Size - 1 do
+    if FCForms[i].FID = ID then begin
+      FCForms[i].BringToFront;
+      Exit(FCForms[i]);
+    end;
+  Result := CreateForm(ANClass, ATable, FormType, Params);
+  Result.FID := ID;
+  Result.FParentForm := Self;
+  FCForms.PushBack(Result);
+  Exit(Result);
 end;
 
 end.
