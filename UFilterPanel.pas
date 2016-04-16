@@ -94,12 +94,12 @@ end;
 
 procedure TFilterPanel.InitOperators;
 begin
-  AddOperator(FNumOps, 'Равно',        ' = ');
-  AddOperator(FNumOps, 'Больше',       ' > ');
-  AddOperator(FNumOps, 'Меньше',       ' < ');
-  AddOperator(FStrOps, 'Содержит',     ' Containing ');
-  AddOperator(FStrOps, 'Не содержит',  ' Not Containing ');
-  AddOperator(FStrOps, 'Начинается с', ' Starting With ');
+  AddOperator(FNumOps ,'Равно'        ,' = ');
+  AddOperator(FNumOps ,'Больше'       ,' > ');
+  AddOperator(FNumOps ,'Меньше'       ,' < ');
+  AddOperator(FStrOps ,'Содержит'     ,' Containing ');
+  AddOperator(FStrOps ,'Не содержит'  ,' Not Containing ');
+  AddOperator(FStrOps ,'Начинается с' ,' Starting With ');
 end;
 
 procedure TFilterPanel.Init(Component, AParent: TWinControl;
