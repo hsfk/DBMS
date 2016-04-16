@@ -5,7 +5,7 @@ unit UAbout;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls, UVector;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls;
 
 const
   CURRENT_VERSION = 'v0.1.6 ';
@@ -20,9 +20,6 @@ type
     FAboutLabel: TLabel;
     procedure FormCreate(Sender: TObject);
   end;
-
-var
-  AboutForm: TAboutForm;
 
 implementation
 
