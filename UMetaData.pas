@@ -35,28 +35,30 @@ type
     property Width: integer read FWidth write FWidth;
   end;
 
-  {TODO Refactor \|/ }
-  generic TGenericData<T> = class(TPrimaryObject)
+  generic _TGData<T: TObject> = class(TPrimaryObject)
+  private type
+    _TGDataItems = specialize TVector<T>;
   private
-    type
-    TItems = specialize TVector<T>;
-  var
-    FItems: TItems;
-  protected
+    FItems: _TGDataItems;
+    function Cast(AItem: TObject): T;
     function CmpItemName(AItem: T; AName: string): boolean; virtual;
     function GetItem(AIndex: integer): T;
     function GetItemByName(AName: string): T;
-    procedure SetItem(AIndex: integer; const Item: T);
-    procedure SetBack(AItem: T);
     function GetBack: T;
+    procedure SetItem(AIndex: integer; const AItem: T);
+    procedure SetBack(AItem: T);
     procedure SetFront(AItem: T);
     function GetFront: T;
     function GetLength: integer;
   public
+    constructor Create(AName, ANativeName: string; AIndex: integer = -1);
+    procedure Assign(AData: _TGData);
     procedure SetItems(AItems: array of T); virtual;
-    procedure Add(Item: T); virtual;
-    constructor Create(AName, ANativeName: string; AIndex: integer = -1); overload;
-    procedure Assign(Data: TGenericData);
+    procedure Add(AItem: T);
+  published
+    property Back: T read GetBack write SetBack;
+    property Front: T read GetFront write SetFront;
+    property Count: integer read GetLength;
   end;
 
 implementation
@@ -90,78 +92,82 @@ begin
   FWidth := Field.Width;
 end;
 
-function TGenericData.CmpItemName(AItem: T; AName: string): boolean;
+function _TGData.Cast(AItem: TObject): T;
+begin
+  Exit(T(AItem));
+end;
+
+function _TGData.CmpItemName(AItem: T; AName: string): boolean;
 begin
   Exit(True);
 end;
 
-function TGenericData.GetItem(AIndex: integer): T;
+function _TGData.GetItem(AIndex: integer): T;
 begin
-  Exit(FItems.Items[AIndex]);
+  Exit(Cast(FItems[AIndex]));
 end;
 
-function TGenericData.GetItemByName(AName: string): T;
+function _TGData.GetItemByName(AName: string): T;
 var
   i: integer;
 begin
   AName := UpCase(AName);
   for i := 0 to FItems.Size - 1 do
-    if CmpItemName(FItems.Items[i], AName) then
-      Exit(FItems.Items[i]);
+    if CmpItemName(FItems[i], AName) then
+      Exit(Cast(FItems[i]));
 end;
 
-procedure TGenericData.SetItem(AIndex: integer; const Item: T);
+procedure _TGData.SetItem(AIndex: integer; const AItem: T);
 begin
-  FItems.Items[AIndex] := Item;
+  FItems[AIndex] := AItem;
 end;
 
-procedure TGenericData.SetBack(AItem: T);
+procedure _TGData.SetBack(AItem: T);
 begin
   FItems.Back := AItem;
 end;
 
-function TGenericData.GetBack: T;
+function _TGData.GetBack: T;
 begin
-  Exit(FItems.Back);
+  Exit(Cast(FItems.Back));
 end;
 
-procedure TGenericData.SetFront(AItem: T);
+procedure _TGData.SetFront(AItem: T);
 begin
   FItems.Front := AItem;
 end;
 
-function TGenericData.GetFront: T;
+function _TGData.GetFront: T;
 begin
-  Exit(FItems.Front);
+  Exit(Cast(FItems.Front));
 end;
 
-function TGenericData.GetLength: integer;
+function _TGData.GetLength: integer;
 begin
   Exit(FItems.Size);
 end;
 
-procedure TGenericData.SetItems(AItems: array of T);
+constructor _TGData.Create(AName, ANativeName: string; AIndex: integer = -1);
 begin
-  FItems.Free;
-  FItems := TItems.Create;
-  FItems.APushBack(AItems);
-end;
-
-procedure TGenericData.Add(Item: T);
-begin
-  FItems.PushBack(Item);
-end;
-
-constructor TGenericData.Create(AName, ANativeName: string; AIndex: integer = -1);
-begin
-  FItems := TItems.Create;
+  FItems := _TGDataItems.Create;
   inherited Create(AName, ANativeName, AIndex);
 end;
 
-procedure TGenericData.Assign(Data: TGenericData);
+procedure _TGData.Assign(AData: _TGData);
 begin
-  inherited Assign(Data);
-  FItems := Data.FItems;
+  inherited Assign(AData);
+  FItems := AData.FItems;
 end;
+
+procedure _TGData.SetItems(AItems: array of T);
+begin
+  FItems.APushBack(AItems);
+end;
+
+procedure _TGData.Add(AItem: T);
+begin
+  FItems.PushBack(AItem);
+end;
+
 
 end.
