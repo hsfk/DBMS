@@ -10,12 +10,8 @@ uses
 
 type
 
-  {TODO: refactor RefFields
-  tdbfielddata ???
-  }
-
   TDBField = class;
-  TDBReferenceField = class;
+  TDBRefField = class;
   TDBFilter = class;
   TDBControl = class;
   TDBTable = class;
@@ -53,27 +49,22 @@ type
     constructor Create(AName, ANativeName: string; AWidth: integer;
       ADataType: TFieldType; AParentTable: TDBTable = nil);
     procedure Load(Column: TColumn);
-    function CreateControl: TDBControl; virtual;
+    function CreateControl(RecID: integer): TDBControl; virtual;
     procedure Assign(Field: TDBField); virtual;
   published
     property ParentTable: TDBTable read FParentTable write FParentTable;
     property Query: IFieldQuery read FQuery;
   end;
 
-  TDBReferenceField = class(TDBField)
+  TDBRefField = class(TDBField)
   protected
-    FJoinOn: string;
-    FJoinedOnField: TDBField;
     FRefFieldName: string;
     FRefTable: TDBTable;
   public
-    constructor Create(RefTable, RefFieldName: string; JoinedTable: TDBTable;
-      JoinedOnFieldName, FieldName: string);
-    function CreateControl: TDBControl; override;
-    procedure Assign(Field: TDBReferenceField);
+    constructor Create(Field: TDBField; RefTable: TDBTable; RefFieldName: string);
+    function CreateControl(RecID: integer): TDBControl; override;
+    procedure Assign(Field: TDBRefField);
   published
-    property JoinOn: string read FJoinOn;
-    property JoinedOnField: TDBField read FJoinedOnField;
     property RefFieldName: string read FRefFieldName;
     property RefTable: TDBTable read FRefTable;
   end;
@@ -104,10 +95,12 @@ type
     FLabel: TLabel;
     FSubscriber: TSubscriber;
   protected
+    FRecID: integer;
     function GetData: TParam; virtual; abstract;
     procedure SetCaption(AData: string); virtual; abstract;
     procedure OnNotificationRecieve(Sender: TObject); virtual;
   public
+    constructor Create(RecID: integer);
     function UpdateTable: TQueryContainer; virtual; abstract;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); virtual;
     procedure Clear; virtual; abstract;
@@ -124,6 +117,7 @@ type
   TDBTable = class(_TTable)
   protected
     FQuery: ITableQuery;
+    function GetIDField: TDBField;
     function CmpItemName(AField: TDBField; AName: string): boolean; override;
   public
     property Fields[AIndex: integer]: TDBField read GetItem write SetItem;
@@ -133,6 +127,7 @@ type
     procedure Assign(Table: TDBTable);
   published
     property Query: ITableQuery read FQuery;
+    property IDField: TDBField read GetIDField;
   end;
 
   _TMetaData = specialize _TGData<TDBTable>;
@@ -171,9 +166,9 @@ begin
   Column.Width := Width;
 end;
 
-function TDBField.CreateControl: TDBControl;
+function TDBField.CreateControl(RecID: integer): TDBControl;
 begin
-  Result := TDBEditControl.Create;
+  Result := TDBEditControl.Create(RecID);
   Result.Subscriber := TSubscriber.Create(False);
   Result.Assign(Self);
 end;
@@ -182,38 +177,27 @@ procedure TDBField.Assign(Field: TDBField);
 begin
   inherited Assign(Field);
   FParentTable := Field.ParentTable;
+  FQuery := Field.Query;
 end;
 
-constructor TDBReferenceField.Create(RefTable, RefFieldName: string;
-  JoinedTable: TDBTable; JoinedOnFieldName, FieldName: string);
-var
-  AJoinedField: TDBField;
-  AJoinedOnField: TDBField;
+constructor TDBRefField.Create(Field: TDBField; RefTable: TDBTable; RefFieldName: string);
 begin
-  FRefTable := DBData.TablesByName[RefTable];
+  inherited Assign(Field);
+  FRefTable := RefTable;
   FRefFieldName := RefFieldName;
-  AJoinedField := JoinedTable.FieldsByName[FieldName];
-  AJoinedOnField := JoinedTable.FieldsByName[JoinedOnFieldName];
-  FJoinOn := AJoinedOnField.NativeName;
-  with AJoinedField do
-    inherited Create(Name, NativeName, Width, DataType);
-  FParentTable := AJoinedField.ParentTable;
-  FJoinedOnField := AJoinedOnField;
   FQuery := TDBRefFieldQuery.Create(Self);
 end;
 
-function TDBReferenceField.CreateControl: TDBControl;
+function TDBRefField.CreateControl(RecID: integer): TDBControl;
 begin
-  Result := TDBCBoxControl.Create;
+  Result := TDBCBoxControl.Create(RecID);
   Result.Subscriber := TSubscriber.Create(False);
   Result.Assign(Self);
 end;
 
-procedure TDBReferenceField.Assign(Field: TDBReferenceField);
+procedure TDBRefField.Assign(Field: TDBRefField);
 begin
   inherited Assign(Field);
-  FJoinOn := Field.FJoinOn;
-  FJoinedOnField := Field.FJoinedOnField;
   FRefFieldName := Field.FRefFieldName;
   FRefTable := Field.FRefTable;
 end;
@@ -248,6 +232,11 @@ begin
   { Do nothing }
 end;
 
+constructor TDBControl.Create(RecID: integer);
+begin
+  FRecID := RecID;
+end;
+
 procedure TDBControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
 begin
   FLabel := TLabel.Create(AParent);
@@ -255,6 +244,11 @@ begin
   FLabel.Top := ATop;
   FLabel.Left := ALeft;
   FLabel.Caption := Name;
+end;
+
+function TDBTable.GetIDField: TDBField;
+begin
+  Exit(Fields[0]);
 end;
 
 function TDBTable.CmpItemName(AField: TDBField; AName: string): boolean;
@@ -366,19 +360,29 @@ initialization
       ]);
     end;
 
-    With TDBReferenceField do begin
+    With TDBRefField do begin
       TablesByName['Time_Table'].SetFields([
-        TDBField.Create('ID','Id', 40, ftInteger),
-        Create('Time_Table' ,'Lesson_Id'      ,TablesByName['Lessons'],       'Id', 'Name'),
-        Create('Time_Table' ,'Lesson_Type_Id' ,TablesByName['Lessons_Types'], 'Id', 'Name'),
-        Create('Time_Table' ,'Teacher_Id'     ,TablesByName['Teachers'],      'Id', 'Last_Name'),
-        Create('Time_Table' ,'Teacher_Id'     ,TablesByName['Teachers'],      'Id', 'First_Name'),
-        Create('Time_Table' ,'Teacher_Id'     ,TablesByName['Teachers'],      'Id', 'Middle_Name'),
-        Create('Time_Table' ,'Group_Id'       ,TablesByName['Groups'],        'Id', 'Name'),
-        Create('Time_Table' ,'Class_Room_Id'  ,TablesByName['Class_Rooms'],   'Id', 'Name'),
-        Create('Time_Table' ,'Week_Day_Id'    ,TablesByName['Week_Days'],     'Id', 'Name'),
-        Create('Time_Table' ,'Lesson_Time_Id' ,TablesByName['Lessons_Times'], 'Id', 'Begin_'),
-        Create('Time_Table' ,'Lesson_Time_Id' ,TablesByName['Lessons_Times'], 'Id', 'End_')
+         TDBField.Create('ID','Id', 40, ftInteger)
+        ,Create( TablesByName[ 'Lessons'      ].FieldsByName[ 'Name'       ]
+                ,TablesByName[ 'Time_Table'   ],'Lesson_Id'                )
+        ,Create( TablesByName[ 'Lessons_Types'].FieldsByName[ 'Name'       ]
+                ,TablesByName[ 'Time_Table'   ],'Lesson_Type_Id'           )
+        ,Create( TablesByName[ 'Teachers'     ].FieldsByName[ 'Last_Name'  ]
+                ,TablesByName[ 'Time_Table'   ],'Teacher_Id'               )
+        ,Create( TablesByName[ 'Teachers'     ].FieldsByName[ 'First_Name' ]
+                ,TablesByName[ 'Time_Table'   ],'Teacher_Id'               )
+        ,Create( TablesByName[ 'Teachers'     ].FieldsByName[ 'Middle_Name']
+                ,TablesByName[ 'Time_Table'   ],'Teacher_Id'               )
+        ,Create( TablesByName[ 'Groups'       ].FieldsByName[ 'Name'       ]
+                ,TablesByName[ 'Time_Table'   ],'Group_Id'                 )
+        ,Create( TablesByName[ 'Class_Rooms'  ].FieldsByName[ 'Name'       ]
+                ,TablesByName[ 'Time_Table'   ],'Class_Room_Id'            )
+        ,Create( TablesByName[ 'Week_Days'    ].FieldsByName[ 'Name'       ]
+                ,TablesByName[ 'Time_Table'   ],'Week_Day_Id'              )
+        ,Create( TablesByName[ 'Lessons_Times'].FieldsByName[ 'Begin_'     ]
+                ,TablesByName[ 'Time_Table'   ],'Lesson_Time_Id'           )
+        ,Create( TablesByName[ 'Lessons_Times'].FieldsByName[ 'End_'       ]
+                ,TablesByName[ 'Time_Table'   ],'Lesson_Time_Id'           )
       ]);
     end;
 
