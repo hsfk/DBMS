@@ -12,7 +12,6 @@ type
 
   {TODO: refactor RefFields
   tdbfielddata ???
-  refactor Tgenericdata
   }
 
   TDBField = class;
@@ -50,11 +49,12 @@ type
     FQuery: IFieldQuery;
     FParentTable: TDBTable;
   public
+    constructor Create;
     constructor Create(AName, ANativeName: string; AWidth: integer;
       ADataType: TFieldType; AParentTable: TDBTable = nil);
     procedure Load(Column: TColumn);
     function CreateControl: TDBControl; virtual;
-    procedure Assign(Field: TDBField);
+    procedure Assign(Field: TDBField); virtual;
   published
     property ParentTable: TDBTable read FParentTable write FParentTable;
     property Query: IFieldQuery read FQuery;
@@ -78,13 +78,7 @@ type
     property RefTable: TDBTable read FRefTable;
   end;
 
-  TDBFieldData = class(TDBField)
-  public
-    constructor Create;
-    procedure Assign(Field: TDBField); virtual;
-  end;
-
-  TDBFilter = class(TDBFieldData)
+  TDBFilter = class(TDBField)
   private
     FParam: string;
     FOperator: string;
@@ -96,15 +90,16 @@ type
     constructor Create(AField: TDBField; COperator, AParam: string); overload;
   end;
 
-  TDBOrder = class(TDBFieldData)
+  TDBOrder = class(TDBField)
   private
     FOrder: string;
   public
-    property Order: string write FOrder;
     procedure Assign(Field: TDBField); override;
+  published
+    property Order: string write FOrder;
   end;
 
-  TDBControl = class(TDBFieldData)
+  TDBControl = class(TDBField)
   private
     FLabel: TLabel;
     FSubscriber: TSubscriber;
@@ -158,6 +153,11 @@ implementation
 
 uses UCardControls, UQuery;
 
+constructor TDBField.Create;
+begin
+ { An empty constructor for descendant classes }
+end;
+
 constructor TDBField.Create(AName, ANativeName: string; AWidth: integer;
   ADataType: TFieldType; AParentTable: TDBTable = nil);
 begin
@@ -171,7 +171,6 @@ begin
   Column.Width := Width;
 end;
 
-{ Create Self-Assigned Control }
 function TDBField.CreateControl: TDBControl;
 begin
   Result := TDBEditControl.Create;
@@ -203,7 +202,6 @@ begin
   FQuery := TDBRefFieldQuery.Create(Self);
 end;
 
-{ Create Self-Assigned Control }
 function TDBReferenceField.CreateControl: TDBControl;
 begin
   Result := TDBCBoxControl.Create;
@@ -218,20 +216,6 @@ begin
   FJoinedOnField := Field.FJoinedOnField;
   FRefFieldName := Field.FRefFieldName;
   FRefTable := Field.FRefTable;
-end;
-
-constructor TDBFieldData.Create;
-begin
-  { Default empty constructor }
-end;
-
-procedure TDBFieldData.Assign(Field: TDBField);
-begin
-  NativeName := Field.NativeName;
-  Name := Field.Name;
-  ParentTable := Field.ParentTable;
-  DataType := Field.DataType;
-  FQuery := Field.Query;
 end;
 
 procedure TDBFilter.Assign(Field: TDBField);
@@ -261,7 +245,7 @@ end;
 
 procedure TDBControl.OnNotificationRecieve(Sender: TObject);
 begin
-  { do nothing }
+  { Do nothing }
 end;
 
 procedure TDBControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
