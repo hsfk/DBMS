@@ -5,7 +5,7 @@ unit UDBObjects;
 interface
 
 uses
-  Classes, SysUtils, DBGrids, DB, UMetaData, UVector, UNotifications,
+  Classes, SysUtils, DBGrids, DB, UMetaDataItems, UVector, UNotifications,
   StdCtrls, Controls;
 
 type
@@ -113,7 +113,7 @@ type
     property Data: TParam read GetData;
   end;
 
-  _TTable = specialize _TGData<TDBField>;
+  _TTable = specialize TGData<TDBField>;
 
   TDBTable = class(_TTable)
   protected
@@ -131,7 +131,7 @@ type
     property IDField: TDBField read GetIDField;
   end;
 
-  _TMetaData = specialize _TGData<TDBTable>;
+  _TMetaData = specialize TGData<TDBTable>;
 
   TDBMetaData = class(_TMetaData)
   protected

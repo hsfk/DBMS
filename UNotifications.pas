@@ -18,14 +18,14 @@ type
   TSubscriber = class
   private
     type
-    __TSubsribers = specialize TVector<TSubscriber>;
+    TSubsribers = specialize TVector<TSubscriber>;
   private
     FRecieveAll: boolean;
     FRecieveEnable: boolean;
     FSendEnable: boolean;
     FNClass: TNClass;
     FParent: TSubscriber;
-    FSubscribers: __TSubsribers;
+    FSubscribers: TSubsribers;
     FOnRecieve: TNotificationEvent;
     function Containing(ANotificationClass: TNClass): boolean;
     procedure NotificationRecieve(Sender: TObject; ANClass: TNClass);
@@ -58,7 +58,7 @@ end;
 constructor TSubscriber.Create(RecieveAll: boolean = False);
 begin
   FParent := nil;
-  FSubscribers := __TSubsribers.Create;
+  FSubscribers := TSubsribers.Create;
   FRecieveAll := RecieveAll;
   FSendEnable := True;
   FRecieveEnable := True;

@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="15">
+    <Units Count="16">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -102,8 +102,9 @@
         <IsPartOfProject Value="True"/>
       </Unit11>
       <Unit12>
-        <Filename Value="UMetaData.pas"/>
+        <Filename Value="umetadataitems.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="UMetaDataItems"/>
       </Unit12>
       <Unit13>
         <Filename Value="UDBObjects.pas"/>
@@ -113,6 +114,13 @@
         <Filename Value="UQuery.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit14>
+      <Unit15>
+        <Filename Value="USchedule.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Schedule"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit15>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
-  Menus, ComCtrls, UDb, UDirectory, UAbout, UNotifications, UDBObjects;
+  Menus, ComCtrls, UDb, UDirectory, UAbout, UNotifications, UDBObjects, USchedule;
 
 type
 
@@ -32,6 +32,8 @@ type
     WeekDays: TMenuItem;
     Teachers: TMenuItem;
     TimeTable: TMenuItem;
+    ScheduleMenu: TMenuItem;
+    procedure ScheduleMenuClick(Sender: TObject);
     procedure AboutMenuClick(Sender: TObject);
     procedure DirectoryMenuItemClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -53,8 +55,15 @@ begin
   MainForm.Caption := APP_NAME + CURRENT_VERSION;
   FIsConnected := True;
   FStatusBar.SimpleText := DbConnection.CurrentConnection;
-
   FNotifications := TSubscriber.Create(True);
+end;
+
+procedure TMainForm.ScheduleMenuClick(Sender: TObject);
+var
+  Schedule: TSchedule;
+begin
+  Application.CreateForm(TSchedule, Schedule);
+  Schedule.Show;
 end;
 
 procedure TMainForm.CreateDirectoryForm(Table: TDBTable);

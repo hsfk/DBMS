@@ -9,7 +9,6 @@ uses
   UDB, DB, UDBObjects, UVector, Dialogs;
 
 type
-  {TODO: Focus}
 
   { TDirectory }
 
@@ -34,8 +33,8 @@ type
     procedure InitConnection(DBConnection: TDbConnection); override;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
-    FFiltersGroupBox: TGroupBox;
-    FTableGroupBox: TGroupBox;
+    FFiltersGBox: TGroupBox;
+    FTableGBox: TGroupBox;
     FStatusBar: TStatusBar;
     FDBGrid: TDBGrid;
     FFiltersScrollBox: TScrollBox;

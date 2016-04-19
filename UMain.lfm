@@ -67,6 +67,10 @@ object MainForm: TMainForm
         OnClick = DirectoryMenuItemClick
       end
     end
+    object ScheduleMenu: TMenuItem
+      Caption = 'Расписание'
+      OnClick = ScheduleMenuClick
+    end
     object AboutMenu: TMenuItem
       Caption = 'О программе'
       OnClick = AboutMenuClick

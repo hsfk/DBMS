@@ -13,7 +13,7 @@ inherited Directory: TDirectory
     AnchorSideTop.Control = Owner
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = FTableGroupBox
+    AnchorSideBottom.Control = FTableGBox
     Left = 0
     Height = 319
     Top = 0
@@ -41,7 +41,7 @@ inherited Directory: TDirectory
     Width = 569
     Panels = <>
   end
-  object FFiltersGroupBox: TGroupBox[2]
+  object FFiltersGBox: TGroupBox[2]
     AnchorSideLeft.Control = Owner
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
@@ -58,11 +58,11 @@ inherited Directory: TDirectory
     ClientWidth = 555
     TabOrder = 2
     object FFiltersScrollBox: TScrollBox
-      AnchorSideLeft.Control = FFiltersGroupBox
-      AnchorSideTop.Control = FFiltersGroupBox
-      AnchorSideRight.Control = FFiltersGroupBox
+      AnchorSideLeft.Control = FFiltersGBox
+      AnchorSideTop.Control = FFiltersGBox
+      AnchorSideRight.Control = FFiltersGBox
       AnchorSideRight.Side = asrBottom
-      AnchorSideBottom.Control = FFiltersGroupBox
+      AnchorSideBottom.Control = FFiltersGBox
       AnchorSideBottom.Side = asrBottom
       Left = 0
       Height = 122
@@ -118,11 +118,11 @@ inherited Directory: TDirectory
       TabOrder = 3
     end
   end
-  object FTableGroupBox: TGroupBox[3]
+  object FTableGBox: TGroupBox[3]
     AnchorSideLeft.Control = Owner
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = FFiltersGroupBox
+    AnchorSideBottom.Control = FFiltersGBox
     Left = 5
     Height = 48
     Top = 320
