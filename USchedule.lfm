@@ -1,0 +1,152 @@
+inherited Schedule: TSchedule
+  Left = 439
+  Height = 564
+  Top = 279
+  Width = 964
+  Caption = 'Schedule'
+  ClientHeight = 564
+  ClientWidth = 964
+  object FDrawGrid: TDrawGrid[0]
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FVisibleRecsGBox
+    Left = 0
+    Height = 378
+    Top = 0
+    Width = 964
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ExtendedSelect = False
+    TabOrder = 0
+  end
+  object FVisibleRecsGBox: TGroupBox[1]
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = FDrawGrid
+    AnchorSideTop.Side = asrBottom
+    AnchorSideBottom.Control = FStatusBar
+    Left = 0
+    Height = 163
+    Top = 378
+    Width = 214
+    Anchors = [akLeft, akBottom]
+    Caption = 'Видимые записи'
+    ClientHeight = 143
+    ClientWidth = 210
+    TabOrder = 1
+    object FCheckListBox: TCheckListBox
+      AnchorSideLeft.Control = FVisibleRecsGBox
+      AnchorSideTop.Control = FVisibleRecsGBox
+      AnchorSideRight.Control = FVisibleRecsGBox
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = FVisibleRecsGBox
+      AnchorSideBottom.Side = asrBottom
+      Left = 0
+      Height = 143
+      Top = 0
+      Width = 210
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      ItemHeight = 0
+      TabOrder = 0
+    end
+  end
+  object FFiltersGBox: TGroupBox[2]
+    AnchorSideLeft.Control = FVisibleRecsGBox
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = FVisibleRecsGBox
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FVisibleRecsGBox
+    AnchorSideBottom.Side = asrBottom
+    Left = 219
+    Height = 163
+    Top = 378
+    Width = 745
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    Caption = 'Фильтры'
+    ClientHeight = 143
+    ClientWidth = 741
+    TabOrder = 2
+    object FHCBox: TComboBox
+      AnchorSideLeft.Control = FHLabel
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = FFiltersGBox
+      Left = 124
+      Height = 23
+      Top = 5
+      Width = 252
+      BorderSpacing.Left = 5
+      BorderSpacing.Around = 5
+      ItemHeight = 15
+      TabOrder = 0
+      Text = 'FHCBox'
+    end
+    object FVCBox: TComboBox
+      AnchorSideLeft.Control = FHCBox
+      AnchorSideTop.Control = FHCBox
+      AnchorSideTop.Side = asrBottom
+      Left = 124
+      Height = 23
+      Top = 33
+      Width = 252
+      ItemHeight = 15
+      TabOrder = 1
+      Text = 'FVCBox'
+    end
+    object FHLabel: TLabel
+      Left = 9
+      Height = 17
+      Top = 13
+      Width = 105
+      Caption = 'По горизонтали'
+      Font.CharSet = RUSSIAN_CHARSET
+      Font.Height = -15
+      Font.Name = 'Default'
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object FVLabel: TLabel
+      AnchorSideTop.Control = FHLabel
+      AnchorSideTop.Side = asrBottom
+      Left = 9
+      Height = 17
+      Top = 39
+      Width = 92
+      BorderSpacing.Top = 9
+      Caption = 'По вертикали'
+      Font.CharSet = RUSSIAN_CHARSET
+      Font.Height = -15
+      Font.Name = 'Default'
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object FApplyFilterBtn: TButton
+      AnchorSideTop.Control = FVCBox
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = FVCBox
+      AnchorSideRight.Side = asrBottom
+      Left = 258
+      Height = 25
+      Top = 61
+      Width = 118
+      Align = alCustom
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 5
+      Caption = 'Применить'
+      OnClick = FApplyFilterBtnClick
+      TabOrder = 2
+    end
+  end
+  object FStatusBar: TStatusBar[3]
+    Left = 0
+    Height = 23
+    Top = 541
+    Width = 964
+    Panels = <>
+  end
+end
