@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="16">
+    <Units Count="17">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -56,9 +56,9 @@
         <ResourceBaseClass Value="Form"/>
       </Unit2>
       <Unit3>
-        <Filename Value="UDB.pas"/>
+        <Filename Value="udbconnection.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UDb"/>
+        <UnitName Value="UDBConnection"/>
       </Unit3>
       <Unit4>
         <Filename Value="UAbout.pas"/>
@@ -102,9 +102,8 @@
         <IsPartOfProject Value="True"/>
       </Unit11>
       <Unit12>
-        <Filename Value="umetadataitems.pas"/>
+        <Filename Value="UMetaDataItems.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UMetaDataItems"/>
       </Unit12>
       <Unit13>
         <Filename Value="UDBObjects.pas"/>
@@ -121,6 +120,11 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit15>
+      <Unit16>
+        <Filename Value="umatrix.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UMatrix"/>
+      </Unit16>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

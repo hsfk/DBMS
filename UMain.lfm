@@ -5,7 +5,7 @@ object MainForm: TMainForm
   Width = 320
   ClientHeight = 220
   ClientWidth = 320
-  Menu = MainMenu
+  Menu = FMainMenu
   OnCreate = FormCreate
   LCLVersion = '1.6.0.4'
   object FStatusBar: TStatusBar
@@ -15,65 +15,26 @@ object MainForm: TMainForm
     Width = 320
     Panels = <>
   end
-  object MainMenu: TMainMenu
+  object FMainMenu: TMainMenu
     left = 24
     top = 20
-    object FileMenu: TMenuItem
+    object FFileMenu: TMenuItem
       Caption = 'Файл'
-      object OpenMenuItem: TMenuItem
+      object FOpenMenuItem: TMenuItem
         Caption = 'Открыть'
-        OnClick = OpenMenuItemClick
+        OnClick = FOpenMenuItemClick
       end
     end
-    object DirectoryMenu: TMenuItem
+    object FDirectoryMenu: TMenuItem
       Caption = 'Справочник'
-      object TimeTable: TMenuItem
-        Caption = 'Расписание'
-        OnClick = DirectoryMenuItemClick
-      end
-      object Groups: TMenuItem
-        Tag = 1
-        Caption = 'Группы'
-        OnClick = DirectoryMenuItemClick
-      end
-      object Lessons: TMenuItem
-        Tag = 2
-        Caption = 'Предметы'
-        OnClick = DirectoryMenuItemClick
-      end
-      object Teachers: TMenuItem
-        Tag = 3
-        Caption = 'Преподаватели'
-        OnClick = DirectoryMenuItemClick
-      end
-      object ClassRooms: TMenuItem
-        Tag = 4
-        Caption = 'Аудитории'
-        OnClick = DirectoryMenuItemClick
-      end
-      object LessonTimes: TMenuItem
-        Tag = 5
-        Caption = 'Времена занятий'
-        OnClick = DirectoryMenuItemClick
-      end
-      object WeekDays: TMenuItem
-        Tag = 6
-        Caption = 'Дни недели'
-        OnClick = DirectoryMenuItemClick
-      end
-      object LessonTypes: TMenuItem
-        Tag = 7
-        Caption = 'Виды предметов'
-        OnClick = DirectoryMenuItemClick
-      end
     end
-    object ScheduleMenu: TMenuItem
+    object FScheduleMenu: TMenuItem
       Caption = 'Расписание'
-      OnClick = ScheduleMenuClick
+      OnClick = FScheduleMenuClick
     end
-    object AboutMenu: TMenuItem
+    object FAboutMenu: TMenuItem
       Caption = 'О программе'
-      OnClick = AboutMenuClick
+      OnClick = FAboutMenuClick
     end
   end
 end
