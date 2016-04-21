@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Grids,
   StdCtrls, ComCtrls, CheckLst, PairSplitter, UDBForm, UVector, UMatrix,
-  UDBObjects, UAbout;
+  UDBObjects, UAbout, UDirectory;
 
 const
   CELL_W = 250;
@@ -25,6 +25,8 @@ type
     type
     TStringMatrix = specialize TMatrix<string>;
   private
+    FRow: integer;
+    FCol: integer;
     FTable: TDBTable;
     FBackGroundCol: TColor;
     FSelectCol: TColor;
@@ -35,20 +37,23 @@ type
     procedure Draw(Rect: TRect; Canvas: TCanvas; VisibleFields: TCheckListBox);
     procedure AddData(Data: TStringMatrix);
   published
+    property Row: integer read FRow write FRow;
+    property Col: integer read FCol write FCol;
     property FieldData: TStringMatrix read FFieldData write FFieldData;
     property BackGroundColor: TColor read FBackGroundCol write FBackGroundCol;
     property SelectionColor: TColor read FSelectCol write FSelectCol;
     property TextColor: TColor read FTextCol write FTextCol;
   end;
-
-  { TSchedule }
-
+  {TODO: subscription
+   Hide useless fields
+  }
   TSchedule = class(TDBForm)
   private
     type
     TCellMatrix = specialize TMatrix<TCell>;
     TCells = specialize TVector<TCell>;
   private
+    FSelectedCell: TCell;
     FHTitleData: TData;
     FVTitleData: TData;
     FCells: TCellMatrix;
@@ -60,6 +65,7 @@ type
     procedure SetTableSize;
     procedure FreePrevData;
     procedure LoadSchedule;
+    function SelectedCellHash: integer;
     function GetTitleData(FieldIndex: integer): TData;
     function GetCellDataTouple: TCells;
   public
@@ -82,7 +88,9 @@ type
     procedure FormCreate(Sender: TObject); override;
     procedure FCheckListBoxClickCheck(Sender: TObject);
     procedure FApplyFilterBtnClick(Sender: TObject);
-    procedure FDrawGridDrawCell(Sender: TObject; aCol, aRow: Integer;
+    procedure FDrawGridSelectCell(Sender: TObject; aCol, aRow: integer;
+      var CanSelect: boolean);
+    procedure FDrawGridDrawCell(Sender: TObject; aCol, aRow: integer;
       aRect: TRect; aState: TGridDrawState);
   end;
 
@@ -92,6 +100,8 @@ implementation
 
 constructor TCell.Create(Table: TDBTable);
 begin
+  FRow := -1;
+  FCol := -1;
   FTable := TDBTable.Create;
   FTable.Assign(Table);
   FBackGroundCol := clWhite;
@@ -116,19 +126,19 @@ begin
   Canvas.FillRect(Rect);
   Canvas.Brush.Style := bsClear;
   DataH := FFieldData.Height - 1;
-   for i := 0 to FFieldData.Width - 1 do begin
-     for j := 0 to DataH do begin
-       if VisibleFields.Checked[j mod FTable.Count] = False then begin
-         InvFieldC += 1;
-         continue;
-       end;
-       Canvas.TextRect(Rect,
-         Rect.TopLeft.x + LEFT_MARGIN,
-         Rect.TopLeft.y + (i * DataH + (j - InvFieldC) + i) * TextH + TextH * SpaceC,
-         FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j]);
-     end;
-     SpaceC += 1;
-   end;
+  for i := 0 to FFieldData.Width - 1 do begin
+    for j := 0 to DataH do begin
+      if VisibleFields.Checked[j mod FTable.Count] = False then begin
+        InvFieldC += 1;
+        continue;
+      end;
+      Canvas.TextRect(Rect,
+        Rect.TopLeft.x + LEFT_MARGIN,
+        Rect.TopLeft.y + (i * DataH + (j - InvFieldC) + i) * TextH + TextH * SpaceC,
+        FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j]);
+    end;
+    SpaceC += 1;
+  end;
 end;
 
 procedure TCell.AddData(Data: TStringMatrix);
@@ -169,7 +179,7 @@ begin
   LoadSchedule;
 end;
 
-procedure TSchedule.FDrawGridDrawCell(Sender: TObject; aCol, aRow: Integer;
+procedure TSchedule.FDrawGridDrawCell(Sender: TObject; aCol, aRow: integer;
   aRect: TRect; aState: TGridDrawState);
 begin
   if (aCol = 0) and (aRow > 0) then begin
@@ -210,8 +220,23 @@ begin
 end;
 
 procedure TSchedule.FDrawGridDblClick(Sender: TObject);
+var
+  Dir: TDirectory;
 begin
+  if FSelectedCell <> nil then begin
+    Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
+      TDirectory, nil, SelectedCellHash));
+    //Zero means EQ operator
+    Dir.AddFilter(FHCBox.ItemIndex, 0, FHTitleData[FSelectedCell.Col], false);
+    Dir.AddFilter(FVCBox.ItemIndex, 0, FVTitleData[FSelectedCell.Row], false);
+    Dir.ApplyFilters;
+  end;
+end;
 
+procedure TSchedule.FDrawGridSelectCell(Sender: TObject; aCol, aRow: integer;
+  var CanSelect: boolean);
+begin
+  FSelectedCell := FCells[aCol - 1, aRow - 1];
 end;
 
 procedure TSchedule.LoadCBoxData;
@@ -254,8 +279,11 @@ begin
   for i := 0 to CellTouple.Size - 1 do begin
     ColIndex := FHTitleData.FindInd(CellTouple[i].FieldData[0, FHCBox.ItemIndex]);
     RowIndex := FVTitleData.FindInd(CellTouple[i].FieldData[0, FVCBox.ItemIndex]);
-    if FCells[ColIndex, RowIndex] = nil then
-      FCells[ColIndex, RowIndex] := CellTouple[i]
+    if FCells[ColIndex, RowIndex] = nil then begin
+      FCells[ColIndex, RowIndex] := CellTouple[i];
+      FCells[ColIndex, RowIndex].Col := ColIndex;
+      FCells[ColIndex, RowIndex].Row := RowIndex;
+    end
     else
       FCells[ColIndex, RowIndex].AddData(CellTouple[i].FFieldData);
   end;
@@ -300,6 +328,13 @@ begin
   BuildMatrix(GetCellDataTouple);
   SetTableSize;
   SetCellsSize(CELL_W, CELL_H);
+end;
+
+function TSchedule.SelectedCellHash: integer;
+begin
+  Result := 1001;
+  Result += word(@(FSelectedCell.FieldData));
+  Result += Result and Result xor Result shl 10;
 end;
 
 function TSchedule.GetCellDataTouple: TCells;
