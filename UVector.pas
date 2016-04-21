@@ -18,14 +18,13 @@ type
     procedure SetItem(Index: integer; const Item: T);
     procedure ChangeSize(Amount: integer);
   public
-    property Back: T read GetBack write SetBack;
-    property Front: T read GetFront write SetFront;
-    constructor Create; overload;
-    constructor Create(FirstItem: T); overload;
-    procedure Resize(Size: integer);
+    constructor Create;
+    constructor Create(FirstItem: T);
     function Containing(Item: T): boolean;
     function Find(Item: T): T;
     function FindInd(Item: T): integer;
+    procedure Fill(Item: T);
+    procedure Resize(ASize: integer);
     procedure PushBack(Item: T);
     procedure APushBack(Items: array of T);
     procedure PushFrontS(Item: T);
@@ -34,8 +33,10 @@ type
     procedure DeleteS(Item: T);
     procedure DeleteIndS(Index: integer);
     procedure Swap(IndexA, IndexB: integer);
-    property Size: integer read GetLength;
     property Items[Index: integer]: T read GetItem write SetItem; default;
+    property Back: T read GetBack write SetBack;
+    property Front: T read GetFront write SetFront;
+    property Size: integer read GetLength;
   end;
 
 implementation
@@ -50,9 +51,9 @@ begin
   PushBack(FirstItem);
 end;
 
-procedure TVector.Resize(Size: integer);
+procedure TVector.Resize(ASize: integer);
 begin
-  SetLength(FItems, Size);
+  SetLength(FItems, ASize);
 end;
 
 function TVector.Containing(Item: T): boolean;
@@ -79,6 +80,14 @@ begin
     if Item = FItems[i] then
       Exit(i);
   Exit(-1);
+end;
+
+procedure TVector.Fill(Item: T);
+var
+  i: integer;
+begin
+  for i := 0 to Size - 1 do
+    FItems[i] := Item;
 end;
 
 procedure TVector.PushBack(Item: T);
