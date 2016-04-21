@@ -1,4 +1,4 @@
-unit UDb;
+unit UDBConnection;
 
 {$mode objfpc}{$H+}
 
@@ -9,7 +9,7 @@ uses
 
 type
 
-  TDbConnection = class
+  TDBConnection = class
   private
     FConnected: boolean;
     FConnection: TIBConnection;
@@ -25,12 +25,9 @@ type
     property Transaction: TSQLTransaction read FTransaction;
   end;
 
-var
-  DbConnection: TDbConnection;
-
 implementation
 
-constructor TDbConnection.Create;
+constructor TDBConnection.Create;
 begin
   FConnected := False;
   FConnection := TIBConnection.Create(FConnection);
@@ -39,7 +36,7 @@ begin
   FTransaction.DataBase := FConnection;
 end;
 
-procedure TDbConnection.Connect(DbName, UserName, Password: string);
+procedure TDBConnection.Connect(DbName, UserName, Password: string);
 begin
   FConnection.DatabaseName := DBName;
   FConnection.UserName := UserName;
@@ -57,7 +54,7 @@ begin
   end;
 end;
 
-function TDbConnection.GetCurrentConnection: string;
+function TDBConnection.GetCurrentConnection: string;
 begin
   with FConnection do begin
     if DatabaseName = '' then
@@ -65,10 +62,5 @@ begin
     Exit('USER: ' + UserName + ' | ' + DatabaseName);
   end;
 end;
-
-initialization
-
-  DbConnection := TDbConnection.Create;
-  DbConnection.Connect('DataBase.fdb', 'sysdba', 'masterkey');
 
 end.
