@@ -56,9 +56,8 @@
         <ResourceBaseClass Value="Form"/>
       </Unit2>
       <Unit3>
-        <Filename Value="udbconnection.pas"/>
+        <Filename Value="UDBConnection.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UDBConnection"/>
       </Unit3>
       <Unit4>
         <Filename Value="UAbout.pas"/>
@@ -121,9 +120,8 @@
         <ResourceBaseClass Value="Form"/>
       </Unit15>
       <Unit16>
-        <Filename Value="umatrix.pas"/>
+        <Filename Value="UMatrix.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UMatrix"/>
       </Unit16>
     </Units>
   </ProjectOptions>

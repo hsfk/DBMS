@@ -1,7 +1,7 @@
 inherited Schedule: TSchedule
-  Left = 537
+  Left = 438
   Height = 564
-  Top = 235
+  Top = 279
   Width = 964
   Caption = 'Schedule'
   ClientHeight = 564
@@ -52,6 +52,7 @@ inherited Schedule: TSchedule
         TabOrder = 0
         OnDblClick = FDrawGridDblClick
         OnDrawCell = FDrawGridDrawCell
+        OnSelectCell = FDrawGridSelectCell
       end
     end
     object FPairSplitterBot: TPairSplitterSide
