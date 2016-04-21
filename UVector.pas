@@ -193,7 +193,7 @@ end;
 
 procedure TVector.ChangeSize(Amount: integer);
 begin
-  SetLength(FItems, Length(FItems) + Amount);
+  SetLength(FItems, Size + Amount);
 end;
 
 end.
