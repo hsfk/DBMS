@@ -5,7 +5,7 @@ unit UFilterPanel;
 interface
 
 uses
-  Classes, SysUtils, StdCtrls, Controls, ExtCtrls, Graphics, DB, UDBObjects;
+  Classes, SysUtils, StdCtrls, Controls, ExtCtrls, Graphics, DB, UDBObjects, Dialogs;
 
 type
 
@@ -38,13 +38,22 @@ type
     procedure LoadOperators(Operators: TOperators);
     procedure OnChangeEvent(Sender: TObject);
     procedure OnFieldsCBoxChange(Sender: TObject);
+    procedure LoadOpsFromDataType(DataType: TFieldType);
+    procedure SetState(AEnabled: boolean);
+    procedure SetFieldIndex(Index: integer);
+    procedure SetOpsIndex(Index: integer);
+    procedure SetEditText(AText: string);
   public
     constructor Create(Table: TDBTable; AParent: TWinControl; ATop, ALeft: integer);
     function Correct: boolean;
   published
+    property FieldIndex: integer write SetFieldIndex;
+    property OpsIndex: integer write SetOpsIndex;
+    property EditText: string write SetEditText;
     property OnChange: TEvent write FOnChangeEvent;
     property Filter: TDBFilter read FFilter;
     property Index: integer read FIndex write FIndex;
+    property Enabled: boolean write SetState;
   end;
 
 implementation
@@ -94,12 +103,12 @@ end;
 
 procedure TFilterPanel.InitOperators;
 begin
-  AddOperator(FNumOps ,'Равно'        ,' = ');
-  AddOperator(FNumOps ,'Больше'       ,' > ');
-  AddOperator(FNumOps ,'Меньше'       ,' < ');
-  AddOperator(FStrOps ,'Содержит'     ,' Containing ');
-  AddOperator(FStrOps ,'Не содержит'  ,' Not Containing ');
-  AddOperator(FStrOps ,'Начинается с' ,' Starting With ');
+  AddOperator(FNumOps, 'Равно', ' = ');
+  AddOperator(FNumOps, 'Больше', ' > ');
+  AddOperator(FNumOps, 'Меньше', ' < ');
+  AddOperator(FStrOps, 'Содержит', ' Containing ');
+  AddOperator(FStrOps, 'Не содержит', ' Not Containing ');
+  AddOperator(FStrOps, 'Начинается с', ' Starting With ');
 end;
 
 procedure TFilterPanel.Init(Component, AParent: TWinControl;
@@ -145,18 +154,43 @@ end;
 
 procedure TFilterPanel.OnFieldsCBoxChange(Sender: TObject);
 begin
-  with FTable.Fields[FFieldsCBox.ItemIndex] do begin
-    if DataType = ftInteger then begin
-      LoadOperators(FNumOps);
-      FEdit.NumbersOnly := True;
-    end;
-    if DataType = ftString then begin
-      LoadOperators(FStrOps);
-      FEdit.NumbersOnly := False;
-    end;
-  end;
+  LoadOpsFromDataType(FTable.Fields[FFieldsCBox.ItemIndex].DataType);
   if FOnChangeEvent <> nil then
     FOnChangeEvent;
+end;
+
+procedure TFilterPanel.LoadOpsFromDataType(DataType: TFieldType);
+begin
+  if DataType = ftInteger then begin
+    LoadOperators(FNumOps);
+    FEdit.NumbersOnly := True;
+  end;
+  if DataType = ftString then begin
+    LoadOperators(FStrOps);
+    FEdit.NumbersOnly := False;
+  end;
+end;
+
+procedure TFilterPanel.SetState(AEnabled: boolean);
+begin
+  FEdit.Enabled := AEnabled;
+  FFieldsCBox.Enabled := AEnabled;
+  FOpsCBox.Enabled := AEnabled;
+end;
+
+procedure TFilterPanel.SetFieldIndex(Index: integer);
+begin
+  FFieldsCBox.ItemIndex := Index;
+end;
+
+procedure TFilterPanel.SetOpsIndex(Index: integer);
+begin
+  FOpsCBox.ItemIndex := Index;
+end;
+
+procedure TFilterPanel.SetEditText(AText: string);
+begin
+  FEdit.Text := AText;
 end;
 
 procedure TFilterPanel.AddOperator(var Operators: TOperators; AName, ACOperator: string);
