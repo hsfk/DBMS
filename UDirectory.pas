@@ -13,8 +13,10 @@ type
   { TDirectory }
 
   TDirectory = class(TDBForm)
-  private type
+  private
+    type
     TFilterPanels = specialize TVector<TFilterPanel>;
+
     TFocus = record
       X: integer;
       Y: integer;
@@ -28,10 +30,14 @@ type
     procedure NotificationRecieve(Sender: TObject);
     procedure MemFocus;
     procedure RestoreFocus;
+    procedure AddFilterPanel(AFilterPanel: TFilterPanel);
     function FormHash: integer;
   public
     procedure InitConnection(DBConnection: TDbConnection); override;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
+    procedure AddFilter(Field, COperator: integer; Param: string;
+      AEnabled: boolean = True);
+    procedure ApplyFilters;
   published
     FFiltersGBox: TGroupBox;
     FTableGBox: TGroupBox;
@@ -80,21 +86,35 @@ begin
   MemFocus;
 end;
 
-procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
+procedure TDirectory.AddFilter(Field, COperator: integer; Param: string;
+  AEnabled: boolean = True);
 var
   FilterPanel: TFilterPanel;
 begin
-  FilterPanel := TFilterPanel.Create
-  (
-    Table, FFiltersScrollBox, 5 + FFilterPanels.Size * 25, 5
-  );
-  FilterPanel.OnChange := @OnFiltersChange;
-  FilterPanel.Index := FFilterPanels.Size;
-  FFilterPanels.PushBack(FilterPanel);
+  FilterPanel := TFilterPanel.Create(Table, FFiltersScrollBox, 5 +
+    FFilterPanels.Size * 25, 5);
+  FilterPanel.FieldIndex := Field;
+  FilterPanel.OpsIndex := COperator;
+  FilterPanel.EditText := Param;
+  FilterPanel.Enabled := AEnabled;
+  AddFilterPanel(FilterPanel);
+end;
+
+procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
+begin
+  AddFilterPanel(TFilterPanel.Create(Table, FFiltersScrollBox, 5 +
+    FFilterPanels.Size * 25, 5));
+end;
+
+procedure TDirectory.AddFilterPanel(AFilterPanel: TFilterPanel);
+begin
+  AFilterPanel.OnChange := @OnFiltersChange;
+  AFilterPanel.Index := FFilterPanels.Size;
+  FFilterPanels.PushBack(AFilterPanel);
   FApplyFilterBtn.Enabled := True;
 end;
 
-procedure TDirectory.FApplyFilterBtnClick(Sender: TObject);
+procedure TDirectory.ApplyFilters;
 var
   Filters: TDBFilters;
   i: integer;
@@ -113,6 +133,11 @@ begin
   end
   else
     PerformQuery(FSelectAll);
+end;
+
+procedure TDirectory.FApplyFilterBtnClick(Sender: TObject);
+begin
+  ApplyFilters;
 end;
 
 procedure TDirectory.FDelFilterBtnClick(Sender: TObject);
@@ -193,8 +218,8 @@ var
 begin
   RecCount := FDBGrid.DataSource.DataSet.RecordCount;
   if RecCount > 0 then begin
-      if FFocus.Y > RecCount then
-        FFocus.Y := RecCount;
+    if FFocus.Y > RecCount then
+      FFocus.Y := RecCount;
     FDBGrid.DataSource.DataSet.RecNo := FFocus.Y;
     FDBGrid.SelectedIndex := FFocus.X;
   end;
