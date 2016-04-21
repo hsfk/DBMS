@@ -36,7 +36,8 @@ type
   end;
 
   generic TGData<T: TObject> = class(TPrimaryObject)
-  private type
+  private
+    type
     TGDataItems = specialize TVector<T>;
   private
     FItems: TGDataItems;
@@ -51,6 +52,7 @@ type
     procedure SetBack(AItem: T);
     procedure SetFront(AItem: T);
   public
+    constructor Create;
     constructor Create(AName, ANativeName: string; AIndex: integer = -1);
     procedure Assign(AData: TGData);
     procedure SetItems(AItems: array of T); virtual;
@@ -145,6 +147,11 @@ end;
 function TGData.GetLength: integer;
 begin
   Exit(FItems.Size);
+end;
+
+constructor TGData.Create;
+begin
+  FItems := TGDataItems.Create;
 end;
 
 constructor TGData.Create(AName, ANativeName: string; AIndex: integer = -1);
