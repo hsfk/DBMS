@@ -44,6 +44,7 @@ type
       FormType: TDBFormType; Params: TParams = nil): TDBForm;
     function CreateChildForm(ANClass: TNClass; ATable: TDBTable;
       FormType: TDBFormType; Params: TParams; ID: integer): TDBForm;
+    procedure CloseChildForms;
   public
     procedure InitConnection(DBConnection: TDbConnection); virtual;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
@@ -120,6 +121,7 @@ begin
       FThisSubscriber.Parent.UnSubscribe(FThisSubscriber);
   if FParentForm <> nil then
     FParentForm.RemoveChildForm(Self);
+  CloseChildForms;
 end;
 
 procedure TDBForm.InitConnection(DBConnection: TDbConnection);
@@ -197,6 +199,16 @@ begin
   Result.FParentForm := Self;
   FCForms.PushBack(Result);
   Exit(Result);
+end;
+
+procedure TDBForm.CloseChildForms;
+var
+  i: integer = 0;
+begin
+  for i := 0 to FCForms.Size - 1 do begin
+    FCForms[i].FParentForm := nil;
+    FCForms[i].Close;
+  end;
 end;
 
 end.
