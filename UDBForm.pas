@@ -6,13 +6,13 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
-  UNotifications, sqldb, DB, UDB, UDBObjects, UVector;
+  UNotifications, sqldb, DB, UDBConnection, UDBObjects, UVector;
 
 type
 
   TDBField = UDBObjects.TDBField;
   TDBTable = UDBObjects.TDBTable;
-  TDbConnection = UDB.TDbConnection;
+  TDbConnection = UDBConnection.TDBConnection;
   TDBFormType = class of TDBForm;
   TNClass = UNotifications.TNClass;
   TParams = DB.TParams;
@@ -31,6 +31,7 @@ type
     FTable: TDBTable;
     FThisSubscriber: TSubscriber;
     FParentForm: TDBForm;
+    FDBConnection: TDbConnection;
     procedure RemoveChildForm(Form: TDBForm);
     procedure EmptyEvent;
   protected
@@ -47,6 +48,7 @@ type
     procedure InitConnection(DBConnection: TDbConnection); virtual;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
   published
+    property Connection: TDbConnection read FDBConnection;
     property OnPerformQuery: TEvent write FOnPerform;
     property OnExecQuery: TEvent write FOnExec;
     property ThisSubscriber: TSubscriber read FThisSubscriber write FThisSubscriber;
@@ -122,6 +124,7 @@ end;
 
 procedure TDBForm.InitConnection(DBConnection: TDbConnection);
 begin
+  FDBConnection := DBConnection;
   FQuery := TSQLQuery.Create(FQuery);
   FDataSource := TDataSource.Create(FDataSource);
   FQuery.DataBase := DBConnection.Connection;
@@ -162,7 +165,7 @@ begin
     FQuery.Params := QContainer.Params;
   try
     FQuery.ExecSQL;
-    DbConnection.Transaction.Commit;
+    FDBConnection.Transaction.Commit;
     FOnExec;
   except
     Result := False;
@@ -173,7 +176,7 @@ function TDBForm.CreateForm(ANClass: TNClass; ATable: TDBTable; FormType: TDBFor
   Params: TParams = nil): TDBForm;
 begin
   Application.CreateForm(FormType, Result);
-  Result.InitConnection(DbConnection);
+  Result.InitConnection(FDBConnection);
   Result.Load(ANClass, ATable, Params);
   ThisSubscriber.Subscribe(Result.ThisSubscriber);
   Result.Show;

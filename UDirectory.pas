@@ -6,7 +6,7 @@ interface
 
 uses
   SysUtils, Forms, DBGrids, ComCtrls, UAbout, UFilterPanel, StdCtrls, UCard, UDBForm,
-  UDB, DB, UDBObjects, UVector, Dialogs;
+  UDBConnection, DB, UDBObjects, UVector, Dialogs;
 
 type
 
@@ -56,14 +56,14 @@ type
 implementation
 
 {$R *.lfm}
-{ TDirectory }
 
 procedure TDirectory.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
+  Constraints.MinWidth := 350;
+  Constraints.MinHeight := 20;
+  DoubleBuffered := True;
   FFilterPanels := TFilterPanels.Create;
-  Constraints.MinHeight := Self.Height;
-  Constraints.MinWidth := Self.Width;
   FApplyFilterBtn.Enabled := True;
   OnPerformQuery := @UpdateColumns;
   FFocus.X := 0;
@@ -74,7 +74,7 @@ procedure TDirectory.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = 
 begin
   inherited Load(ANClass, ATable);
   ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
-  Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
+  Caption := APP_CAPTION + ' - ' + Table.Name;
   FSelectAll := Table.Query.Select(nil);
   PerformQuery(FSelectAll);
   MemFocus;
@@ -213,8 +213,7 @@ begin
   inherited InitConnection(DBConnection);
   FDBGrid.DataSource := DataSource;
   FDBGrid.ReadOnly := True;
-  FStatusBar.SimpleText := 'USER: ' + DbConnection.Connection.UserName +
-    ' | ' + DbConnection.Connection.DatabaseName;
+  FStatusBar.SimpleText := DBConnection.CurrentConnection;
 end;
 
 end.
