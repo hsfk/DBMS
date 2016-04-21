@@ -206,7 +206,10 @@ end;
 
 procedure TDirectory.NotificationRecieve(Sender: TObject);
 begin
-  PerformQuery(FSelectAll);
+  if FFilterPanels.Size > 0 then
+    ApplyFilters
+  else
+    PerformQuery(FSelectAll);
   RestoreFocus;
 end;
 
