@@ -74,8 +74,8 @@ type
     FParam: string;
     FOperator: string;
   public
-    constructor Create; overload;
-    constructor Create(AField: TDBField; COperator, AParam: string); overload;
+    constructor Create;
+    constructor Create(AField: TDBField; COperator, AParam: string);
     procedure Assign(Field: TDBField); override;
   published
     property Param: string read FParam write FParam;
