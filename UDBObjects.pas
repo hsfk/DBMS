@@ -48,8 +48,8 @@ type
     constructor Create;
     constructor Create(AName, ANativeName: string; AWidth: integer;
       ADataType: TFieldType; AParentTable: TDBTable = nil);
-    procedure Load(Column: TColumn);
     function CreateControl(RecID: integer): TDBControl; virtual;
+    procedure Load(Column: TColumn);
     procedure Assign(Field: TDBField); virtual;
   published
     property ParentTable: TDBTable read FParentTable write FParentTable;
@@ -74,11 +74,12 @@ type
     FParam: string;
     FOperator: string;
   public
-    property Param: string read FParam write FParam;
-    property ConditionalOperator: string read FOperator write FOperator;
-    procedure Assign(Field: TDBField); override;
     constructor Create; overload;
     constructor Create(AField: TDBField; COperator, AParam: string); overload;
+    procedure Assign(Field: TDBField); override;
+  published
+    property Param: string read FParam write FParam;
+    property ConditionalOperator: string read FOperator write FOperator;
   end;
 
   TDBOrder = class(TDBField)
@@ -102,10 +103,10 @@ type
   public
     constructor Create(RecID: integer);
     function UpdateTable: TQueryContainer; virtual; abstract;
+    function Correct: boolean; virtual; abstract;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); virtual;
     procedure Deselect; virtual; abstract;
     procedure Clear; virtual; abstract;
-    function Correct: boolean; virtual; abstract;
     procedure LoadData(Data: string; ID: integer); virtual; abstract;
   published
     property Subscriber: TSubscriber read FSubscriber write FSubscriber;
@@ -121,11 +122,12 @@ type
     function GetIDField: TDBField;
     function CmpItemName(AField: TDBField; AName: string): boolean; override;
   public
+    constructor Create;
+    constructor Create(AName, ANativeName: string; AIndex: integer = -1);
+    procedure SetFields(AFields: array of TDBField);
+    procedure Assign(Table: TDBTable);
     property Fields[AIndex: integer]: TDBField read GetItem write SetItem;
     property FieldsByName[AName: string]: TDBField read GetItemByName;
-    procedure SetFields(AFields: array of TDBField);
-    constructor Create(AName, ANativeName: string; AIndex: integer = -1);
-    procedure Assign(Table: TDBTable);
   published
     property Query: ITableQuery read FQuery;
     property IDField: TDBField read GetIDField;
@@ -137,9 +139,9 @@ type
   protected
     function CmpItemName(ATable: TDBTable; AName: string): boolean; override;
   public
+    procedure SetTables(ATables: array of TDBTable);
     property Tables[AIndex: integer]: TDBTable read GetItem write SetItem;
     property TablesByName[AName: string]: TDBTable read GetItemByName;
-    procedure SetTables(ATables: array of TDBTable);
   end;
 
 var
@@ -151,7 +153,7 @@ uses UCardControls, UQuery;
 
 constructor TDBField.Create;
 begin
- { An empty constructor for descendant classes }
+  { An empty constructor for descendant classes }
 end;
 
 constructor TDBField.Create(AName, ANativeName: string; AWidth: integer;
@@ -181,7 +183,8 @@ begin
   FQuery := Field.Query;
 end;
 
-constructor TDBRefField.Create(Field: TDBField; RefTable: TDBTable; RefFieldName: string);
+constructor TDBRefField.Create(Field: TDBField; RefTable: TDBTable;
+  RefFieldName: string);
 begin
   inherited Assign(Field);
   FRefTable := RefTable;
@@ -245,6 +248,7 @@ begin
   FLabel.Top := ATop;
   FLabel.Left := ALeft;
   FLabel.Caption := Name;
+  FLabel.Align := alCustom;
 end;
 
 function TDBTable.GetIDField: TDBField;
@@ -260,6 +264,12 @@ begin
   Exit(False);
 end;
 
+constructor TDBTable.Create;
+begin
+  inherited Create;
+  FQuery := TDBTableQuery.Create(Self);
+end;
+
 procedure TDBTable.SetFields(AFields: array of TDBField);
 var
   i: integer;
@@ -268,7 +278,8 @@ begin
   for i := 0 to Count - 1 do begin
     if Fields[i].ParentTable = nil then
       Fields[i].ParentTable := Self;
-    Fields[i].Index := i;
+    if Fields[i].Index = -1 then
+      Fields[i].Index := i;
   end;
 end;
 
@@ -306,7 +317,6 @@ initialization
   DBData := TDBMetaData.Create('MetaData', 'MetaData');
 
   with DBData do begin
-
     with TDBTable do begin
       SetTables([
          Create( 'Расписание'     ,'Time_Table'    )
@@ -386,7 +396,6 @@ initialization
                 ,TablesByName[ 'Time_Table'   ],'Lesson_Time_Id'           )
       ]);
     end;
-
   end;
 
 end.
