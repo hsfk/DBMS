@@ -497,7 +497,6 @@ end;
 
 procedure TSchedule.NotificationRecieve(Sender: TObject);
 begin
-  LoadCBoxData;
   LoadSchedule;
   FDrawGrid.Invalidate;
 end;

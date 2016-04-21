@@ -48,7 +48,7 @@ inherited Schedule: TSchedule
         Width = 964
         Anchors = [akTop, akLeft, akRight, akBottom]
         ExtendedSelect = False
-        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goRowSizing, goColSizing, goSmoothScroll]
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRowSizing, goColSizing, goSmoothScroll]
         TabOrder = 0
         OnClick = FDrawGridClick
         OnDblClick = FDrawGridDblClick
