@@ -5,7 +5,7 @@ unit UCard;
 interface
 
 uses
-  SysUtils, StdCtrls, ComCtrls, sqldb, UDb, UCardControls, DB,
+  SysUtils, StdCtrls, ComCtrls, sqldb, UCardControls, DB,
   UAbout, UDBForm, Dialogs, UDBObjects, UNotifications, Controls;
 
 type
@@ -56,20 +56,18 @@ implementation
 
 {$R *.lfm}
 
-{ TCard }
-
 procedure TCard.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
-  Self.Constraints.MinHeight := Self.Height;
-  Self.Constraints.MaxHeight := Self.Height;
-  Self.Constraints.MinWidth := Self.Width;
+  Constraints.MinWidth := Width;
+  Constraints.MinHeight := Height;
 end;
 
 procedure TCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   Table := ATable;
-  Self.Caption := APP_NAME + CURRENT_VERSION + ' - ' + Table.Name;
+  Caption := APP_CAPTION + ' - ' + Table.Name;
+  FStatusBar.SimpleText := Connection.CurrentConnection;
   FTop := 20;
   FLeft := 32;
   FControls := TControls.Create;
@@ -126,7 +124,7 @@ end;
 procedure TCard.LoadGUIData;
 var
   i: integer;
-  FieldIndex: integer = 1;
+  FieldIndex: integer = 0;
   SameFieldLeft: boolean = False;
 begin
   for i := 0 to FControls.Size - 1 do begin
@@ -137,11 +135,11 @@ begin
     if SameFieldLeft then
       FieldIndex += 1
     else
-      FieldIndex := 2;
+      FieldIndex := 1;
     while not FormQuery.EOF do begin
       FControls[i].LoadData(
-         FormQuery.Fields.FieldByNumber(FieldIndex).AsString
-        ,FormQuery.Fields.FieldByNumber(1).AsInteger
+         FormQuery.Fields[FieldIndex].AsString
+        ,FormQuery.Fields[0].AsInteger
         );
       FormQuery.Next;
     end;

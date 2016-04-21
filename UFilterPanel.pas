@@ -12,7 +12,7 @@ type
   TEvent = procedure of object;
 
   TFilterPanel = class(TPanel)
-  strict private
+  private
     type
     TOperator = record
       Name: string;

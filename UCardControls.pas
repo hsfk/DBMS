@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, StdCtrls, Controls, DB, UDBObjects, UVector;
 
 type
-
+  {TODO: Generic comboboxes}
   TControls = specialize TVector<TDBControl>;
 
   TDBEditControl = class(TDBControl)
@@ -71,6 +71,7 @@ begin
   FEdit.Left := ALeft + 100;
   FEdit.Width := 250;
   FEdit.Anchors := [akRight, akLeft];
+  FEdit.Align := alCustom;
   if DataType = ftInteger then
     FEdit.NumbersOnly := True;
 end;
@@ -148,6 +149,7 @@ begin
   FCBox.Left := ALeft + 100;
   FCBox.Width := 250;
   FCBox.Anchors := [akRight, akLeft];
+  FCBox.Align := alCustom;
   FCBox.OnChange := @OnChange;
   Subscriber.OnNotificationRecieve := @OnNotificationRecieve;
 end;

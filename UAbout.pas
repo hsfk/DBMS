@@ -8,10 +8,10 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls;
 
 const
-  CURRENT_VERSION = 'v0.1.6 ';
+  CURRENT_VERSION = 'v0.2.0 ';
   APP_NAME = 'DBViewer ';
-  ABOUT = APP_NAME + CURRENT_VERSION + chr(10) + 'Автор: Протасов Сергей' +
-    chr(10) + '2016г.';
+  APP_CAPTION = APP_NAME + CURRENT_VERSION;
+  ABOUT = APP_CAPTION + #13#10 + 'Автор: Протасов Сергей' + #13#10 + '2016г.';
 
 type
 
@@ -29,7 +29,7 @@ implementation
 
 procedure TAboutForm.FormCreate(Sender: TObject);
 begin
-  Self.Caption := APP_NAME + CURRENT_VERSION + ' - ' + 'О программе';
+  Self.Caption := APP_CAPTION + ' - ' + 'О программе';
   FAboutLabel.Caption := ABOUT;
 end;
 
