@@ -27,16 +27,26 @@ type
   private
     FRow: integer;
     FCol: integer;
+    FMaxH: integer;
+    FMaxW: integer;
     FTable: TDBTable;
     FBackGroundCol: TColor;
     FSelectCol: TColor;
     FTextCol: TColor;
     FFieldData: TStringMatrix;
+    FTriangleExists: boolean;
+    FTriangle: array [0..2] of TPoint;
+    procedure DrawTriangle(ZeroPoint: TPoint; Canvas: TCanvas);
+    function Distance(A, B: TPoint): double;
+    function Max(A, B: integer): integer;
   public
     constructor Create(Table: TDBTable);
     procedure Draw(Rect: TRect; Canvas: TCanvas; VisibleFields: TCheckListBox);
     procedure AddData(Data: TStringMatrix);
+    function InTriangle(Point: TPoint): boolean;
   published
+    property MaxTextH: integer read FMaxH;
+    property MaxTextW: integer read FMaxW;
     property Row: integer read FRow write FRow;
     property Col: integer read FCol write FCol;
     property FieldData: TStringMatrix read FFieldData write FFieldData;
@@ -44,19 +54,19 @@ type
     property SelectionColor: TColor read FSelectCol write FSelectCol;
     property TextColor: TColor read FTextCol write FTextCol;
   end;
-  {TODO: subscription
-   Hide useless fields
-  }
+
   TSchedule = class(TDBForm)
   private
     type
     TCellMatrix = specialize TMatrix<TCell>;
     TCells = specialize TVector<TCell>;
   private
+    FMouseCoords: TPoint;
     FSelectedCell: TCell;
     FHTitleData: TData;
     FVTitleData: TData;
     FCells: TCellMatrix;
+    FInTriangle: boolean;
     procedure LoadCBoxData;
     procedure LoadCheckListBoxData;
     procedure LoadStringListData(Items: TStrings);
@@ -65,9 +75,12 @@ type
     procedure SetTableSize;
     procedure FreePrevData;
     procedure LoadSchedule;
+    procedure DeleteEmptyLines;
     function SelectedCellHash: integer;
     function GetTitleData(FieldIndex: integer): TData;
     function GetCellDataTouple: TCells;
+    function EmptyRow(Index: integer): boolean;
+    function EmptyCol(Index: integer): boolean;
   public
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
@@ -85,6 +98,7 @@ type
     FPairSplitterBot: TPairSplitterSide;
     FStatusBar: TStatusBar;
     procedure FDrawGridDblClick(Sender: TObject);
+    procedure FDrawGridClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
     procedure FCheckListBoxClickCheck(Sender: TObject);
     procedure FApplyFilterBtnClick(Sender: TObject);
@@ -92,6 +106,8 @@ type
       var CanSelect: boolean);
     procedure FDrawGridDrawCell(Sender: TObject; aCol, aRow: integer;
       aRect: TRect; aState: TGridDrawState);
+    procedure FDrawGridMouseMove(Sender: TObject; Shift: TShiftState;
+      X, Y: integer);
   end;
 
 implementation
@@ -102,6 +118,9 @@ constructor TCell.Create(Table: TDBTable);
 begin
   FRow := -1;
   FCol := -1;
+  FMaxH := 0;
+  FMaxW := 0;
+  FTriangleExists := False;
   FTable := TDBTable.Create;
   FTable.Assign(Table);
   FBackGroundCol := clWhite;
@@ -117,28 +136,42 @@ var
   i: integer;
   j: integer;
   TextH: integer;
-  DataH: integer;
+  FieldsAmount: integer;
   SpaceC: integer = 0;
   InvFieldC: integer = 0;
+  XOffset: integer;
+  YOffset: integer;
+  Text: string;
 begin
   TextH := Canvas.TextHeight('Нрб');
+  Canvas.Pen.Color := clBlack;
   Canvas.Brush.Color := FBackGroundCol;
   Canvas.FillRect(Rect);
   Canvas.Brush.Style := bsClear;
-  DataH := FFieldData.Height - 1;
+  FieldsAmount := FFieldData.Height - 1;
+
   for i := 0 to FFieldData.Width - 1 do begin
-    for j := 0 to DataH do begin
+    for j := 0 to FieldsAmount do begin
       if VisibleFields.Checked[j mod FTable.Count] = False then begin
         InvFieldC += 1;
         continue;
       end;
-      Canvas.TextRect(Rect,
-        Rect.TopLeft.x + LEFT_MARGIN,
-        Rect.TopLeft.y + (i * DataH + (j - InvFieldC) + i) * TextH + TextH * SpaceC,
-        FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j]);
+      XOffset := Rect.TopLeft.x + LEFT_MARGIN;
+      YOffset := Rect.TopLeft.y + (i * FieldsAmount + (j - InvFieldC) + i) *
+        TextH + TextH * SpaceC;
+      Text := FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j];
+      Canvas.TextRect(Rect, XOffset, YOffset, Text);
+      FMaxW := Max(FMaxW, LEFT_MARGIN + Canvas.TextWidth(Text) + 5);
+      FMaxH := Max(FMaxH, YOffset - Rect.TopLeft.y + 20);
+      if (FMaxW > CELL_W) or (FMaxH > CELL_H) then
+        FTriangleExists := True
+      else
+        FTriangleExists := False;
     end;
     SpaceC += 1;
   end;
+  if FTriangleExists then
+    DrawTriangle(Rect.BottomRight, Canvas);
 end;
 
 procedure TCell.AddData(Data: TStringMatrix);
@@ -154,11 +187,59 @@ begin
       FFieldData[i + OldWidth, j] := Data[i, j];
 end;
 
+procedure TCell.DrawTriangle(ZeroPoint: TPoint; Canvas: TCanvas);
+begin
+  FTriangle[0] := ZeroPoint;
+  FTriangle[1] := ZeroPoint;
+  FTriangle[2] := ZeroPoint;
+  FTriangle[1].X -= 17;
+  FTriangle[2].Y -= 17;
+  Canvas.Pen.Color := clBlack;
+  Canvas.Brush.Color := clDkGray;
+  Canvas.Polygon(FTriangle);
+end;
+
+function TCell.Max(A, B: integer): integer;
+begin
+  if A > B then
+    Exit(A);
+  Exit(B);
+end;
+
+function TCell.InTriangle(Point: TPoint): boolean;
+var
+  P: double = 0.0;
+  D: double = 0.0;
+  i: integer;
+begin
+  if not FTriangleExists then
+    Exit(False);
+  for i := 0 to 2 do
+    P += Distance(FTriangle[i], FTriangle[(i + 1) mod 3]);
+  P *= 2 / 3;
+  for i := 0 to 2 do
+    D += Distance(Point, FTriangle[i]);
+  if D <= P then
+    Exit(True);
+  Exit(False);
+end;
+
+function TCell.Distance(A, B: TPoint): double;
+var
+  dx: integer;
+  dy: integer;
+begin
+  dx := Abs(A.x - B.x);
+  dy := Abs(A.y - B.y);
+  Exit(Sqrt(dx * dx + dy * dy));
+end;
+
 procedure TSchedule.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
   Constraints.MinHeight := 20;
   Constraints.MinWidth := 350;
+  FInTriangle := False;
   FCells := TCellMatrix.Create;
   FVTitleData := TData.Create;
   FHTitleData := TData.Create;
@@ -192,7 +273,7 @@ begin
   else if (aRow = 0) and (aCol > 0) then begin
     FDrawGrid.Canvas.Pen.Color := clBlack;
     FDrawGrid.Canvas.TextRect(aRect,
-      aRect.TopLeft.x + LEFT_MARGIN,
+      aRect.TopLeft.X + LEFT_MARGIN,
       aRect.TopLeft.Y,
       FHTitleData[aCol - 1]);
   end
@@ -226,10 +307,12 @@ begin
   if FSelectedCell <> nil then begin
     Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
       TDirectory, nil, SelectedCellHash));
-    //Zero means EQ operator
-    Dir.AddFilter(FHCBox.ItemIndex, 0, FHTitleData[FSelectedCell.Col], false);
-    Dir.AddFilter(FVCBox.ItemIndex, 0, FVTitleData[FSelectedCell.Row], false);
-    Dir.ApplyFilters;
+    if Dir.FilterCount = 0 then begin
+      //                              0 = EQ operator
+      Dir.AddFilter(FHCBox.ItemIndex, 0, FHTitleData[FSelectedCell.Col], False);
+      Dir.AddFilter(FVCBox.ItemIndex, 0, FVTitleData[FSelectedCell.Row], False);
+      Dir.ApplyFilters;
+    end;
   end;
 end;
 
@@ -237,6 +320,29 @@ procedure TSchedule.FDrawGridSelectCell(Sender: TObject; aCol, aRow: integer;
   var CanSelect: boolean);
 begin
   FSelectedCell := FCells[aCol - 1, aRow - 1];
+end;
+
+procedure TSchedule.FDrawGridMouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: integer);
+begin
+  FMouseCoords.X := X;
+  FMouseCoords.Y := Y;
+end;
+
+procedure TSchedule.FDrawGridClick(Sender: TObject);
+begin
+  if FSelectedCell <> nil then
+    if FSelectedCell.InTriangle(FMouseCoords) then
+      with FDrawGrid do begin
+        if (RowHeights[FSelectedCell.Row + 1] < FSelectedCell.MaxTextH) then
+          RowHeights[FSelectedCell.Row + 1] := FSelectedCell.MaxTextH
+        else
+          RowHeights[FSelectedCell.Row + 1] := CELL_H;
+        if (ColWidths[FSelectedCell.Col + 1] < FSelectedCell.MaxTextW) then
+          ColWidths[FSelectedCell.Col + 1] := FSelectedCell.MaxTextW
+        else
+          ColWidths[FSelectedCell.Col + 1] := CELL_W;
+      end;
 end;
 
 procedure TSchedule.LoadCBoxData;
@@ -326,8 +432,53 @@ begin
   FVTitleData := GetTitleData(FVCBox.ItemIndex);
   FHTitleData := GetTitleData(FHCBox.ItemIndex);
   BuildMatrix(GetCellDataTouple);
+  DeleteEmptyLines;
   SetTableSize;
   SetCellsSize(CELL_W, CELL_H);
+end;
+
+function TSchedule.EmptyRow(Index: integer): boolean;
+var
+  i: integer;
+begin
+  for i := 0 to FCells.Width - 1 do
+    if FCells[i, Index] <> nil then
+      Exit(False);
+  Exit(True);
+end;
+
+function TSchedule.EmptyCol(Index: integer): boolean;
+var
+  i: integer;
+begin
+  for i := 0 to FCells.Height - 1 do
+    if FCells[Index, i] <> nil then
+      Exit(False);
+  Exit(True);
+end;
+
+procedure TSchedule.DeleteEmptyLines;
+var
+  i: integer = 0;
+begin
+  while i < FCells.Height do begin
+    if EmptyRow(i) then begin
+      FCells.DeleteRow(i);
+      FVTitleData.DeleteInd(i);
+      i -= 1;
+    end;
+    i += 1;
+  end;
+
+  i := 0;
+  while i < FCells.Width do begin
+    if EmptyCol(i) then begin
+      FCells.DeleteCol(i);
+      FHTitleData.DeleteInd(i);
+      i -= 1;
+    end;
+    i += 1;
+  end;
 end;
 
 function TSchedule.SelectedCellHash: integer;

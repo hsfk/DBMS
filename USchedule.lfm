@@ -50,8 +50,10 @@ inherited Schedule: TSchedule
         ExtendedSelect = False
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goRowSizing, goColSizing, goSmoothScroll]
         TabOrder = 0
+        OnClick = FDrawGridClick
         OnDblClick = FDrawGridDblClick
         OnDrawCell = FDrawGridDrawCell
+        OnMouseMove = FDrawGridMouseMove
         OnSelectCell = FDrawGridSelectCell
       end
     end
