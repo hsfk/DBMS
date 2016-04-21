@@ -19,10 +19,10 @@ type
     procedure SetCaption(AData: string); override;
   public
     function UpdateTable: TQueryContainer; override;
+    function Correct: boolean; override;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure Clear; override;
     procedure Deselect; override;
-    function Correct: boolean; override;
     procedure LoadData(AData: string; ID: integer); override;
   end;
 
@@ -43,10 +43,10 @@ type
     procedure SetCaption(AData: string); override;
   public
     function UpdateTable: TQueryContainer; override;
+    function Correct: boolean; override;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure Clear; override;
     procedure Deselect; override;
-    function Correct: boolean; override;
     procedure LoadData(AData: string; ID: integer); override;
   end;
 
