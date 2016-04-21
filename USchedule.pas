@@ -71,11 +71,13 @@ type
     procedure LoadCheckListBoxData;
     procedure LoadStringListData(Items: TStrings);
     procedure BuildMatrix(CellTouple: TCells);
+    procedure SetCellsCoords;
     procedure SetCellsSize(CellW, CellH: integer);
     procedure SetTableSize;
     procedure FreePrevData;
     procedure LoadSchedule;
     procedure DeleteEmptyLines;
+    procedure NotificationRecieve(Sender: TObject);
     function SelectedCellHash: integer;
     function GetTitleData(FieldIndex: integer): TData;
     function GetCellDataTouple: TCells;
@@ -254,6 +256,7 @@ end;
 procedure TSchedule.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   inherited Load(ANClass, ATable, Params);
+  ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
   Caption := APP_CAPTION + ' - ' + Table.Name;
   FStatusBar.SimpleText := Connection.CurrentConnection;
   LoadCBoxData;
@@ -385,14 +388,24 @@ begin
   for i := 0 to CellTouple.Size - 1 do begin
     ColIndex := FHTitleData.FindInd(CellTouple[i].FieldData[0, FHCBox.ItemIndex]);
     RowIndex := FVTitleData.FindInd(CellTouple[i].FieldData[0, FVCBox.ItemIndex]);
-    if FCells[ColIndex, RowIndex] = nil then begin
-      FCells[ColIndex, RowIndex] := CellTouple[i];
-      FCells[ColIndex, RowIndex].Col := ColIndex;
-      FCells[ColIndex, RowIndex].Row := RowIndex;
-    end
+    if FCells[ColIndex, RowIndex] = nil then
+      FCells[ColIndex, RowIndex] := CellTouple[i]
     else
       FCells[ColIndex, RowIndex].AddData(CellTouple[i].FFieldData);
   end;
+end;
+
+procedure TSchedule.SetCellsCoords;
+var
+  i: integer;
+  j: integer;
+begin
+  for i := 0 to FCells.Width - 1 do
+    for j := 0 to FCells.Height - 1 do
+      if FCells[i, j] <> nil then begin
+        FCells[i, j].Col := i;
+        FCells[i, j].Row := j;
+      end;
 end;
 
 procedure TSchedule.SetCellsSize(CellW, CellH: integer);
@@ -433,6 +446,7 @@ begin
   FHTitleData := GetTitleData(FHCBox.ItemIndex);
   BuildMatrix(GetCellDataTouple);
   DeleteEmptyLines;
+  SetCellsCoords;
   SetTableSize;
   SetCellsSize(CELL_W, CELL_H);
 end;
@@ -479,6 +493,13 @@ begin
     end;
     i += 1;
   end;
+end;
+
+procedure TSchedule.NotificationRecieve(Sender: TObject);
+begin
+  LoadCBoxData;
+  LoadSchedule;
+  FDrawGrid.Invalidate;
 end;
 
 function TSchedule.SelectedCellHash: integer;
