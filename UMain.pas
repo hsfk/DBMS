@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   Menus, ComCtrls, UDBConnection, UDirectory, UAbout, UNotifications,
-  UDBObjects, USchedule;
+  UDBObjects, USchedule, UDBForm;
 
 type
 
@@ -15,7 +15,7 @@ type
   private
     FNotifications: TSubscriber;
     FDBConnection: TDBConnection;
-    procedure CreateDirectoryForm(Table: TDBTable);
+    procedure CreateForm(Table: TDBTable; FormType: TDBFormType);
     procedure LoadDirectoryMenyItems;
   published
     FMainMenu: TMainMenu;
@@ -52,38 +52,30 @@ begin
 end;
 
 procedure TMainForm.FScheduleMenuClick(Sender: TObject);
-var
-  Schedule: TSchedule;
-  NClass: TNClass;
 begin
-  if FDBConnection.Connected then begin
-    SetLength(NClass, 1);
-    NClass[0] := 0;
-    Application.CreateForm(TSchedule, Schedule);
-    Schedule.InitConnection(FDBConnection);
-    Schedule.Load(NClass, DBData.TablesByName['Time_Table']);
-    Schedule.Show;
-  end
-  else
-    ShowMessage('Необходимо подключение к базе данных.');
+  CreateForm(DBData.TablesByName['Time_Table'], TSchedule);
 end;
 
-procedure TMainForm.CreateDirectoryForm(Table: TDBTable);
+procedure TMainForm.CreateForm(Table: TDBTable; FormType: TDBFormType);
 var
-  Directory: TDirectory;
+  Form: TDBForm;
   NClass: TNClass;
   i: integer;
 begin
-  SetLength(NClass, 0);
-  for i := 0 to Table.Count - 1 do begin
-    SetLength(NClass, Length(NClass) + 1);
-    NClass[High(NClass)] := Table.Fields[i].ParentTable.Index;
-  end;
-  Application.CreateForm(TDirectory, Directory);
-  Directory.InitConnection(FDBConnection);
-  Directory.Load(NClass, Table);
-  FNotifications.Subscribe(Directory.ThisSubscriber);
-  Directory.Show;
+  if FDBConnection.Connected then begin
+    SetLength(NClass, 0);
+    for i := 0 to Table.Count - 1 do begin
+      SetLength(NClass, Length(NClass) + 1);
+      NClass[High(NClass)] := Table.Fields[i].ParentTable.Index;
+    end;
+    Application.CreateForm(FormType, Form);
+    Form.InitConnection(FDBConnection);
+    Form.Load(NClass, Table);
+    FNotifications.Subscribe(Form.ThisSubscriber);
+    Form.Show;
+  end
+  else
+    ShowMessage('Необходимо подключение к базе данных.');
 end;
 
 procedure TMainForm.LoadDirectoryMenyItems;
@@ -115,10 +107,7 @@ end;
 
 procedure TMainForm.DirectoryMenuItemClick(Sender: TObject);
 begin
-  if FDBConnection.Connected then
-    CreateDirectoryForm(DBData.Tables[TMenuItem(Sender).Tag])
-  else
-    ShowMessage('Необходимо подключение к базе данных.');
+  CreateForm(DBData.Tables[TMenuItem(Sender).Tag], TDirectory)
 end;
 
 procedure TMainForm.FAboutMenuClick(Sender: TObject);
