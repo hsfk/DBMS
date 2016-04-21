@@ -61,6 +61,8 @@ begin
   inherited FormCreate(Sender);
   Constraints.MinWidth := Width;
   Constraints.MinHeight := Height;
+  Constraints.MaxWidth := Width;
+  Constraints.MaxHeight := Height;
 end;
 
 procedure TCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
