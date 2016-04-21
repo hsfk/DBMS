@@ -18,8 +18,8 @@ type
     function InnerJoin: string;
     function SelectedFields: string;
   public
+   constructor Create(Field: TDBField);
     function Update(RecordID: integer; Data: TParam): TQueryContainer;
-    constructor Create(Field: TDBField);
     function __QConstructor: IFieldConstructor;
   end;
 
@@ -30,18 +30,19 @@ type
     function InnerJoin: string;
     function SelectedFields: string;
   public
-    function Update(RecordID: integer; Data: TParam): TQueryContainer;
     constructor Create(Field: TDBRefField);
+    function Update(RecordID: integer; Data: TParam): TQueryContainer;
     function __QConstructor: IFieldConstructor;
   end;
 
   TDBTableQuery = class(TInterfacedObject, ITableQuery)
-  public
+  private
     FTable: TDBTable;
+  public
+    constructor Create(Table: TDBTable);
     function Insert(Values: TParams): TQueryContainer;
     function Delete(RecordID: integer): TQueryContainer;
     function Select(Filters: TDBFilters): TQueryContainer;
-    constructor Create(Table: TDBTable);
   end;
 
 implementation
