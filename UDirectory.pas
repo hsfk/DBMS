@@ -10,8 +10,6 @@ uses
 
 type
 
-  { TDirectory }
-
   TDirectory = class(TDBForm)
   private
     type
@@ -37,6 +35,7 @@ type
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
     procedure AddFilter(Field, COperator: integer; Param: string;
       AEnabled: boolean = True);
+    function FilterCount: integer;
     procedure ApplyFilters;
   published
     FFiltersGBox: TGroupBox;
@@ -98,6 +97,11 @@ begin
   FilterPanel.EditText := Param;
   FilterPanel.Enabled := AEnabled;
   AddFilterPanel(FilterPanel);
+end;
+
+function TDirectory.FilterCount: integer;
+begin
+  Exit(FFilterPanels.Size);
 end;
 
 procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
