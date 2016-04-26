@@ -5,7 +5,7 @@ unit UCard;
 interface
 
 uses
-  SysUtils, StdCtrls, ComCtrls, sqldb, UCardControls, DB,
+  SysUtils, StdCtrls, ComCtrls, sqldb, DB,
   UAbout, UDBForm, Dialogs, UDBObjects, UNotifications, Controls;
 
 type
@@ -14,7 +14,7 @@ type
   private
     FTop: integer;
     FLeft: integer;
-    FControls: TControls;
+    FControls: TDBControls;
     FRecordIndex: integer;
     FCboxNotifications: TSubscriber;
     function Correct: boolean;
@@ -70,7 +70,7 @@ begin
   FStatusBar.SimpleText := Connection.CurrentConnection;
   FTop := 20;
   FLeft := 32;
-  FControls := TControls.Create;
+  FControls := TDBControls.Create;
   FRecordIndex := Params.ParamByName('Target').AsInteger;
   inherited Load(ANClass, ATable);
   ThisSubscriber.OnNotificationRecieve := @OnNotificationRecieve;
@@ -110,7 +110,7 @@ end;
 procedure TCard.CreateGUIControls;
 var
   i: integer;
-  Control: TCardControl;
+  Control: TDBCardControl;
 begin
   with Table do
     for i := 1 to Count - 1 do begin

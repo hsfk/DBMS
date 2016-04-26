@@ -50,9 +50,9 @@ inherited Schedule: TSchedule
         ExtendedSelect = False
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRowSizing, goColSizing, goSmoothScroll]
         TabOrder = 0
+        OnClick = FDrawGridClick
         OnDblClick = FDrawGridDblClick
         OnDrawCell = FDrawGridDrawCell
-        OnMouseDown = FDrawGridMouseDown
         OnMouseMove = FDrawGridMouseMove
         OnSelectCell = FDrawGridSelectCell
       end
@@ -241,14 +241,6 @@ inherited Schedule: TSchedule
           ParentColor = False
         end
       end
-    end
-  end
-  object FCellMenu: TPopupMenu[2]
-    left = 531
-    top = 36
-    object FOpenDir: TMenuItem
-      Caption = 'Найти в справочнике'
-      OnClick = FOpenDirClick
     end
   end
 end

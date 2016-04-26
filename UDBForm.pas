@@ -17,7 +17,6 @@ type
   TNClass = UNotifications.TNClass;
   TParams = DB.TParams;
 
-  {TODO: Child forms}
   TDBForm = class(TForm)
   private
     type
@@ -122,6 +121,7 @@ begin
   if FParentForm <> nil then
     FParentForm.RemoveChildForm(Self);
   CloseChildForms;
+  CloseAction := caFree;
 end;
 
 procedure TDBForm.InitConnection(DBConnection: TDbConnection);
@@ -175,8 +175,8 @@ begin
   end;
 end;
 
-function TDBForm.CreateForm(ANClass: TNClass; ATable: TDBTable; FormType: TDBFormType;
-  Params: TParams = nil): TDBForm;
+function TDBForm.CreateForm(ANClass: TNClass; ATable: TDBTable;
+  FormType: TDBFormType; Params: TParams = nil): TDBForm;
 begin
   Application.CreateForm(FormType, Result);
   Result.InitConnection(FDBConnection);
