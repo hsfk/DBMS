@@ -10,6 +10,7 @@ uses
 type
 
   TEvent = procedure of object;
+  TParamEvent = procedure(FilterIndex: integer) of object;
 
   TFilterPanel = class(TPanel)
   private
@@ -24,12 +25,14 @@ type
     FFilter: TDBFilter;
     FFieldsCBox: TComboBox;
     FOpsCBox: TComboBox;
+    FDelBtn: TButton;
     FEdit: TEdit;
     FTable: TDBTable;
     FCurOps: TOperators;
     FNumOps: TOperators;
     FStrOps: TOperators;
     FOnChangeEvent: TEvent;
+    FBeforeDelete: TParamEvent;
     procedure InitGUI(AParent: TWinControl; ATop, ALeft: integer);
     procedure Init(Component, AParent: TWinControl; ATop, ALeft, AWidth: integer);
     procedure InitOperators;
@@ -43,10 +46,13 @@ type
     procedure SetFieldIndex(Index: integer);
     procedure SetOpsIndex(Index: integer);
     procedure SetEditText(AText: string);
+    procedure FDelBtnMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
   public
     constructor Create(Table: TDBTable; AParent: TWinControl; ATop, ALeft: integer);
     function Correct: boolean;
   published
+    property BeforeDelete: TParamEvent write FBeforeDelete;
     property FieldIndex: integer write SetFieldIndex;
     property OpsIndex: integer write SetOpsIndex;
     property EditText: string write SetEditText;
@@ -65,6 +71,8 @@ begin
   FFieldsCBox.OnSelect := @OnFieldsCBoxChange;
   FOpsCBox.OnChange := @OnChangeEvent;
   FEdit.OnChange := @OnChangeEvent;
+  FDelBtn.OnMouseUp := @FDelBtnMouseUp;
+  FDelBtn.Caption := 'X';
   FFilter := TDBFilter.Create;
   FFilter.Assign(Table.Fields[0]);
   InitOperators;
@@ -84,7 +92,7 @@ const
   FIELDS_CBOX_WIDTH = 150;
   OPS_CBOX_WIDTH = 100;
   EDIT_WIDTH = 150;
-  TOTAL_WIDTH = SPACE * 4 + FIELDS_CBOX_WIDTH + OPS_CBOX_WIDTH + EDIT_WIDTH;
+  TOTAL_WIDTH = SPACE * 4 + FIELDS_CBOX_WIDTH + OPS_CBOX_WIDTH + EDIT_WIDTH + 20;
 begin
   inherited Create(AParent);
   Init(Self, AParent, ATop - 1, ALeft, TOTAL_WIDTH);
@@ -94,11 +102,13 @@ begin
   FFieldsCBox := TComboBox.Create(Self);
   FOpsCBox := TComboBox.Create(Self);
   FEdit := TEdit.Create(Self);
+  FDelBtn := TButton.Create(Self);
   FFieldsCBox.ReadOnly := True;
   FOpsCBox.ReadOnly := True;
   Init(FFieldsCBox, Self, 1, 0, FIELDS_CBOX_WIDTH);
   Init(FOpsCBox, Self, 1, FIELDS_CBOX_WIDTH + SPACE, OPS_CBOX_WIDTH);
   Init(FEdit, Self, 1, FOpsCBox.Left + OPS_CBOX_WIDTH + SPACE, EDIT_WIDTH);
+  Init(FDelBtn, Self, 0, FEdit.Left + FEdit.Width, 20);
 end;
 
 procedure TFilterPanel.InitOperators;
@@ -198,6 +208,14 @@ begin
   SetLength(Operators, Length(Operators) + 1);
   Operators[High(Operators)].Name := AName;
   Operators[High(Operators)].COperator := ACOperator;
+end;
+
+procedure TFilterPanel.FDelBtnMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
+begin
+  if FBeforeDelete <> nil then
+    FBeforeDelete(FIndex);
+  Self.Free;
 end;
 
 end.
