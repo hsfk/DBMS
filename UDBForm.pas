@@ -139,6 +139,7 @@ begin
   FTable := ATable;
   FThisSubscriber := TSubscriber.Create;
   FThisSubscriber.NClass := ANClass;
+  FSelectAll := Table.Query.Select(nil);
 end;
 
 function TDBForm.PerformQuery(QContainer: TQueryContainer): boolean;
