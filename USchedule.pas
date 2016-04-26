@@ -6,8 +6,8 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Grids,
-  StdCtrls, ComCtrls, CheckLst, PairSplitter, UDBForm, UVector, UMatrix,
-  UDBObjects, UAbout, UDirectory;
+  StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
+  UDBObjects, UAbout, UDirectory, UFilterForm;
 
 const
   CELL_W = 250;
@@ -33,7 +33,7 @@ type
     FBackGroundCol: TColor;
     FTextCol: TColor;
     FFieldData: TStringMatrix;
-    FTriangleExists: boolean;
+    FExpandable: boolean;
     FTriangle: array [0..2] of TPoint;
     procedure DrawTriangle(ZeroPoint: TPoint; Canvas: TCanvas);
     function Distance(A, B: TPoint): double;
@@ -42,7 +42,6 @@ type
     constructor Create(Table: TDBTable);
     procedure Draw(Rect: TRect; Canvas: TCanvas; VisibleFields: TCheckListBox);
     procedure AddData(Data: TStringMatrix);
-    function InTriangle(Point: TPoint): boolean;
   published
     property MaxTextH: integer read FMaxH;
     property MaxTextW: integer read FMaxW;
@@ -79,6 +78,8 @@ type
     procedure LoadSchedule;
     procedure DeleteEmptyLines;
     procedure NotificationRecieve(Sender: TObject);
+    procedure CreateDir;
+    procedure ExpandSelectedCell;
     procedure AddDirFilter(Dir: TDirectory; Field, COp, Param: string;
       AEnabled: boolean);
     function SelectedCellHash: integer;
@@ -107,14 +108,18 @@ type
     FScheduleGBox: TGroupBox;
     FVCBox: TComboBox;
     FHLabel: TLabel;
+    FCellMenu: TPopupMenu;
+    FOpenDir: TMenuItem;
+    procedure FOpenDirClick(Sender: TObject);
     procedure FDrawEmptyLinesChange(Sender: TObject);
     procedure FAddFilterBtnClick(Sender: TObject);
     procedure FDelAllFiltersBtnClick(Sender: TObject);
     procedure FDrawGridDblClick(Sender: TObject);
-    procedure FDrawGridClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
     procedure FCheckListBoxClickCheck(Sender: TObject);
     procedure FApplyFilterBtnClick(Sender: TObject);
+    procedure FDrawGridMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
     procedure FDrawGridSelectCell(Sender: TObject; aCol, aRow: integer;
       var CanSelect: boolean);
     procedure FDrawGridDrawCell(Sender: TObject; aCol, aRow: integer;
@@ -133,7 +138,7 @@ begin
   FCol := -1;
   FMaxH := 0;
   FMaxW := 0;
-  FTriangleExists := False;
+  FExpandable := False;
   FTable := TDBTable.Create;
   FTable.Assign(Table);
   FBackGroundCol := clWhite;
@@ -155,14 +160,14 @@ var
   YOffset: integer;
   Text: string;
 begin
+  TextH := Canvas.TextHeight('Нрб');
+  FieldsAmount := FFieldData.Height - 1;
   FMaxH := 0;
   FMaxW := 0;
-  TextH := Canvas.TextHeight('Нрб');
   Canvas.Pen.Color := clBlack;
   Canvas.Brush.Color := FBackGroundCol;
   Canvas.FillRect(Rect);
   Canvas.Brush.Style := bsClear;
-  FieldsAmount := FFieldData.Height - 1;
 
   for i := 0 to FFieldData.Width - 1 do begin
     for j := 0 to FieldsAmount do begin
@@ -171,18 +176,20 @@ begin
         continue;
       end;
       XOffset := Rect.TopLeft.x + LEFT_MARGIN;
-      YOffset := Rect.TopLeft.y + (i * FieldsAmount + (j - InvFieldC) + i) *
+      YOffset := Rect.Top + (i * FieldsAmount + (j - InvFieldC) + i) *
         TextH + TextH * SpaceC;
       Text := FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j];
       Canvas.TextRect(Rect, XOffset, YOffset, Text);
-      FMaxW := Max(FMaxW, LEFT_MARGIN + Canvas.TextWidth(Text) + 5);
-      FMaxH := Max(FMaxH, YOffset - Rect.TopLeft.y + 20);
-      FTriangleExists := (FMaxW > CELL_W) or (FMaxH > CELL_H);
+
+      FMaxW := Max(FMaxW, LEFT_MARGIN + Canvas.TextWidth(Text));
+      FMaxH := Max(FMaxH, YOffset - Rect.Top + 10);
+      FExpandable := (FMaxW > (Rect.Right - Rect.Left)) or
+        (FMaxH > (Rect.Bottom - Rect.Top));
     end;
     SpaceC += 1;
   end;
 
-  if FTriangleExists then
+  if FExpandable then
     DrawTriangle(Rect.BottomRight, Canvas);
 end;
 
@@ -204,8 +211,8 @@ begin
   FTriangle[0] := ZeroPoint;
   FTriangle[1] := ZeroPoint;
   FTriangle[2] := ZeroPoint;
-  FTriangle[1].X -= 17;
-  FTriangle[2].Y -= 17;
+  FTriangle[1].X -= 13;
+  FTriangle[2].Y -= 13;
   Canvas.Pen.Color := clBlack;
   Canvas.Brush.Color := clDkGray;
   Canvas.Polygon(FTriangle);
@@ -216,24 +223,6 @@ begin
   if A > B then
     Exit(A);
   Exit(B);
-end;
-
-function TCell.InTriangle(Point: TPoint): boolean;
-var
-  P: double = 0.0;
-  D: double = 0.0;
-  i: integer;
-begin
-  if not FTriangleExists then
-    Exit(False);
-  for i := 0 to 2 do
-    P += Distance(FTriangle[i], FTriangle[(i + 1) mod 3]);
-  P *= 2 / 3;
-  for i := 0 to 2 do
-    D += Distance(Point, FTriangle[i]);
-  if D <= P then
-    Exit(True);
-  Exit(False);
 end;
 
 function TCell.Distance(A, B: TPoint): double;
@@ -316,30 +305,8 @@ begin
 end;
 
 procedure TSchedule.FDrawGridDblClick(Sender: TObject);
-var
-  Dir: TDirectory;
-  i: integer;
 begin
-  if FSelectedCell <> nil then begin
-    Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
-      TDirectory, nil, SelectedCellHash));
-    if Dir.FilterCount = 0 then begin
-      AddDirFilter(Dir,
-        FHCBox.Items[FHCBox.ItemIndex], ' = ',
-        FHTitleData[FSelectedCell.Col], False);
-      AddDirFilter(Dir,
-        FVCBox.Items[FVCBox.ItemIndex], ' = ',
-        FVTitleData[FSelectedCell.Row], False);
-
-      for i := 0 to FilterCount - 1 do
-        if FFilterPanels[i].Correct then
-          AddDirFilter(Dir, FFilterPanels[i].Filter.Name,
-            FFilterPanels[i].Filter.ConditionalOperator,
-            FFilterPanels[i].Filter.Param, True);
-
-      Dir.ApplyFilters;
-    end;
-  end;
+  ExpandSelectedCell;
 end;
 
 procedure TSchedule.FDrawGridSelectCell(Sender: TObject; aCol, aRow: integer;
@@ -353,22 +320,6 @@ procedure TSchedule.FDrawGridMouseMove(Sender: TObject; Shift: TShiftState;
 begin
   FMouseCoords.X := X;
   FMouseCoords.Y := Y;
-end;
-
-procedure TSchedule.FDrawGridClick(Sender: TObject);
-begin
-  if FSelectedCell <> nil then
-    if FSelectedCell.InTriangle(FMouseCoords) then
-      with FDrawGrid do begin
-        if (RowHeights[FSelectedCell.Row + 1] < FSelectedCell.MaxTextH) then
-          RowHeights[FSelectedCell.Row + 1] := FSelectedCell.MaxTextH
-        else
-          RowHeights[FSelectedCell.Row + 1] := CELL_H;
-        if (ColWidths[FSelectedCell.Col + 1] < FSelectedCell.MaxTextW) then
-          ColWidths[FSelectedCell.Col + 1] := FSelectedCell.MaxTextW
-        else
-          ColWidths[FSelectedCell.Col + 1] := CELL_W;
-      end;
 end;
 
 procedure TSchedule.FAddFilterBtnClick(Sender: TObject);
@@ -386,6 +337,23 @@ begin
   FDelEmptyLines := not FDelEmptyLines;
   FDrawEmptyLines.Checked := not FDelEmptyLines;
   LoadSchedule;
+end;
+
+procedure TSchedule.FOpenDirClick(Sender: TObject);
+begin
+  CreateDir;
+end;
+
+procedure TSchedule.FDrawGridMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
+var
+  Col: integer = 0;
+  Row: integer = 0;
+begin
+  FDrawGrid.MouseToCell(X, Y, Col, Row);
+  if (Button = mbRight) and ((Col - 1 = FSelectedCell.Col) and
+    (Row - 1 = FSelectedCell.Row)) then
+    FCellMenu.PopUp(X + Left, Y + Top);
 end;
 
 procedure TSchedule.LoadCBoxData;
@@ -540,6 +508,53 @@ procedure TSchedule.NotificationRecieve(Sender: TObject);
 begin
   LoadSchedule;
   FDrawGrid.Invalidate;
+end;
+
+procedure TSchedule.CreateDir;
+var
+  Dir: TDirectory;
+  i: integer;
+begin
+  if FSelectedCell <> nil then begin
+    Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
+      TDirectory, nil, SelectedCellHash));
+    if Dir.FilterCount = 0 then begin
+      AddDirFilter(Dir,
+        FHCBox.Items[FHCBox.ItemIndex], ' = ',
+        FHTitleData[FSelectedCell.Col], False);
+      AddDirFilter(Dir,
+        FVCBox.Items[FVCBox.ItemIndex], ' = ',
+        FVTitleData[FSelectedCell.Row], False);
+
+      for i := 0 to FilterCount - 1 do
+        if FFilterPanels[i].Correct then
+          AddDirFilter(Dir, FFilterPanels[i].Filter.Name,
+            FFilterPanels[i].Filter.ConditionalOperator,
+            FFilterPanels[i].Filter.Param, True);
+
+      Dir.ApplyFilters;
+    end;
+  end;
+end;
+
+procedure TSchedule.ExpandSelectedCell;
+var
+  Row: integer = 0;
+  Col: integer = 0;
+begin
+  with FDrawGrid do
+    if FSelectedCell <> nil then begin
+      Row := FSelectedCell.Row + 1;
+      Col := FSelectedCell.Col + 1;
+      if FSelectedCell.FExpandable then begin
+        RowHeights[Row] := FSelectedCell.MaxTextH + 10;
+        ColWidths[Col] := FSelectedCell.MaxTextW;
+      end
+      else begin
+        RowHeights[Row] := CELL_H;
+        ColWidths[Col] := CELL_W;
+      end;
+    end;
 end;
 
 procedure TSchedule.AddDirFilter(Dir: TDirectory; Field, COp, Param: string;
