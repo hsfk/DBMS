@@ -31,7 +31,6 @@ type
     FMaxW: integer;
     FTable: TDBTable;
     FBackGroundCol: TColor;
-    FSelectCol: TColor;
     FTextCol: TColor;
     FFieldData: TStringMatrix;
     FTriangleExists: boolean;
@@ -51,16 +50,18 @@ type
     property Col: integer read FCol write FCol;
     property FieldData: TStringMatrix read FFieldData write FFieldData;
     property BackGroundColor: TColor read FBackGroundCol write FBackGroundCol;
-    property SelectionColor: TColor read FSelectCol write FSelectCol;
     property TextColor: TColor read FTextCol write FTextCol;
   end;
 
-  TSchedule = class(TDBForm)
+  { TSchedule }
+
+  TSchedule = class(TFilterForm)
   private
     type
     TCellMatrix = specialize TMatrix<TCell>;
     TCells = specialize TVector<TCell>;
   private
+    FDelEmptyLines: boolean;
     FMouseCoords: TPoint;
     FSelectedCell: TCell;
     FHTitleData: TData;
@@ -70,7 +71,7 @@ type
     procedure LoadCBoxData;
     procedure LoadCheckListBoxData;
     procedure LoadStringListData(Items: TStrings);
-    procedure BuildMatrix(CellTouple: TCells);
+    procedure BuildMatrix(CellTuple: TCells);
     procedure SetCellsCoords;
     procedure SetCellsSize(CellW, CellH: integer);
     procedure SetTableSize;
@@ -78,27 +79,37 @@ type
     procedure LoadSchedule;
     procedure DeleteEmptyLines;
     procedure NotificationRecieve(Sender: TObject);
+    procedure AddDirFilter(Dir: TDirectory; Field, COp, Param: string;
+      AEnabled: boolean);
     function SelectedCellHash: integer;
     function GetTitleData(FieldIndex: integer): TData;
-    function GetCellDataTouple: TCells;
+    function GetCellDataTuple: TCells;
     function EmptyRow(Index: integer): boolean;
     function EmptyCol(Index: integer): boolean;
   public
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
-    FApplyFilterBtn: TButton;
     FCheckListBox: TCheckListBox;
     FDrawGrid: TDrawGrid;
     FFiltersGBox: TGroupBox;
-    FHCBox: TComboBox;
-    FHLabel: TLabel;
-    FVCBox: TComboBox;
     FVisibleRecsGBox: TGroupBox;
-    FVLabel: TLabel;
     FPairSplitter: TPairSplitter;
     FPairSplitterTop: TPairSplitterSide;
     FPairSplitterBot: TPairSplitterSide;
     FStatusBar: TStatusBar;
+    FAddFilterBtn: TButton;
+    FApplyFilterBtn: TButton;
+    FDelAllFiltersBtn: TButton;
+    FDrawEmptyLines: TCheckBox;
+    FFiltersSBox: TScrollBox;
+    FHCBox: TComboBox;
+    FVLabel: TLabel;
+    FScheduleGBox: TGroupBox;
+    FVCBox: TComboBox;
+    FHLabel: TLabel;
+    procedure FDrawEmptyLinesChange(Sender: TObject);
+    procedure FAddFilterBtnClick(Sender: TObject);
+    procedure FDelAllFiltersBtnClick(Sender: TObject);
     procedure FDrawGridDblClick(Sender: TObject);
     procedure FDrawGridClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
@@ -126,7 +137,6 @@ begin
   FTable := TDBTable.Create;
   FTable.Assign(Table);
   FBackGroundCol := clWhite;
-  FSelectCol := clRed;
   FTextCol := clBlack;
   FFieldData := TStringMatrix.Create;
   FFieldData.Resize(1, FTable.Count);
@@ -145,6 +155,8 @@ var
   YOffset: integer;
   Text: string;
 begin
+  FMaxH := 0;
+  FMaxW := 0;
   TextH := Canvas.TextHeight('Нрб');
   Canvas.Pen.Color := clBlack;
   Canvas.Brush.Color := FBackGroundCol;
@@ -165,13 +177,11 @@ begin
       Canvas.TextRect(Rect, XOffset, YOffset, Text);
       FMaxW := Max(FMaxW, LEFT_MARGIN + Canvas.TextWidth(Text) + 5);
       FMaxH := Max(FMaxH, YOffset - Rect.TopLeft.y + 20);
-      if (FMaxW > CELL_W) or (FMaxH > CELL_H) then
-        FTriangleExists := True
-      else
-        FTriangleExists := False;
+      FTriangleExists := (FMaxW > CELL_W) or (FMaxH > CELL_H);
     end;
     SpaceC += 1;
   end;
+
   if FTriangleExists then
     DrawTriangle(Rect.BottomRight, Canvas);
 end;
@@ -239,6 +249,8 @@ end;
 procedure TSchedule.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
+  FDelEmptyLines := True;
+  FDrawEmptyLines.Checked := not FDelEmptyLines;
   Constraints.MinHeight := 20;
   Constraints.MinWidth := 350;
   FInTriangle := False;
@@ -306,14 +318,25 @@ end;
 procedure TSchedule.FDrawGridDblClick(Sender: TObject);
 var
   Dir: TDirectory;
+  i: integer;
 begin
   if FSelectedCell <> nil then begin
     Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
       TDirectory, nil, SelectedCellHash));
     if Dir.FilterCount = 0 then begin
-      //                              0 = EQ operator
-      Dir.AddFilter(FHCBox.ItemIndex, 0, FHTitleData[FSelectedCell.Col], False);
-      Dir.AddFilter(FVCBox.ItemIndex, 0, FVTitleData[FSelectedCell.Row], False);
+      AddDirFilter(Dir,
+        FHCBox.Items[FHCBox.ItemIndex], ' = ',
+        FHTitleData[FSelectedCell.Col], False);
+      AddDirFilter(Dir,
+        FVCBox.Items[FVCBox.ItemIndex], ' = ',
+        FVTitleData[FSelectedCell.Row], False);
+
+      for i := 0 to FilterCount - 1 do
+        if FFilterPanels[i].Correct then
+          AddDirFilter(Dir, FFilterPanels[i].Filter.Name,
+            FFilterPanels[i].Filter.ConditionalOperator,
+            FFilterPanels[i].Filter.Param, True);
+
       Dir.ApplyFilters;
     end;
   end;
@@ -348,6 +371,23 @@ begin
       end;
 end;
 
+procedure TSchedule.FAddFilterBtnClick(Sender: TObject);
+begin
+  AddFilterPanel(TFilterPanel.Create(Table, FFiltersSBox, 5 + FilterCount * 25, 5));
+end;
+
+procedure TSchedule.FDelAllFiltersBtnClick(Sender: TObject);
+begin
+  DeleteFilters;
+end;
+
+procedure TSchedule.FDrawEmptyLinesChange(Sender: TObject);
+begin
+  FDelEmptyLines := not FDelEmptyLines;
+  FDrawEmptyLines.Checked := not FDelEmptyLines;
+  LoadSchedule;
+end;
+
 procedure TSchedule.LoadCBoxData;
 begin
   LoadStringListData(FHCBox.Items);
@@ -377,7 +417,7 @@ begin
     Items.Add(Table.Fields[i].Name);
 end;
 
-procedure TSchedule.BuildMatrix(CellTouple: TCells);
+procedure TSchedule.BuildMatrix(CellTuple: TCells);
 var
   i: integer;
   ColIndex: integer;
@@ -385,13 +425,13 @@ var
 begin
   FCells.Resize(FHTitleData.Size, FVTitleData.Size);
   FCells.Fill(nil);
-  for i := 0 to CellTouple.Size - 1 do begin
-    ColIndex := FHTitleData.FindInd(CellTouple[i].FieldData[0, FHCBox.ItemIndex]);
-    RowIndex := FVTitleData.FindInd(CellTouple[i].FieldData[0, FVCBox.ItemIndex]);
+  for i := 0 to CellTuple.Size - 1 do begin
+    ColIndex := FHTitleData.FindInd(CellTuple[i].FieldData[0, FHCBox.ItemIndex]);
+    RowIndex := FVTitleData.FindInd(CellTuple[i].FieldData[0, FVCBox.ItemIndex]);
     if FCells[ColIndex, RowIndex] = nil then
-      FCells[ColIndex, RowIndex] := CellTouple[i]
+      FCells[ColIndex, RowIndex] := CellTuple[i]
     else
-      FCells[ColIndex, RowIndex].AddData(CellTouple[i].FFieldData);
+      FCells[ColIndex, RowIndex].AddData(CellTuple[i].FFieldData);
   end;
 end;
 
@@ -444,8 +484,9 @@ begin
   LoadCheckListBoxData;
   FVTitleData := GetTitleData(FVCBox.ItemIndex);
   FHTitleData := GetTitleData(FHCBox.ItemIndex);
-  BuildMatrix(GetCellDataTouple);
-  DeleteEmptyLines;
+  BuildMatrix(GetCellDataTuple);
+  if FDelEmptyLines then
+    DeleteEmptyLines;
   SetCellsCoords;
   SetTableSize;
   SetCellsSize(CELL_W, CELL_H);
@@ -501,6 +542,17 @@ begin
   FDrawGrid.Invalidate;
 end;
 
+procedure TSchedule.AddDirFilter(Dir: TDirectory; Field, COp, Param: string;
+  AEnabled: boolean);
+var
+  FilterPanel: TFilterPanel;
+begin
+  FilterPanel := TFilterPanel.Create(Table);
+  Dir.AddFilterPanel(FilterPanel);
+  FilterPanel.SetFilterData(Field, COp, Param);
+  FilterPanel.Enabled := AEnabled;
+end;
+
 function TSchedule.SelectedCellHash: integer;
 begin
   Result := 1001;
@@ -508,12 +560,12 @@ begin
   Result += Result and Result xor Result shl 10;
 end;
 
-function TSchedule.GetCellDataTouple: TCells;
+function TSchedule.GetCellDataTuple: TCells;
 var
   i: integer;
   Cell: TCell;
 begin
-  PerformQuery(Table.Query.Select(nil));
+  ApplyFilters;
   Result := TCells.Create;
   while not FormQuery.EOF do begin
     Cell := TCell.Create(Table);
