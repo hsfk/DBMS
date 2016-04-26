@@ -93,43 +93,42 @@
         <ResourceBaseClass Value="Form"/>
       </Unit9>
       <Unit10>
-        <Filename Value="UStringUtils.pas"/>
+        <Filename Value="UMetaDataItems.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit10>
       <Unit11>
-        <Filename Value="UVector.pas"/>
+        <Filename Value="UDBObjects.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit11>
       <Unit12>
-        <Filename Value="UMetaDataItems.pas"/>
+        <Filename Value="UQuery.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit12>
       <Unit13>
-        <Filename Value="UDBObjects.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit13>
-      <Unit14>
-        <Filename Value="UQuery.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit14>
-      <Unit15>
         <Filename Value="USchedule.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="Schedule"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit15>
-      <Unit16>
-        <Filename Value="UMatrix.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit16>
-      <Unit17>
-        <Filename Value="ufilterform.pas"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="UFilterForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="FilterForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="UFilterForm"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="Generics\UVector.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="Generics\UMatrix.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="Utils\UStringUtils.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit17>
     </Units>
   </ProjectOptions>
@@ -141,6 +140,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="Generics;Utils"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
