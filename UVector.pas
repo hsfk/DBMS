@@ -26,7 +26,7 @@ type
     procedure Fill(Item: T);
     procedure Resize(ASize: integer);
     procedure PushBack(Item: T);
-    procedure APushBack(Items: array of T);
+    procedure PushBackA(Items: array of T);
     procedure PushFrontS(Item: T);
     procedure Delete(Item: T);
     procedure DeleteInd(Index: integer);
@@ -96,7 +96,7 @@ begin
   SetBack(Item);
 end;
 
-procedure TVector.APushBack(Items: array of T);
+procedure TVector.PushBackA(Items: array of T);
 var
   i: integer;
 begin
