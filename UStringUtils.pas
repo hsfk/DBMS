@@ -5,9 +5,10 @@ unit UStringUtils;
 interface
 
 uses
-  SysUtils;
+  SysUtils, Classes;
 
 function Param(Index: integer): string;
+function FindInd(Str: string; Strings: TStrings): integer;
 procedure DeleteLastSymbols(var AString: string; n: integer);
 procedure DeleteFirstSymbols(var AString: string; n: integer);
 
@@ -16,6 +17,16 @@ implementation
 function Param(Index: integer): string;
 begin
   Exit('Param' + IntToStr(Index));
+end;
+
+function FindInd(Str: string; Strings: TStrings): integer;
+var
+  i: integer;
+begin
+  for i := 0 to Strings.Count - 1 do
+    if Str = Strings[i] then
+      Exit(i);
+  Exit(-1);
 end;
 
 procedure DeleteLastSymbols(var AString: string; n: integer);
