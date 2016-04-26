@@ -10,8 +10,6 @@ uses
 
 type
 
-  { TCard }
-
   TCard = class(TDBForm)
   private
     FTop: integer;
@@ -112,7 +110,7 @@ end;
 procedure TCard.CreateGUIControls;
 var
   i: integer;
-  Control: TDBControl;
+  Control: TCardControl;
 begin
   with Table do
     for i := 1 to Count - 1 do begin

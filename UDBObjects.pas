@@ -13,7 +13,7 @@ type
   TDBField = class;
   TDBRefField = class;
   TDBFilter = class;
-  TDBControl = class;
+  TCardControl = class;
   TDBTable = class;
   TDBMetaData = class;
   TDBFilters = specialize TVector<TDBFilter>;
@@ -48,7 +48,7 @@ type
     constructor Create;
     constructor Create(AName, ANativeName: string; AWidth: integer;
       ADataType: TFieldType; AParentTable: TDBTable = nil);
-    function CreateControl(RecID: integer): TDBControl; virtual;
+    function CreateControl(RecID: integer): TCardControl; virtual;
     procedure Load(Column: TColumn);
     procedure Assign(Field: TDBField); virtual;
   published
@@ -62,7 +62,7 @@ type
     FRefTable: TDBTable;
   public
     constructor Create(Field: TDBField; RefTable: TDBTable; RefFieldName: string);
-    function CreateControl(RecID: integer): TDBControl; override;
+    function CreateControl(RecID: integer): TCardControl; override;
     procedure Assign(Field: TDBRefField);
   published
     property RefFieldName: string read FRefFieldName;
@@ -91,7 +91,7 @@ type
     property Order: string write FOrder;
   end;
 
-  TDBControl = class(TDBField)
+  TCardControl = class(TDBField)
   private
     FLabel: TLabel;
     FSubscriber: TSubscriber;
@@ -169,7 +169,7 @@ begin
   Column.Width := Width;
 end;
 
-function TDBField.CreateControl(RecID: integer): TDBControl;
+function TDBField.CreateControl(RecID: integer): TCardControl;
 begin
   Result := TDBEditControl.Create(RecID);
   Result.Subscriber := TSubscriber.Create(False);
@@ -192,7 +192,7 @@ begin
   FQuery := TDBRefFieldQuery.Create(Self);
 end;
 
-function TDBRefField.CreateControl(RecID: integer): TDBControl;
+function TDBRefField.CreateControl(RecID: integer): TCardControl;
 begin
   Result := TDBCBoxControl.Create(RecID);
   Result.Subscriber := TSubscriber.Create(False);
@@ -231,17 +231,17 @@ begin
   FOrder := '';
 end;
 
-procedure TDBControl.OnNotificationRecieve(Sender: TObject);
+procedure TCardControl.OnNotificationRecieve(Sender: TObject);
 begin
   { Do nothing }
 end;
 
-constructor TDBControl.Create(RecID: integer);
+constructor TCardControl.Create(RecID: integer);
 begin
   FRecID := RecID;
 end;
 
-procedure TDBControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
+procedure TCardControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
 begin
   FLabel := TLabel.Create(AParent);
   FLabel.Parent := AParent;

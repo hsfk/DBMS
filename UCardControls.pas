@@ -9,9 +9,9 @@ uses
 
 type
   {TODO: Generic comboboxes}
-  TControls = specialize TVector<TDBControl>;
+  TControls = specialize TVector<TCardControl>;
 
-  TDBEditControl = class(TDBControl)
+  TDBEditControl = class(TCardControl)
   private
     FEdit: TEdit;
   protected
@@ -26,7 +26,7 @@ type
     procedure LoadData(AData: string; ID: integer); override;
   end;
 
-  TDBCBoxControl = class(TDBControl)
+  TDBCBoxControl = class(TCardControl)
   private
     type
     TCBoxData = record

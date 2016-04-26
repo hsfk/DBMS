@@ -168,7 +168,7 @@ end;
 
 procedure TGData.SetItems(AItems: array of T);
 begin
-  FItems.APushBack(AItems);
+  FItems.PushBackA(AItems);
 end;
 
 procedure TGData.Add(AItem: T);
