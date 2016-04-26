@@ -5,12 +5,15 @@ unit UFilterPanel;
 interface
 
 uses
-  Classes, SysUtils, StdCtrls, Controls, ExtCtrls, Graphics, DB, UDBObjects, Dialogs;
+  Classes, SysUtils, StdCtrls, Controls, ExtCtrls, Graphics, DB,
+  UDBObjects, Dialogs, UVector, UStringUtils;
 
 type
 
+  TFilterPanel = class;
   TEvent = procedure of object;
   TParamEvent = procedure(FilterIndex: integer) of object;
+  TFilterPanels = specialize TVector<TFilterPanel>;
 
   TFilterPanel = class(TPanel)
   private
@@ -22,61 +25,58 @@ type
     TOperators = array of TOperator;
   private
     FIndex: integer;
+    FEnabled: boolean;
     FFilter: TDBFilter;
     FFieldsCBox: TComboBox;
     FOpsCBox: TComboBox;
     FDelBtn: TButton;
     FEdit: TEdit;
-    FTable: TDBTable;
     FCurOps: TOperators;
     FNumOps: TOperators;
     FStrOps: TOperators;
     FOnChangeEvent: TEvent;
     FBeforeDelete: TParamEvent;
-    procedure InitGUI(AParent: TWinControl; ATop, ALeft: integer);
     procedure Init(Component, AParent: TWinControl; ATop, ALeft, AWidth: integer);
     procedure InitOperators;
     procedure AddOperator(var Operators: TOperators; AName, ACOperator: string);
-    procedure Load(Table: TDBTable);
-    procedure LoadOperators(Operators: TOperators);
+    procedure LoadFieldsCBox;
+    procedure LoadOperators(Ops: TOperators);
     procedure OnChangeEvent(Sender: TObject);
     procedure OnFieldsCBoxChange(Sender: TObject);
     procedure LoadOpsFromDataType(DataType: TFieldType);
     procedure SetState(AEnabled: boolean);
-    procedure SetFieldIndex(Index: integer);
-    procedure SetOpsIndex(Index: integer);
-    procedure SetEditText(AText: string);
     procedure FDelBtnMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    function FindOpsInd(Op: string; Ops: TOperators): integer;
   public
+    constructor Create(Table: TDBTable);
     constructor Create(Table: TDBTable; AParent: TWinControl; ATop, ALeft: integer);
+    procedure InitControls(AParent: TWinControl; ATop, ALeft: integer);
+    procedure SetFilterData(Field, COp, Param: string);
     function Correct: boolean;
   published
     property BeforeDelete: TParamEvent write FBeforeDelete;
-    property FieldIndex: integer write SetFieldIndex;
-    property OpsIndex: integer write SetOpsIndex;
-    property EditText: string write SetEditText;
     property OnChange: TEvent write FOnChangeEvent;
     property Filter: TDBFilter read FFilter;
     property Index: integer read FIndex write FIndex;
-    property Enabled: boolean write SetState;
+    property Enabled: boolean read FEnabled write SetState;
   end;
 
 implementation
 
-constructor TFilterPanel.Create(Table: TDBTable; AParent: TWinControl;
-  ATop, ALeft: integer);
+constructor TFilterPanel.Create(Table: TDBTable);
 begin
-  InitGUI(AParent, ATop, ALeft);
-  FFieldsCBox.OnSelect := @OnFieldsCBoxChange;
-  FOpsCBox.OnChange := @OnChangeEvent;
-  FEdit.OnChange := @OnChangeEvent;
-  FDelBtn.OnMouseUp := @FDelBtnMouseUp;
-  FDelBtn.Caption := 'X';
+  FEnabled := True;
   FFilter := TDBFilter.Create;
   FFilter.Assign(Table.Fields[0]);
   InitOperators;
-  Load(Table);
+end;
+
+constructor TFilterPanel.Create(Table: TDBTable; AParent: TWinControl;
+  ATop, ALeft: integer);
+begin
+  Create(Table);
+  InitControls(AParent, ATop, ALeft);
 end;
 
 function TFilterPanel.Correct: boolean;
@@ -86,7 +86,7 @@ begin
   Exit(False);
 end;
 
-procedure TFilterPanel.InitGUI(AParent: TWinControl; ATop, ALeft: integer);
+procedure TFilterPanel.InitControls(AParent: TWinControl; ATop, ALeft: integer);
 const
   SPACE = 5;
   FIELDS_CBOX_WIDTH = 150;
@@ -109,6 +109,31 @@ begin
   Init(FOpsCBox, Self, 1, FIELDS_CBOX_WIDTH + SPACE, OPS_CBOX_WIDTH);
   Init(FEdit, Self, 1, FOpsCBox.Left + OPS_CBOX_WIDTH + SPACE, EDIT_WIDTH);
   Init(FDelBtn, Self, 0, FEdit.Left + FEdit.Width, 20);
+
+  FFieldsCBox.OnSelect := @OnFieldsCBoxChange;
+  FOpsCBox.OnChange := @OnChangeEvent;
+  FEdit.OnChange := @OnChangeEvent;
+  FDelBtn.OnMouseUp := @FDelBtnMouseUp;
+  FDelBtn.Caption := 'X';
+
+  LoadFieldsCBox;
+end;
+
+procedure TFilterPanel.SetFilterData(Field, COp, Param: string);
+var
+  OpsIndex: integer;
+begin
+  FFieldsCBox.ItemIndex := FindInd(Field, FFieldsCBox.Items);
+  OpsIndex := FindOpsInd(COp, FNumOps);
+  if OpsIndex <> -1 then begin
+    LoadOperators(FNumOps);
+  end
+  else begin
+    OpsIndex := FindOpsInd(COp, FStrOps);
+    LoadOperators(FStrOps);
+  end;
+  FOpsCBox.ItemIndex := OpsIndex;
+  FEdit.Text := Param;
 end;
 
 procedure TFilterPanel.InitOperators;
@@ -130,32 +155,31 @@ begin
   Component.Width := AWidth;
 end;
 
-procedure TFilterPanel.Load(Table: TDBTable);
+procedure TFilterPanel.LoadFieldsCBox;
 var
   i: integer;
 begin
-  FTable := Table;
-  for i := 0 to FTable.Count - 1 do
-    FFieldsCBox.Items.Add(FTable.Fields[i].Name);
+  for i := 0 to FFilter.ParentTable.Count - 1 do
+    FFieldsCBox.Items.Add(FFilter.ParentTable.Fields[i].Name);
   FFieldsCBox.ItemIndex := 0;
   LoadOperators(FNumOps);
 end;
 
-procedure TFilterPanel.LoadOperators(Operators: TOperators);
+procedure TFilterPanel.LoadOperators(Ops: TOperators);
 var
   i: integer;
 begin
   FOpsCBox.Items.Clear;
-  for i := 0 to High(Operators) do
-    FOpsCBox.Items.Add(Operators[i].Name);
-  FCurOps := Operators;
+  for i := 0 to High(Ops) do
+    FOpsCBox.Items.Add(Ops[i].Name);
+  FCurOps := Ops;
   FOpsCBox.ItemIndex := 0;
   FEdit.NumbersOnly := True;
 end;
 
 procedure TFilterPanel.OnChangeEvent(Sender: TObject);
 begin
-  FFilter.Assign(FTable.Fields[FFieldsCBox.ItemIndex]);
+  FFilter.Assign(FFilter.ParentTable.Fields[FFieldsCBox.ItemIndex]);
   FFilter.ConditionalOperator := FCurOps[FOpsCBox.ItemIndex].COperator;
   FFilter.Param := FEdit.Text;
   if FOnChangeEvent <> nil then
@@ -164,7 +188,7 @@ end;
 
 procedure TFilterPanel.OnFieldsCBoxChange(Sender: TObject);
 begin
-  LoadOpsFromDataType(FTable.Fields[FFieldsCBox.ItemIndex].DataType);
+  LoadOpsFromDataType(FFilter.ParentTable.Fields[FFieldsCBox.ItemIndex].DataType);
   if FOnChangeEvent <> nil then
     FOnChangeEvent;
 end;
@@ -183,24 +207,11 @@ end;
 
 procedure TFilterPanel.SetState(AEnabled: boolean);
 begin
+  FEnabled := AEnabled;
   FEdit.Enabled := AEnabled;
   FFieldsCBox.Enabled := AEnabled;
   FOpsCBox.Enabled := AEnabled;
-end;
-
-procedure TFilterPanel.SetFieldIndex(Index: integer);
-begin
-  FFieldsCBox.ItemIndex := Index;
-end;
-
-procedure TFilterPanel.SetOpsIndex(Index: integer);
-begin
-  FOpsCBox.ItemIndex := Index;
-end;
-
-procedure TFilterPanel.SetEditText(AText: string);
-begin
-  FEdit.Text := AText;
+  FDelBtn.Enabled := AEnabled;
 end;
 
 procedure TFilterPanel.AddOperator(var Operators: TOperators; AName, ACOperator: string);
@@ -216,6 +227,17 @@ begin
   if FBeforeDelete <> nil then
     FBeforeDelete(FIndex);
   Self.Free;
+end;
+
+function TFilterPanel.FindOpsInd(Op: string; Ops: TOperators): integer;
+var
+  i: integer;
+begin
+  Op := UpCase(Op);
+  for i := 0 to High(Ops) do
+    if (Op = UpCase(Ops[i].COperator)) or (Op = UpCase(Ops[i].Name)) then
+      Exit(i);
+  Exit(-1);
 end;
 
 end.
