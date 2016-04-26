@@ -1,4 +1,4 @@
-inherited Directory: TDirectory
+object Directory: TDirectory
   Left = 438
   Height = 563
   Top = 279
@@ -8,7 +8,8 @@ inherited Directory: TDirectory
   ClientWidth = 569
   OnClose = FormClose
   OnCreate = FormCreate
-  object FDBGrid: TDBGrid[0]
+  LCLVersion = '1.6.0.4'
+  object FDBGrid: TDBGrid
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = Owner
     AnchorSideRight.Control = Owner
@@ -29,7 +30,7 @@ inherited Directory: TDirectory
     OnCellClick = FDBGridCellClick
     OnDblClick = FDBGridDblClick
   end
-  object FStatusBar: TStatusBar[1]
+  object FStatusBar: TStatusBar
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
@@ -41,7 +42,7 @@ inherited Directory: TDirectory
     Width = 569
     Panels = <>
   end
-  object FFiltersGBox: TGroupBox[2]
+  object FFiltersGBox: TGroupBox
     AnchorSideLeft.Control = Owner
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
@@ -118,7 +119,7 @@ inherited Directory: TDirectory
       TabOrder = 3
     end
   end
-  object FTableGBox: TGroupBox[3]
+  object FTableGBox: TGroupBox
     AnchorSideLeft.Control = Owner
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
