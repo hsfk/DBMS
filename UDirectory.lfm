@@ -57,7 +57,7 @@ inherited Directory: TDirectory
     ClientHeight = 152
     ClientWidth = 555
     TabOrder = 2
-    object FFiltersScrollBox: TScrollBox
+    object FFiltersSBox: TScrollBox
       AnchorSideLeft.Control = FFiltersGBox
       AnchorSideTop.Control = FFiltersGBox
       AnchorSideRight.Control = FFiltersGBox
@@ -74,7 +74,7 @@ inherited Directory: TDirectory
       BorderSpacing.Top = 30
       TabOrder = 0
     end
-    object FDelFilterBtn: TButton
+    object FDelAllFiltersBtn: TButton
       AnchorSideRight.Side = asrBottom
       Left = 120
       Height = 25
@@ -83,12 +83,12 @@ inherited Directory: TDirectory
       Align = alCustom
       Anchors = []
       BorderSpacing.Right = 25
-      Caption = 'Удалить фильтр'
+      Caption = 'Удалить фильтры'
       ParentBidiMode = False
-      OnClick = FDelFilterBtnClick
+      OnClick = FDelAllFiltersBtnClick
       TabOrder = 1
     end
-    object FApplyFilterBtn: TButton
+    object FApplyBtn: TButton
       AnchorSideTop.Side = asrBottom
       AnchorSideRight.Side = asrBottom
       Left = 240
@@ -100,7 +100,7 @@ inherited Directory: TDirectory
       BorderSpacing.Top = 10
       BorderSpacing.Right = 25
       Caption = 'Применить'
-      OnClick = FApplyFilterBtnClick
+      OnClick = FApplyBtnClick
       TabOrder = 2
     end
     object FAddFilterBtn: TButton
