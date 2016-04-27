@@ -6,6 +6,7 @@ inherited Schedule: TSchedule
   Caption = 'Schedule'
   ClientHeight = 564
   ClientWidth = 966
+  OnClose = FormClose
   object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23
@@ -50,6 +51,7 @@ inherited Schedule: TSchedule
         ExtendedSelect = False
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRowSizing, goColSizing, goSmoothScroll]
         TabOrder = 0
+        OnClick = FDrawGridClick
         OnDblClick = FDrawGridDblClick
         OnDrawCell = FDrawGridDrawCell
         OnMouseDown = FDrawGridMouseDown
@@ -244,11 +246,15 @@ inherited Schedule: TSchedule
     end
   end
   object FCellMenu: TPopupMenu[2]
-    left = 531
-    top = 36
-    object FOpenDir: TMenuItem
+    left = 480
+    top = 32
+    object FOpenDirItem: TMenuItem
       Caption = 'Найти в справочнике'
-      OnClick = FOpenDirClick
+      OnClick = FOpenDirItemClick
+    end
+    object FInsertItem: TMenuItem
+      Caption = 'Добавить'
+      OnClick = FInsertItemClick
     end
   end
 end
