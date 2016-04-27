@@ -146,13 +146,13 @@ end;
 
 procedure TDirectory.CreateCard(CardType: TDBFormType);
 var
-  TargetIndex: integer;
+  RowIndex: integer;
   Params: TParams;
 begin
-  TargetIndex := FormQuery.Fields[0].Value;
+  RowIndex := FormQuery.Fields[0].Value;
   Params := TParams.Create;
   Params.CreateParam(ftInteger, 'Target', ptUnknown);
-  Params.ParamByName('Target').AsInteger := TargetIndex;
+  Params.ParamByName('Target').AsInteger := RowIndex;
   CreateChildForm(ThisSubscriber.NClass, Table, CardType, Params, FormHash);
 end;
 

@@ -96,8 +96,9 @@ begin
   with QContainer do
     if Params <> nil then
       for i := 0 to Params.Count - 1 do begin
-        Str += Params.Items[i].Name + ' ' + Params.Items[i].AsString + #13#10;
+        Str += Params.Items[i].Name + ' ' + string(Params.Items[i].Value) + #13#10;
       end;
+
   ShowMessage(Str);
 end;
 
@@ -121,7 +122,6 @@ begin
   if FParentForm <> nil then
     FParentForm.RemoveChildForm(Self);
   CloseChildForms;
-  CloseAction := caFree;
 end;
 
 procedure TDBForm.InitConnection(DBConnection: TDbConnection);
