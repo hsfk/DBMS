@@ -128,21 +128,15 @@ end;
 
 function TDBTableQuery.Insert(Values: TParams): TQueryContainer;
 var
-  i: integer = 1;
-  SameTable: TDBTable = nil;
+  i: integer;
 begin
   with FTable do begin
     Result.Query := Format('Insert Into %s Values(0, ', [NativeName]);
     Result.Params := TParams.Create;
-
-    while i < Count do begin
-      if SameTable <> Fields[i].ParentTable then begin
-        Result.Query += Format(':%s, ', [Param(i)]);
-        Result.Params.AddParam(Values.ParamByName(Fields[i].NativeName));
-        Result.Params.ParamByName(Fields[i].NativeName).Name := Param(i);
-        SameTable := Fields[i].ParentTable;
-      end;
-      i += 1;
+    for i := 0 to Values.Count - 1 do begin
+      Result.Query += Format(':%s, ', [Param(i)]);
+      Values[0].Name := Param(i);
+      Result.Params.AddParam(Values[0]);
     end;
     DeleteLastSymbols(Result.Query, 2);
     Result.Query += ') ';

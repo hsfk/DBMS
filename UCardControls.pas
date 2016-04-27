@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, StdCtrls, Controls, DB, UDBObjects, UVector;
 
 type
-  {TODO: Generic comboboxes}
+
   TControls = specialize TVector<TCardControl>;
 
   TDBEditControl = class(TCardControl)

@@ -203,11 +203,17 @@ end;
 procedure TInsertCard.TableInsert;
 var
   Values: TParams;
-  i: integer;
+  i: integer = 0;
+  SameTable: TDBTable = nil;
 begin
   Values := TParams.Create;
-  for i := 0 to FControls.Size - 1 do
-    Values.AddParam(FControls.Items[i].Data);
+  while i < FControls.Size do begin
+    if SameTable <> FControls[i].ParentTable then begin
+      Values.AddParam(FControls[i].Data);
+      SameTable := FControls[i].ParentTable;
+    end;
+    i += 1;
+  end;
   ExecQuery(Table.Query.Insert(Values));
 end;
 
