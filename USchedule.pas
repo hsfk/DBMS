@@ -7,23 +7,72 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Grids,
   StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
-  UDBObjects, UAbout, UDirectory, UFilterForm;
+  UDBObjects, UAbout, UDirectory, UFilterForm, DB, UCard, UPointUtils;
 
 const
+  DIR_SEED = 123456;
+  CARD_SEED = 333;
+  ID_FIELD_INDX = 0;
   CELL_W = 250;
-  CELL_H = 100;
+  CELL_H = 120;
   TITLE_W = 100;
   TITLE_H = 30;
+  BTN_SIZE = 14;
   LEFT_MARGIN = 5;
 
 type
 
+  TSchedule = class;
   TData = specialize TVector<string>;
+  TStringMatrix = specialize TMatrix<string>;
+
+  TCellBtn = class
+  private
+    FBtn: TRect;
+    FOffset: TPoint;
+    FColor: TColor;
+    FRowID: integer;
+    FSideSize: integer;
+    FInited: boolean;
+    function InBtn(Mouse: TPoint): boolean;
+    function ShiftedBtn: TRect;
+    procedure SetOffset(Point: TPoint);
+  public
+    constructor Create(SideSize: integer; RowID: integer = 0);
+    procedure Draw(Canvas: TCanvas);
+    procedure Click(const Schedule: TSchedule); virtual; abstract;
+    property Offset: TPoint write SetOffset;
+    property OffsetInited: boolean read FInited write FInited;
+  end;
+
+  TDelBtn = class(TCellBtn)
+  public
+    constructor Create(SideSize: integer; RowID: integer = 0);
+    procedure Click(const Schedule: TSchedule); override;
+  end;
+
+  TEditBtn = class(TCellBtn)
+  public
+    constructor Create(SideSize: integer; RowID: integer = 0);
+    procedure Click(const Schedule: TSchedule); override;
+  end;
+
+  TAddBtn = class(TCellBtn)
+  public
+    constructor Create(SideSize: integer; RowID: integer = 0);
+    procedure Click(const Schedule: TSchedule); override;
+  end;
+
+  TShowBtn = class(TCellBtn)
+  public
+    constructor Create(SideSize: integer; RowID: integer = 0);
+    procedure Click(const Schedule: TSchedule); override;
+  end;
 
   TCell = class
   private
     type
-    TStringMatrix = specialize TMatrix<string>;
+    TCellBtns = specialize TVector<TCellBtn>;
   private
     FRow: integer;
     FCol: integer;
@@ -32,16 +81,18 @@ type
     FTable: TDBTable;
     FBackGroundCol: TColor;
     FTextCol: TColor;
+    FBtns: TCellBtns;
     FFieldData: TStringMatrix;
     FExpandable: boolean;
     FTriangle: array [0..2] of TPoint;
-    procedure DrawTriangle(ZeroPoint: TPoint; Canvas: TCanvas);
-    function Distance(A, B: TPoint): double;
+    procedure DrawTriangle(AnchorPoint: TPoint; Canvas: TCanvas);
+    procedure DrawBtns(Canvas: TCanvas; Rect: TRect; YOffset, Index: integer);
     function Max(A, B: integer): integer;
   public
     constructor Create(Table: TDBTable);
+    procedure Click(Mouse: TPoint; const Schedule: TSchedule);
     procedure Draw(Rect: TRect; Canvas: TCanvas; VisibleFields: TCheckListBox);
-    procedure AddData(Data: TStringMatrix);
+    procedure CopyData(Data: TStringMatrix);
   published
     property MaxTextH: integer read FMaxH;
     property MaxTextW: integer read FMaxW;
@@ -80,9 +131,13 @@ type
     procedure NotificationRecieve(Sender: TObject);
     procedure CreateDir;
     procedure ExpandSelectedCell;
+    procedure DeleteElement(ID: integer);
+    procedure CreateEditCard(ID: integer);
+    procedure CreateInsertCard;
+    procedure CreateCard(RowIndex: integer; CardType: TDBFormType);
     procedure AddDirFilter(Dir: TDirectory; Field, COp, Param: string;
       AEnabled: boolean);
-    function SelectedCellHash: integer;
+    function SelectedCellHash(Seed: integer): integer;
     function GetTitleData(FieldIndex: integer): TData;
     function GetCellDataTuple: TCells;
     function EmptyRow(Index: integer): boolean;
@@ -109,8 +164,11 @@ type
     FVCBox: TComboBox;
     FHLabel: TLabel;
     FCellMenu: TPopupMenu;
-    FOpenDir: TMenuItem;
-    procedure FOpenDirClick(Sender: TObject);
+    FOpenDirItem: TMenuItem;
+    FInsertItem: TMenuItem;
+    procedure FDrawGridClick(Sender: TObject);
+    procedure FInsertItemClick(Sender: TObject);
+    procedure FOpenDirItemClick(Sender: TObject);
     procedure FDrawEmptyLinesChange(Sender: TObject);
     procedure FAddFilterBtnClick(Sender: TObject);
     procedure FDelAllFiltersBtnClick(Sender: TObject);
@@ -132,6 +190,90 @@ implementation
 
 {$R *.lfm}
 
+function TCellBtn.InBtn(Mouse: TPoint): boolean;
+begin
+  Exit(PointInRect(Mouse, ShiftedBtn));
+end;
+
+function TCellBtn.ShiftedBtn: TRect;
+begin
+  Result := FBtn;
+  Result.TopLeft += FOffset;
+  Result.BottomRight += FOffset;
+end;
+
+procedure TCellBtn.SetOffset(Point: TPoint);
+begin
+  FInited := True;
+  FOffset := Point;
+end;
+
+constructor TCellBtn.Create(SideSize: integer; RowID: integer = 0);
+begin
+  FInited := False;
+  FRowID := RowID;
+  FSideSize := SideSize;
+  FOffset := NULLP;
+  FBtn.TopLeft := NULLP;
+  FBtn.BottomRight.x := SideSize;
+  FBtn.BottomRight.y := SideSize;
+  FColor := clBlack;
+end;
+
+procedure TCellBtn.Draw(Canvas: TCanvas);
+var
+  PrevBColor: TColor;
+begin
+  PrevBColor := Canvas.Brush.Color;
+  Canvas.Brush.Color := FColor;
+  Canvas.Rectangle(ShiftedBtn);
+  Canvas.Brush.Color := PrevBColor;
+end;
+
+constructor TDelBtn.Create(SideSize: integer; RowID: integer = 0);
+begin
+  inherited Create(SideSize, RowID);
+  FColor := clRed;
+end;
+
+procedure TDelBtn.Click(const Schedule: TSchedule);
+begin
+  Schedule.DeleteElement(FRowID);
+end;
+
+constructor TEditBtn.Create(SideSize: integer; RowID: integer = 0);
+begin
+  inherited Create(SideSize, RowID);
+  FColor := clBlue;
+end;
+
+procedure TEditBtn.Click(const Schedule: TSchedule);
+begin
+  Schedule.CreateEditCard(FRowID);
+end;
+
+constructor TAddBtn.Create(SideSize: integer; RowID: integer = 0);
+begin
+  inherited Create(SideSize, RowID);
+  FColor := clGreen;
+end;
+
+procedure TAddBtn.Click(const Schedule: TSchedule);
+begin
+  Schedule.CreateInsertCard;
+end;
+
+constructor TShowBtn.Create(SideSize: integer; RowID: integer = 0);
+begin
+  inherited Create(SideSize, RowID);
+  FColor := clYellow;
+end;
+
+procedure TShowBtn.Click(const Schedule: TSchedule);
+begin
+  Schedule.CreateDir;
+end;
+
 constructor TCell.Create(Table: TDBTable);
 begin
   FRow := -1;
@@ -139,13 +281,25 @@ begin
   FMaxH := 0;
   FMaxW := 0;
   FExpandable := False;
-  FTable := TDBTable.Create;
-  FTable.Assign(Table);
+  FTable := Table;
   FBackGroundCol := clWhite;
   FTextCol := clBlack;
   FFieldData := TStringMatrix.Create;
-  FFieldData.Resize(1, FTable.Count);
-  FFieldData.Fill('');
+  FBtns := TCellBtns.Create;
+  FBtns.Resize(2);
+  FBtns[0] := TAddBtn.Create(BTN_SIZE);
+  FBtns[1] := TShowBtn.Create(BTN_SIZE);
+end;
+
+procedure TCell.Click(Mouse: TPoint; const Schedule: TSchedule);
+var
+  i: integer;
+begin
+  for i := 0 to FBtns.Size - 1 do
+    if FBtns[i].InBtn(Mouse) then begin
+      FBtns[i].Click(Schedule);
+      Exit;
+    end;
 end;
 
 procedure TCell.Draw(Rect: TRect; Canvas: TCanvas; VisibleFields: TCheckListBox);
@@ -156,8 +310,8 @@ var
   FieldsAmount: integer;
   SpaceC: integer = 0;
   InvFieldC: integer = 0;
-  XOffset: integer;
-  YOffset: integer;
+  Offset: TPoint;
+  RowIndex: integer = 0;
   Text: string;
 begin
   TextH := Canvas.TextHeight('Нрб');
@@ -175,47 +329,70 @@ begin
         InvFieldC += 1;
         continue;
       end;
-      XOffset := Rect.TopLeft.x + LEFT_MARGIN;
-      YOffset := Rect.Top + (i * FieldsAmount + (j - InvFieldC) + i) *
-        TextH + TextH * SpaceC;
+      RowIndex := i * FieldsAmount + i + j + SpaceC - InvFieldC;
+      Offset.X := Rect.TopLeft.x + LEFT_MARGIN;
+      Offset.Y := Rect.Top + TextH * RowIndex;
       Text := FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j];
-      Canvas.TextRect(Rect, XOffset, YOffset, Text);
+      Canvas.TextRect(Rect, Offset.X, Offset.Y, Text);
 
       FMaxW := Max(FMaxW, LEFT_MARGIN + Canvas.TextWidth(Text));
-      FMaxH := Max(FMaxH, YOffset - Rect.Top + 10);
+      FMaxH := Max(FMaxH, Offset.Y - Rect.Top + 10);
       FExpandable := (FMaxW > (Rect.Right - Rect.Left)) or
         (FMaxH > (Rect.Bottom - Rect.Top));
     end;
+    DrawBtns(Canvas, Rect, Offset.y, i);
     SpaceC += 1;
   end;
-
+  DrawBtns(Canvas, Rect, Rect.Top, -1);
   if FExpandable then
     DrawTriangle(Rect.BottomRight, Canvas);
 end;
 
-procedure TCell.AddData(Data: TStringMatrix);
+procedure TCell.CopyData(Data: TStringMatrix);
 var
   i: integer;
   j: integer;
   OldWidth: integer;
+  RowIndex: integer;
 begin
   OldWidth := FFieldData.Width;
-  FFieldData.AddColumns(Data.Width);
-  for i := 0 to Data.Width - 1 do
+  if OldWidth = 0 then
+    FFieldData.Resize(Data.Width, Data.Height)
+  else
+    FFieldData.AddColumns(Data.Width);
+
+  for i := 0 to Data.Width - 1 do begin
+    RowIndex := StrToInt(Data[i, ID_FIELD_INDX]);
+    FBtns.PushBack(TDelBtn.Create(BTN_SIZE, RowIndex));
+    FBtns.PushBack(TEditBtn.Create(BTN_SIZE, RowIndex));
     for j := 0 to Data.Height - 1 do
       FFieldData[i + OldWidth, j] := Data[i, j];
+  end;
 end;
 
-procedure TCell.DrawTriangle(ZeroPoint: TPoint; Canvas: TCanvas);
+procedure TCell.DrawTriangle(AnchorPoint: TPoint; Canvas: TCanvas);
 begin
-  FTriangle[0] := ZeroPoint;
-  FTriangle[1] := ZeroPoint;
-  FTriangle[2] := ZeroPoint;
-  FTriangle[1].X -= 13;
-  FTriangle[2].Y -= 13;
+  FTriangle[0] := AnchorPoint;
+  FTriangle[1] := AnchorPoint;
+  FTriangle[2] := AnchorPoint;
+  FTriangle[1].X -= 14;
+  FTriangle[2].Y -= 14;
   Canvas.Pen.Color := clBlack;
   Canvas.Brush.Color := clDkGray;
   Canvas.Polygon(FTriangle);
+end;
+
+procedure TCell.DrawBtns(Canvas: TCanvas; Rect: TRect; YOffset, Index: integer);
+var
+  Offset: TPoint;
+begin
+  Index += 1;
+  Offset := ToPoint(Rect.Right - BTN_SIZE, YOffset);
+  FBtns[2 * Index].Offset := Offset;
+  FBtns[2 * Index].Draw(Canvas);
+  Offset.x -= BTN_SIZE;
+  FBtns[2 * Index + 1].Offset := Offset;
+  FBtns[2 * Index + 1].Draw(Canvas);
 end;
 
 function TCell.Max(A, B: integer): integer;
@@ -223,16 +400,6 @@ begin
   if A > B then
     Exit(A);
   Exit(B);
-end;
-
-function TCell.Distance(A, B: TPoint): double;
-var
-  dx: integer;
-  dy: integer;
-begin
-  dx := Abs(A.x - B.x);
-  dy := Abs(A.y - B.y);
-  Exit(Sqrt(dx * dx + dy * dy));
 end;
 
 procedure TSchedule.FormCreate(Sender: TObject);
@@ -312,7 +479,8 @@ end;
 procedure TSchedule.FDrawGridSelectCell(Sender: TObject; aCol, aRow: integer;
   var CanSelect: boolean);
 begin
-  FSelectedCell := FCells[aCol - 1, aRow - 1];
+  if (aCol > 0) and (aRow > 0) then
+    FSelectedCell := FCells[aCol - 1, aRow - 1];
 end;
 
 procedure TSchedule.FDrawGridMouseMove(Sender: TObject; Shift: TShiftState;
@@ -339,7 +507,7 @@ begin
   LoadSchedule;
 end;
 
-procedure TSchedule.FOpenDirClick(Sender: TObject);
+procedure TSchedule.FOpenDirItemClick(Sender: TObject);
 begin
   CreateDir;
 end;
@@ -350,10 +518,27 @@ var
   Col: integer = 0;
   Row: integer = 0;
 begin
+  if FSelectedCell = nil then
+    Exit;
   FDrawGrid.MouseToCell(X, Y, Col, Row);
-  if (Button = mbRight) and ((Col - 1 = FSelectedCell.Col) and
-    (Row - 1 = FSelectedCell.Row)) then
-    FCellMenu.PopUp(X + Left, Y + Top);
+  if Button = mbRight then begin
+    if ((Col - 1 = FSelectedCell.Col) and (Row - 1 = FSelectedCell.Row)) then
+      FCellMenu.PopUp(X + Left, Y + Top + 20);
+  end;
+  //else if Button = mbLeft then;
+  //  FSelectedCell.Click(FMouseCoords, Self);
+end;
+
+procedure TSchedule.FInsertItemClick(Sender: TObject);
+begin
+  CreateInsertCard;
+end;
+
+procedure TSchedule.FDrawGridClick(Sender: TObject);
+begin
+  if FSelectedCell = nil then
+    Exit;
+  FSelectedCell.Click(FMouseCoords, Self);
 end;
 
 procedure TSchedule.LoadCBoxData;
@@ -399,7 +584,7 @@ begin
     if FCells[ColIndex, RowIndex] = nil then
       FCells[ColIndex, RowIndex] := CellTuple[i]
     else
-      FCells[ColIndex, RowIndex].AddData(CellTuple[i].FFieldData);
+      FCells[ColIndex, RowIndex].CopyData(CellTuple[i].FFieldData);
   end;
 end;
 
@@ -515,25 +700,25 @@ var
   Dir: TDirectory;
   i: integer;
 begin
-  if FSelectedCell <> nil then begin
-    Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
-      TDirectory, nil, SelectedCellHash));
-    if Dir.FilterCount = 0 then begin
-      AddDirFilter(Dir,
-        FHCBox.Items[FHCBox.ItemIndex], ' = ',
-        FHTitleData[FSelectedCell.Col], False);
-      AddDirFilter(Dir,
-        FVCBox.Items[FVCBox.ItemIndex], ' = ',
-        FVTitleData[FSelectedCell.Row], False);
+  if FSelectedCell = nil then
+    Exit;
+  Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
+    TDirectory, nil, SelectedCellHash(DIR_SEED)));
+  if Dir.FilterCount = 0 then begin
+    AddDirFilter(Dir,
+      FHCBox.Items[FHCBox.ItemIndex], ' = ',
+      FHTitleData[FSelectedCell.Col], True);
+    AddDirFilter(Dir,
+      FVCBox.Items[FVCBox.ItemIndex], ' = ',
+      FVTitleData[FSelectedCell.Row], True);
 
-      for i := 0 to FilterCount - 1 do
-        if FFilterPanels[i].Correct then
-          AddDirFilter(Dir, FFilterPanels[i].Filter.Name,
-            FFilterPanels[i].Filter.ConditionalOperator,
-            FFilterPanels[i].Filter.Param, True);
+    for i := 0 to FilterCount - 1 do
+      if FFilterPanels[i].Correct then
+        AddDirFilter(Dir, FFilterPanels[i].Filter.Name,
+          FFilterPanels[i].Filter.ConditionalOperator,
+          FFilterPanels[i].Filter.Param, True);
 
-      Dir.ApplyFilters;
-    end;
+    Dir.ApplyFilters;
   end;
 end;
 
@@ -542,19 +727,58 @@ var
   Row: integer = 0;
   Col: integer = 0;
 begin
-  with FDrawGrid do
-    if FSelectedCell <> nil then begin
-      Row := FSelectedCell.Row + 1;
-      Col := FSelectedCell.Col + 1;
-      if FSelectedCell.FExpandable then begin
-        RowHeights[Row] := FSelectedCell.MaxTextH + 10;
-        ColWidths[Col] := FSelectedCell.MaxTextW;
-      end
-      else begin
-        RowHeights[Row] := CELL_H;
-        ColWidths[Col] := CELL_W;
-      end;
+  if FSelectedCell = nil then
+    Exit;
+  with FDrawGrid do begin
+    Row := FSelectedCell.Row + 1;
+    Col := FSelectedCell.Col + 1;
+    if FSelectedCell.FExpandable then begin
+      RowHeights[Row] := FSelectedCell.MaxTextH + 10;
+      ColWidths[Col] := FSelectedCell.MaxTextW;
+    end
+    else begin
+      RowHeights[Row] := CELL_H;
+      ColWidths[Col] := CELL_W;
     end;
+  end;
+end;
+
+procedure TSchedule.DeleteElement(ID: integer);
+begin
+  if FSelectedCell = nil then
+    Exit;
+  ExecQuery(Table.Query.Delete(ID));
+  ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
+end;
+
+procedure TSchedule.CreateEditCard(ID: integer);
+begin
+  if FSelectedCell = nil then
+    Exit;
+  CreateCard(ID, TEditCard);
+end;
+
+procedure TSchedule.CreateInsertCard;
+var
+  RowIndex: integer;
+begin
+  if FSelectedCell = nil then
+    Exit;
+  //Since we have an insert card we don't need
+  //row index, so we take it from the first field
+  RowIndex := StrToInt(FSelectedCell.FieldData[0, ID_FIELD_INDX]);
+  CreateCard(RowIndex, TInsertCard);
+end;
+
+procedure TSchedule.CreateCard(RowIndex: integer; CardType: TDBFormType);
+var
+  Params: TParams;
+begin
+  Params := TParams.Create;
+  Params.CreateParam(ftInteger, 'Target', ptUnknown);
+  Params.ParamByName('Target').AsInteger := RowIndex;
+  CreateChildForm(ThisSubscriber.NClass, Table, CardType, Params,
+    SelectedCellHash(CARD_SEED));
 end;
 
 procedure TSchedule.AddDirFilter(Dir: TDirectory; Field, COp, Param: string;
@@ -568,9 +792,10 @@ begin
   FilterPanel.Enabled := AEnabled;
 end;
 
-function TSchedule.SelectedCellHash: integer;
+function TSchedule.SelectedCellHash(Seed: integer): integer;
 begin
-  Result := 1001;
+  Result := 1001 + (Seed + 3) * (Seed - 7);
+  Result += Result shl (Seed mod 16) xor Result;
   Result += word(@(FSelectedCell.FieldData));
   Result += Result and Result xor Result shl 10;
 end;
@@ -579,13 +804,18 @@ function TSchedule.GetCellDataTuple: TCells;
 var
   i: integer;
   Cell: TCell;
+  Data: TStringMatrix;
 begin
   ApplyFilters;
   Result := TCells.Create;
   while not FormQuery.EOF do begin
     Cell := TCell.Create(Table);
+    Data := TStringMatrix.Create;
+    Data.Resize(1, Table.Count);
     for i := 0 to Table.Count - 1 do
-      Cell.FieldData[0, i] := FormQuery.Fields[i].AsString;
+      Data[0, i] := FormQuery.Fields[i].AsString;
+    Cell.CopyData(Data);
+    Data.Free;
     FormQuery.Next;
     Result.PushBack(Cell);
   end;
