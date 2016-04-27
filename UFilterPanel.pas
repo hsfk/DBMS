@@ -27,6 +27,7 @@ type
     FIndex: integer;
     FEnabled: boolean;
     FFilter: TDBFilter;
+    FTable: TDBTable;
     FFieldsCBox: TComboBox;
     FOpsCBox: TComboBox;
     FDelBtn: TButton;
@@ -66,8 +67,10 @@ implementation
 
 constructor TFilterPanel.Create(Table: TDBTable);
 begin
+  FOnChangeEvent := nil;
   FEnabled := True;
   FFilter := TDBFilter.Create;
+  FTable := Table;
   FFilter.Assign(Table.Fields[0]);
   InitOperators;
 end;
@@ -179,7 +182,7 @@ end;
 
 procedure TFilterPanel.OnChangeEvent(Sender: TObject);
 begin
-  FFilter.Assign(FFilter.ParentTable.Fields[FFieldsCBox.ItemIndex]);
+  FFilter.Assign(FTable.Fields[FFieldsCBox.ItemIndex]);
   FFilter.ConditionalOperator := FCurOps[FOpsCBox.ItemIndex].COperator;
   FFilter.Param := FEdit.Text;
   if FOnChangeEvent <> nil then
