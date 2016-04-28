@@ -248,13 +248,37 @@ inherited Schedule: TSchedule
   object FCellMenu: TPopupMenu[2]
     left = 480
     top = 32
-    object FOpenDirItem: TMenuItem
+    object FOpenDirMenu: TMenuItem
       Caption = 'Найти в справочнике'
-      OnClick = FOpenDirItemClick
+      OnClick = FOpenDirMenuClick
     end
-    object FInsertItem: TMenuItem
+    object FInsertMenu: TMenuItem
       Caption = 'Добавить'
-      OnClick = FInsertItemClick
+      OnClick = FInsertMenuClick
+    end
+    object FCutAllMenu: TMenuItem
+      Caption = 'Вырезать все'
+      OnClick = FCutAllMenuClick
+    end
+    object FPasteMenu: TMenuItem
+      Caption = 'Вставить'
+      OnClick = FPasteMenuClick
+    end
+  end
+  object FCellBtnActions: TPopupMenu[3]
+    left = 560
+    top = 32
+    object FEditBtnMenu: TMenuItem
+      Caption = 'Редактировать'
+      OnClick = FEditBtnMenuClick
+    end
+    object FCutBtnMenu: TMenuItem
+      Caption = 'Вырезать'
+      OnClick = FCutBtnMenuClick
+    end
+    object FDelBtnMenu: TMenuItem
+      Caption = 'Удалить'
+      OnClick = FDelBtnMenuClick
     end
   end
 end
