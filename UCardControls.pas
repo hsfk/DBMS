@@ -28,14 +28,8 @@ type
 
   TDBCBoxControl = class(TCardControl)
   private
-    type
-    TCBoxData = record
-      Data: string;
-      ID: integer;
-    end;
-  private
     FCBox: TComboBox;
-    FData: array of TCBoxData;
+    FData: array of TDBData;
     procedure OnChange(Sender: TObject);
   protected
     function GetData: TParam; override;

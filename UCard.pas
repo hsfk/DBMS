@@ -25,6 +25,7 @@ type
     procedure OnNotificationRecieve(Sender: TObject);
   public
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
+    procedure Select(ControlIndex: integer; Data: string);
   published
     FStatusBar: TStatusBar;
     FApplyBtn: TButton;
@@ -74,13 +75,17 @@ begin
   FRecordIndex := Params.ParamByName('Target').AsInteger;
   inherited Load(ANClass, ATable);
   ThisSubscriber.OnNotificationRecieve := @OnNotificationRecieve;
-  FSelectAll := Table.Query.Select(
-    TDBFilters.Create(
-      TDBFilter.Create(Table.Front, ' = ', IntToStr(FRecordIndex))));
+  FSelectAll := Table.Query.Select(TDBFilters.Create(
+    TDBFilter.Create(Table.Front, ' = ', IntToStr(FRecordIndex))));
   CreateGUIControls;
   LoadGUIData;
   SubscribeCBoxes;
   LoadInterface;
+end;
+
+procedure TCard.Select(ControlIndex: integer; Data: string);
+begin
+  FControls[ControlIndex].Caption := Data;
 end;
 
 procedure TCard.SubscribeCBoxes;
@@ -138,8 +143,8 @@ begin
       FieldIndex := 1;
     while not FormQuery.EOF do begin
       FControls[i].LoadData(
-         FormQuery.Fields[FieldIndex].AsString
-        ,FormQuery.Fields[0].AsInteger
+        FormQuery.Fields[FieldIndex].AsString
+       ,FormQuery.Fields[0].AsInteger
         );
       FormQuery.Next;
     end;
@@ -158,8 +163,12 @@ end;
 
 procedure TCard.OnNotificationRecieve(Sender: TObject);
 begin
-  LoadGUIData;
-  LoadInterface;
+  try
+    LoadGUIData;
+    LoadInterface;
+  except
+    Close;
+  end;
 end;
 
 procedure TCard.FCancelBtnClick(Sender: TObject);
