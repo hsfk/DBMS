@@ -23,6 +23,8 @@ operator / (a: TPoint; b: integer): TPoint; overload; inline;
 operator * (a: TPoint; b: integer): TPoint; overload; inline;
 operator >= (a, b: TPoint): boolean; overload; inline;
 operator <= (a, b: TPoint): boolean; overload; inline;
+operator = (a, b: TPoint): boolean; overload; inline;
+operator <> (a, b: TPoint): boolean; overload; inline;
 function PointInRect(Point: TPoint; Rect: TRect): boolean; inline;
 function ToPoint(x, y: integer): TPoint; inline;
 function Distance(a, b: TPoint): double; inline;
@@ -76,6 +78,20 @@ operator <= (a, b: TPoint): boolean; overload; inline;
 begin
   Result := False;
   if (a.x <= b.x) and (a.y <= b.y) then
+    Result := True;
+end;
+
+operator = (a, b: TPoint): boolean; overload; inline;
+begin
+  Result := False;
+  if (a.x = b.x) and (a.y = b.y) then
+    Result := True;
+end;
+
+operator <> (a, b: TPoint): boolean; overload; inline;
+begin
+  Result := False;
+  if (a.x <> b.x) and (a.y <> b.y) then
     Result := True;
 end;
 
