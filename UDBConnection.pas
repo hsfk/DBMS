@@ -17,7 +17,9 @@ type
     function GetCurrentConnection: string;
   public
     constructor Create;
+    constructor EmptyCreate;
     procedure Connect(DbName, UserName, Password: string);
+    function NewTransaction: TDBConnection;
   published
     property Connected: boolean read FConnected;
     property CurrentConnection: string read GetCurrentConnection;
@@ -26,6 +28,11 @@ type
   end;
 
 implementation
+
+constructor TDBConnection.EmptyCreate;
+begin
+
+end;
 
 constructor TDBConnection.Create;
 begin
@@ -52,6 +59,13 @@ begin
     FConnection.UserName := '';
     FConnection.Password := '';
   end;
+end;
+
+function TDBConnection.NewTransaction: TDBConnection;
+begin
+  Result := TDBConnection.Create;
+  with FConnection do
+    Result.Connect(DatabaseName, UserName, Password);
 end;
 
 function TDBConnection.GetCurrentConnection: string;

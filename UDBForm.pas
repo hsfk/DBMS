@@ -46,6 +46,7 @@ type
     procedure CloseChildForms;
   public
     procedure InitConnection(DBConnection: TDbConnection); virtual;
+    procedure CreateTransaction;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
   published
     property Connection: TDbConnection read FDBConnection;
@@ -132,6 +133,11 @@ begin
   FQuery.DataBase := DBConnection.Connection;
   FQuery.Transaction := DBConnection.Transaction;
   FDataSource.DataSet := FQuery;
+end;
+
+procedure TDBForm.CreateTransaction;
+begin
+  FDBConnection := FDBConnection.NewTransaction;
 end;
 
 procedure TDBForm.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
