@@ -23,6 +23,13 @@ type
     Params: TParams;
   end;
 
+  TDBData = record
+    Data: string;
+    ID: integer;
+  end;
+
+  TDBDataTuple = array of TDBData;
+
   IFieldConstructor = interface
     function RealName: string;
     function InnerJoin: string;
