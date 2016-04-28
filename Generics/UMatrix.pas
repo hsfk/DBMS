@@ -35,6 +35,10 @@ type
     property Height: integer read GetHeight;
   end;
 
+  TStringM = specialize TMatrix<string>;
+  TIntegerM = specialize TMatrix<integer>;
+  TDoubleM = specialize TMatrix<double>;
+
 implementation
 
 constructor TMatrix.Create;

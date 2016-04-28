@@ -39,6 +39,10 @@ type
     property Size: integer read GetLength;
   end;
 
+  TStringV = specialize TVector<string>;
+  TIntegerV = specialize TVector<integer>;
+  TDoubleV = specialize TVector<double>;
+
 implementation
 
 constructor TVector.Create;
