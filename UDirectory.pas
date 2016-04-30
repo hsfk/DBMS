@@ -5,29 +5,29 @@ unit UDirectory;
 interface
 
 uses
-  SysUtils, Forms, DBGrids, ComCtrls, UAbout, UFilterPanel, StdCtrls, UCard, UDBForm,
-  UDBConnection, DB, UDBObjects, Dialogs, Controls, Classes, UFilterForm;
+  SysUtils, Forms, DBGrids, ComCtrls, UAbout, UFilters, StdCtrls, UCard, UDBForm,
+  UDBConnection, DB, UDBObjects, Dialogs, Controls, Classes;
 
 type
 
-  TFilterPanel = UFilterPanel.TFilterPanel;
-
-  TDirectory = class(TFilterForm)
+  TDirectory = class(TDBForm)
   private
     FFocus: TPoint;
-    procedure OnFiltersChange;
+    FFilters: TFilterPanels;
+    procedure EnableBtn;
     procedure UpdateColumns;
     procedure CreateCard(CardType: TDBFormType);
     procedure NotificationRecieve(Sender: TObject);
     procedure MemFocus;
     procedure RestoreFocus;
     function FormHash: integer;
-  protected
-    procedure BeforeFilterDelete(FilterIndex: integer); override;
   public
     procedure InitConnection(DBConnection: TDbConnection); override;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
-    procedure AddFilterPanel(AFilterPanel: TFilterPanel); override;
+    procedure ApplyFilters;
+    procedure AddFilterPanel(AFilterPanel: TFilterPanel);
+    procedure AddFilterPanel(Field, COp, Param: string; AEnabled: boolean);
+    function FilterCount: integer;
   published
     FFiltersGBox: TGroupBox;
     FTableGBox: TGroupBox;
@@ -47,6 +47,7 @@ type
     procedure FAddFilterBtnClick(Sender: TObject);
     procedure FApplyBtnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); override;
   end;
 
 implementation
@@ -65,46 +66,67 @@ begin
   FFocus.Y := 1;
 end;
 
+procedure TDirectory.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  FFilters.Free;
+  inherited FormClose(Sender, CloseAction);
+end;
+
 procedure TDirectory.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   inherited Load(ANClass, ATable);
+  FFilters := TFilterPanels.Create(ATable, FFiltersSBox, 5, 5);
+  FFilters.OnChange := @EnableBtn;
+  FFilters.OnDelete := @EnableBtn;
   ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
   Caption := APP_CAPTION + ' - ' + Table.Name;
   PerformQuery(FSelectAll);
   MemFocus;
 end;
 
-procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
+procedure TDirectory.ApplyFilters;
+var
+  Filtered: TQueryContainer;
 begin
-  AddFilterPanel(TFilterPanel.Create(Table));
-  FApplyBtn.Enabled := True;
+  Filtered := FFilters.Apply;
+  PerformQuery(Filtered);
+  if Filtered.Query <> FSelectAll.Query then
+    FApplyBtn.Enabled := False;
 end;
 
-procedure TDirectory.BeforeFilterDelete(FilterIndex: integer);
+procedure TDirectory.FAddFilterBtnClick(Sender: TObject);
 begin
-  if FFilterPanels[FilterIndex].Correct or (FFilterPanels.Size = 0) then
-    FApplyBtn.Enabled := True;
-  inherited BeforeFilterDelete(FilterIndex);
+  FFilters.AddFilterPanel;
 end;
 
 procedure TDirectory.AddFilterPanel(AFilterPanel: TFilterPanel);
 begin
-  AFilterPanel.InitControls(FFiltersSBox, 5 + FilterCount * 25, 5);
-  AFilterPanel.OnChange := @OnFiltersChange;
-  inherited AddFilterPanel(AFilterPanel);
-  FApplyBtn.Enabled := True;
+  FFilters.AddFilterPanel(AFilterPanel);
+end;
+
+procedure TDirectory.AddFilterPanel(Field, COp, Param: string; AEnabled: boolean);
+var
+  FilterPanel: TFilterPanel;
+begin
+  FilterPanel := TFilterPanel.Create(Table, FFiltersSBox, 5, 5);
+  FFilters.AddFilterPanel(FilterPanel);
+  FilterPanel.SetFilterData(Field, COp, Param);
+  FilterPanel.Enabled := AEnabled;
+end;
+
+function TDirectory.FilterCount: integer;
+begin
+  Exit(FFilters.Size);
 end;
 
 procedure TDirectory.FApplyBtnClick(Sender: TObject);
 begin
-  if ApplyFilters then
-    FApplyBtn.Enabled := False;
+  ApplyFilters;
 end;
 
 procedure TDirectory.FDelAllFiltersBtnClick(Sender: TObject);
 begin
-  DeleteFilters;
-  FApplyBtn.Enabled := True;
+  FFilters.DeleteAll;
 end;
 
 procedure TDirectory.FDelElementClick(Sender: TObject);
@@ -131,7 +153,7 @@ begin
   MemFocus;
 end;
 
-procedure TDirectory.OnFiltersChange;
+procedure TDirectory.EnableBtn;
 begin
   FApplyBtn.Enabled := True;
 end;
@@ -158,10 +180,7 @@ end;
 
 procedure TDirectory.NotificationRecieve(Sender: TObject);
 begin
-  if FFilterPanels.Size > 0 then
-    ApplyFilters
-  else
-    PerformQuery(FSelectAll);
+  PerformQuery(FFilters.Apply);
   RestoreFocus;
 end;
 
