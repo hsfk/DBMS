@@ -23,22 +23,22 @@ type
     procedure SwapRows(IndexA, IndexB: integer);    virtual;
     procedure Swap    (XA, YA, XB, YB: integer);    virtual;
   public
-    constructor Create;                             virtual;
-    destructor  Destroy;                            override;
-    procedure Resize    (AWidth, AHeight: integer); virtual;
-    procedure AddColumns(Amount: integer);          virtual;
-    procedure Fill      (Item: T);                  virtual;
-    procedure DeleteRow (Index: integer);           virtual;
-    procedure DeleteCol (Index: integer);           virtual;
+    constructor Create;                               virtual;
+    destructor  Destroy;                              override;
+    procedure   Resize    (AWidth, AHeight: integer); virtual;
+    procedure   AddColumns(Amount: integer);          virtual;
+    procedure   Fill      (Item: T);                  virtual;
+    procedure   DeleteRow (Index: integer);           virtual;
+    procedure   DeleteCol (Index: integer);           virtual;
 
     property Width:  integer read GetWidth;
     property Height: integer read GetHeight;
     property Items[i, j: integer]: T read GetItem write SetItem; default;
   end;
 
-  TStringM = specialize TMatrix<string>;
+  TStringM  = specialize TMatrix<string>;
   TIntegerM = specialize TMatrix<integer>;
-  TDoubleM = specialize TMatrix<double>;
+  TDoubleM  = specialize TMatrix<double>;
 
   generic TObjMatrix<T: TObject> = class(specialize TMatrix<T>)
   public
