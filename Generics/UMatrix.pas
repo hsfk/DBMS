@@ -10,40 +10,57 @@ type
 
   generic TMatrix<T> = class
   private type
-    TCol = specialize TVector<T>;
+    TCol   = specialize TVector<T>;
     TItems = specialize TVector<TCol>;
   private
     FMatrix: TItems;
-    function GetItem(i, j: integer): T;
-    function GetWidth: integer;
-    function GetHeight: integer;
-    procedure SetItem(i, j:integer; const Item: T);
+    procedure SetItem(i, j:integer; const Item: T); virtual;
+    function  GetItem (i, j: integer): T;           virtual;
+    function  GetWidth:  integer;                   virtual;
+    function  GetHeight: integer;                   virtual;
   public
-    procedure SwapCols(IndexA, IndexB: integer);
-    procedure SwapRows(IndexA, IndexB: integer);
-    procedure Swap(XA, YA, XB, YB: integer);
+    procedure SwapCols(IndexA, IndexB: integer);    virtual;
+    procedure SwapRows(IndexA, IndexB: integer);    virtual;
+    procedure Swap    (XA, YA, XB, YB: integer);    virtual;
   public
-    constructor Create;
-    procedure Resize(AWidth, AHeight: integer);
-    procedure AddColumns(Amount: integer);
-    procedure Fill(Item: T);
-    procedure DeleteRow(Index: integer);
-    procedure DeleteCol(Index: integer);
-    property Items[i, j: integer]: T read GetItem write SetItem; default;
-  published
-    property Width: integer read GetWidth;
+    constructor Create;                             virtual;
+    destructor  Destroy;                            override;
+    procedure Resize    (AWidth, AHeight: integer); virtual;
+    procedure AddColumns(Amount: integer);          virtual;
+    procedure Fill      (Item: T);                  virtual;
+    procedure DeleteRow (Index: integer);           virtual;
+    procedure DeleteCol (Index: integer);           virtual;
+
+    property Width:  integer read GetWidth;
     property Height: integer read GetHeight;
+    property Items[i, j: integer]: T read GetItem write SetItem; default;
   end;
 
   TStringM = specialize TMatrix<string>;
   TIntegerM = specialize TMatrix<integer>;
   TDoubleM = specialize TMatrix<double>;
 
+  generic TObjMatrix<T: TObject> = class(specialize TMatrix<T>)
+  public
+    destructor Destroy; override;
+    procedure  FreeItems;
+  end;
+
 implementation
 
 constructor TMatrix.Create;
 begin
   FMatrix := TItems.Create;
+end;
+
+destructor TMatrix.Destroy;
+var
+  i: integer;
+begin
+  for i := 0 to FMatrix.Size - 1 do
+    FMatrix[i].Free;
+  FMatrix.Free;
+  inherited Destroy;
 end;
 
 function TMatrix.GetItem(i, j: integer): T;
@@ -140,6 +157,25 @@ procedure TMatrix.DeleteCol(Index: integer);
 begin
   SwapCols(Index, Width - 1);
   FMatrix.Resize(FMatrix.Size - 1);
+end;
+
+destructor TObjMatrix.Destroy;
+begin
+  FreeItems;
+  inherited Destroy;
+end;
+
+procedure TObjMatrix.FreeItems;
+var
+  i: integer;
+  j: integer;
+begin
+  for i := 0 to Width - 1 do
+    for j := 0 to Height - 1 do
+      if Items[i, j] <> nil then begin
+        Items[i, j].Free;
+        Items[i, j] := nil;
+      end;
 end;
 
 end.
