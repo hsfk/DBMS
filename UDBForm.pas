@@ -26,10 +26,10 @@ type
     FOnPerform: TEvent;
     FOnExec: TEvent;
     FQuery: TSQLQuery;
-    FDataSource: TDataSource;
     FTable: TDBTable;
-    FThisSubscriber: TSubscriber;
     FParentForm: TDBForm;
+    FDataSource: TDataSource;
+    FThisSubscriber: TSubscriber;
     FDBConnection: TDbConnection;
     procedure RemoveChildForm(Form: TDBForm);
     procedure EmptyEvent;
@@ -37,18 +37,21 @@ type
     FCForms: TDBForms;
     FSelectAll: TQueryContainer;
     procedure ShowQuery(QContainer: TQueryContainer);
+    procedure CloseChildForms;
+    procedure UnSubscribeChilds;
     function PerformQuery(QContainer: TQueryContainer): boolean; virtual;
     function ExecQuery(QContainer: TQueryContainer): boolean; virtual;
     function CreateForm(ANClass: TNClass; ATable: TDBTable;
       FormType: TDBFormType; Params: TParams = nil): TDBForm;
     function CreateChildForm(ANClass: TNClass; ATable: TDBTable;
       FormType: TDBFormType; Params: TParams; ID: integer): TDBForm;
-    procedure CloseChildForms;
   public
     procedure InitConnection(DBConnection: TDbConnection); virtual;
     procedure CreateTransaction;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
   published
+    procedure FormCreate(Sender: TObject); virtual;
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); virtual;
     property Connection: TDbConnection read FDBConnection;
     property OnPerformQuery: TEvent write FOnPerform;
     property OnExecQuery: TEvent write FOnExec;
@@ -56,8 +59,6 @@ type
     property FormQuery: TSQLQuery read FQuery;
     property Table: TDBTable read FTable write FTable;
     property DataSource: TDataSource read FDataSource;
-    procedure FormCreate(Sender: TObject); virtual;
-    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); virtual;
   end;
 
 function ToNClass(A: array of integer): TNClass;
@@ -65,6 +66,10 @@ function ToNClass(A: array of integer): TNClass;
 implementation
 
 {$R *.lfm}
+
+procedure TDBForm.EmptyEvent;
+begin
+end;
 
 function ToNClass(A: array of integer): TNClass;
 var
@@ -82,10 +87,6 @@ begin
   Index := FCForms.FindInd(Form);
   if Index <> -1 then
     FCForms.DeleteInd(Index);
-end;
-
-procedure TDBForm.EmptyEvent;
-begin
 end;
 
 procedure TDBForm.ShowQuery(QContainer: TQueryContainer);
@@ -116,13 +117,17 @@ begin
 end;
 
 procedure TDBForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+var
+  i: integer;
 begin
+  CloseAction := caFree;
+  for i := 0 to FCForms.Size - 1 do
+    FCForms[i].Close;
   if FThisSubscriber <> nil then
-    if FThisSubscriber.Parent <> nil then
-      FThisSubscriber.Parent.UnSubscribe(FThisSubscriber);
-  if FParentForm <> nil then
-    FParentForm.RemoveChildForm(Self);
-  CloseChildForms;
+    FThisSubscriber.Free;
+  FQuery.Free;
+  FDataSource.Free;
+  FCForms.Free;
 end;
 
 procedure TDBForm.InitConnection(DBConnection: TDbConnection);
@@ -216,6 +221,11 @@ begin
     FCForms[i].FParentForm := nil;
     FCForms[i].Close;
   end;
+end;
+
+procedure TDBForm.UnSubscribeChilds;
+begin
+
 end;
 
 end.
