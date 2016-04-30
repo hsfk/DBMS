@@ -1,4 +1,4 @@
-unit UFilterPanel;
+unit UFilters;
 
 {$mode objfpc}{$H+}
 
@@ -6,14 +6,13 @@ interface
 
 uses
   Classes, SysUtils, StdCtrls, Controls, ExtCtrls, Graphics, DB,
-  UDBObjects, Dialogs, UVector, UStringUtils;
+  UDBObjects, UVector, UStringUtils;
 
 type
 
   TFilterPanel = class;
   TEvent = procedure of object;
   TParamEvent = procedure(FilterIndex: integer) of object;
-  TFilterPanels = specialize TVector<TFilterPanel>;
 
   TFilterPanel = class(TPanel)
   private
@@ -35,8 +34,8 @@ type
     FCurOps: TOperators;
     FNumOps: TOperators;
     FStrOps: TOperators;
-    FOnChangeEvent: TEvent;
-    FBeforeDelete: TParamEvent;
+    FOnChange: TEvent;
+    FOnDelete: TParamEvent;
     procedure Init(Component, AParent: TWinControl; ATop, ALeft, AWidth: integer);
     procedure InitOperators;
     procedure AddOperator(var Operators: TOperators; AName, ACOperator: string);
@@ -56,18 +55,46 @@ type
     procedure SetFilterData(Field, COp, Param: string);
     function Correct: boolean;
   published
-    property BeforeDelete: TParamEvent write FBeforeDelete;
-    property OnChange: TEvent write FOnChangeEvent;
+    property OnDelete: TParamEvent write FOnDelete;
+    property OnChange: TEvent write FOnChange;
     property Filter: TDBFilter read FFilter;
     property Index: integer read FIndex write FIndex;
     property Enabled: boolean read FEnabled write SetState;
+  end;
+
+  TFilterPanelV = specialize TObjVector<TFilterPanel>;
+
+  TFilterPanels = class(TFilterPanelV)
+  private
+    FParent: TWinControl;
+    FTop: integer;
+    FLeft: integer;
+    FYOffset: integer;
+    FOnDelete: TEvent;
+    FOnChange: TEvent;
+    FTable: TDBTable;
+    procedure UpdateFilters;
+    //this procedure is called by deleted filter panel
+    procedure OnFilterDelete(FilterIndex: integer);
+    procedure SetOnChange(AOnChange: TEvent);
+  public
+    constructor Create(Table: TDBTable; AParent: TWinControl; ATop, ALeft: integer);
+    procedure DeleteAll;
+    procedure AddFilterPanel;
+    procedure AddFilterPanel(AFilterPanel: TFilterPanel);
+    function FiltersCorrect: boolean;
+    function Apply: TQueryContainer;
+  published
+    property OnDelete: TEvent write FOnDelete;
+    property OnChange: TEvent write SetOnChange;
   end;
 
 implementation
 
 constructor TFilterPanel.Create(Table: TDBTable);
 begin
-  FOnChangeEvent := nil;
+  FOnChange := nil;
+  FOnDelete := nil;
   FEnabled := True;
   FFilter := TDBFilter.Create;
   FTable := Table;
@@ -185,15 +212,15 @@ begin
   FFilter.Assign(FTable.Fields[FFieldsCBox.ItemIndex]);
   FFilter.ConditionalOperator := FCurOps[FOpsCBox.ItemIndex].COperator;
   FFilter.Param := FEdit.Text;
-  if FOnChangeEvent <> nil then
-    FOnChangeEvent;
+  if FOnChange <> nil then
+    FOnChange;
 end;
 
 procedure TFilterPanel.OnFieldsCBoxChange(Sender: TObject);
 begin
   LoadOpsFromDataType(FFilter.ParentTable.Fields[FFieldsCBox.ItemIndex].DataType);
-  if FOnChangeEvent <> nil then
-    FOnChangeEvent;
+  if FOnChange <> nil then
+    FOnChange;
 end;
 
 procedure TFilterPanel.LoadOpsFromDataType(DataType: TFieldType);
@@ -227,8 +254,8 @@ end;
 procedure TFilterPanel.FDelBtnMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
 begin
-  if FBeforeDelete <> nil then
-    FBeforeDelete(FIndex);
+  if FOnDelete <> nil then
+    FOnDelete(FIndex);
   Self.Free;
 end;
 
@@ -241,6 +268,112 @@ begin
     if (Op = UpCase(Ops[i].COperator)) or (Op = UpCase(Ops[i].Name)) then
       Exit(i);
   Exit(-1);
+end;
+
+constructor TFilterPanels.Create(Table: TDBTable; AParent: TWinControl;
+  ATop, ALeft: integer);
+begin
+  FTable := Table;
+  FParent := AParent;
+  FTop := ATop;
+  FLeft := ALeft;
+  FOnDelete := nil;
+  FOnChange := nil;
+  FYOffset := 0;
+end;
+
+procedure TFilterPanels.AddFilterPanel;
+begin
+  AddFilterPanel(TFilterPanel.Create(FTable, FParent, FTop, FLeft));
+end;
+
+procedure TFilterPanels.AddFilterPanel(AFilterPanel: TFilterPanel);
+begin
+  FYOffset := Size * AFilterPanel.Height;
+  AFilterPanel.Index := Size;
+  AFilterPanel.OnChange := FOnChange;
+  AFilterPanel.OnDelete := @OnFilterDelete;
+  AFilterPanel.Top := AFilterPanel.Top + FYOffset;
+  PushBack(AFilterPanel);
+end;
+
+procedure TFilterPanels.UpdateFilters;
+var
+  i: integer;
+begin
+  FYOffset := 0;
+  for i := 0 to Size - 1 do begin
+    FYOffset := i* Items[i].Height;
+    Items[i].Top := FYOffset;
+    Items[i].Index := i;
+  end;
+end;
+
+procedure TFilterPanels.OnFilterDelete(FilterIndex: integer);
+begin
+  if Size > 0 then begin
+    DeleteIndS(FilterIndex);
+    UpdateFilters;
+    if FOnDelete <> nil then
+      FOnDelete;
+  end;
+end;
+
+procedure TFilterPanels.SetOnChange(AOnChange: TEvent);
+var
+  i: integer;
+begin
+  FOnChange := AOnChange;
+  for i := 0 to Size - 1 do
+    Items[i].OnChange := AOnChange;
+end;
+
+procedure TFilterPanels.DeleteAll;
+var
+  i: integer = 0;
+  Amount: integer;
+begin
+  if Size > 0 then begin
+    Amount := Size;
+    while i < Amount do begin
+      if Items[i].Enabled then begin
+        Items[i].Free;
+        DeleteIndS(i);
+        Amount -= 1;
+      end
+      else
+        i += 1;
+    end;
+    FYOffset := 0;
+    if FOnDelete <> nil then
+      FOnDelete;
+  end;
+end;
+
+function TFilterPanels.FiltersCorrect: boolean;
+var
+  i: integer;
+begin
+  for i := 0 to Size - 1 do
+    if not Items[i].Correct then
+      Exit(False);
+  Exit(True);
+end;
+
+function TFilterPanels.Apply: TQueryContainer;
+var
+  Filters: TDBFilters;
+  i: integer;
+begin
+  if Size > 0 then begin
+    Filters := TDBFilters.Create;
+    for i := 0 to Size - 1 do
+      Filters.PushBack(Items[i].Filter);
+    Result := FTable.Query.Select(Filters);
+    Filters.Free;
+    Exit(Result);
+  end;
+  Exit(FTable.Query.Select(nil));
 end;
 
 end.
