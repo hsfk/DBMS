@@ -9,7 +9,7 @@ uses
 
 type
 
-  TControls = specialize TVector<TCardControl>;
+  TControls = specialize TObjVector<TCardControl>;
 
   TDBEditControl = class(TCardControl)
   private

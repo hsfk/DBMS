@@ -5,7 +5,7 @@ unit UCard;
 interface
 
 uses
-  SysUtils, StdCtrls, ComCtrls, sqldb, UCardControls, DB,
+  SysUtils, StdCtrls, ComCtrls, sqldb, UCardControls, DB, Forms,
   UAbout, UDBForm, Dialogs, UDBObjects, UNotifications, Controls;
 
 type
@@ -33,6 +33,7 @@ type
     procedure FormCreate(Sender: TObject); override;
     procedure FApplyBtnClick(Sender: TObject); virtual; abstract;
     procedure FCancelBtnClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); override;
   end;
 
   TEditCard = class(TCard)
@@ -62,6 +63,12 @@ begin
   Constraints.MinHeight := Height;
   Constraints.MaxWidth := Width;
   Constraints.MaxHeight := Height;
+end;
+
+procedure TCard.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  FControls.Free;
+  inherited FormClose(Sender, CloseAction);
 end;
 
 procedure TCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
@@ -101,8 +108,7 @@ begin
       if Fields[i].ParentTable = Fields[i + 1].ParentTable then begin
         SameTable := Fields[i].ParentTable;
         while (i < Count) and (Fields[i].ParentTable = SameTable) do begin
-          FControls.Items[i - 1].Subscriber.NClass :=
-            ToNClass([NClass]);
+          FControls.Items[i - 1].Subscriber.NClass := ToNClass([NClass]);
           FCboxNotifications.Subscribe(FControls.Items[i - 1].Subscriber);
           i += 1;
         end;
