@@ -18,7 +18,7 @@ type
   TSubscriber = class
   private
     type
-    TSubsribers = specialize TVector<TSubscriber>;
+    TSubsribers = specialize TObjVector<TSubscriber>;
   private
     FRecieveAll: boolean;
     FRecieveEnable: boolean;
@@ -65,13 +65,10 @@ begin
 end;
 
 destructor TSubscriber.Destroy;
-var
-  i: integer;
 begin
   if FParent <> nil then
     FParent.UnSubscribe(Self);
-  for i := 0 to FSubscribers.Size - 1 do
-    FSubscribers[i].Destroy;
+  FSubscribers.Free;
 end;
 
 function TSubscriber.Containing(ANotificationClass: TNClass): boolean;
