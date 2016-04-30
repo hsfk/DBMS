@@ -1,8 +1,0 @@
-object FilterForm: TFilterForm
-  Left = 121
-  Height = 240
-  Top = 185
-  Width = 320
-  Caption = 'FilterForm'
-  LCLVersion = '1.6.0.4'
-end
