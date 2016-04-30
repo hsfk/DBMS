@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="19">
+    <Units Count="18">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -67,7 +67,7 @@
         <ResourceBaseClass Value="Form"/>
       </Unit4>
       <Unit5>
-        <Filename Value="UFilterPanel.pas"/>
+        <Filename Value="UFilters.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
@@ -112,28 +112,21 @@
         <ResourceBaseClass Value="Form"/>
       </Unit13>
       <Unit14>
-        <Filename Value="UFilterForm.pas"/>
+        <Filename Value="Generics\UVector.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="FilterForm"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Form"/>
       </Unit14>
       <Unit15>
-        <Filename Value="Generics\UVector.pas"/>
+        <Filename Value="Generics\UMatrix.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit15>
       <Unit16>
-        <Filename Value="Generics\UMatrix.pas"/>
+        <Filename Value="Utils\UStringUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit16>
       <Unit17>
-        <Filename Value="Utils\UStringUtils.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit17>
-      <Unit18>
         <Filename Value="Utils\UPointUtils.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit18>
+      </Unit17>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
