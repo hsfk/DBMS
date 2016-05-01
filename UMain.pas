@@ -7,15 +7,15 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   Menus, ComCtrls, UDBConnection, UDirectory, UAbout, UNotifications,
-  UDBObjects, USchedule, UDBForm;
+  UDBObjects, USchedule, UDBForm, UFormManager;
 
 type
 
-  TMainForm = class(TForm)
+  { TMainForm }
+
+  TMainForm = class(TDBForm)
   private
-    FNotifications: TSubscriber;
-    FDBConnection: TDBConnection;
-    procedure CreateForm(Table: TDBTable; FormType: TDBFormType);
+    procedure CreateForm(ATable: TDBTable; FormType: TDBFormType);
     procedure LoadDirectoryMenyItems;
   published
     FMainMenu: TMainMenu;
@@ -25,10 +25,12 @@ type
     FOpenMenuItem: TMenuItem;
     FStatusBar: TStatusBar;
     FScheduleMenu: TMenuItem;
+    FFormMenu: TMenuItem;
+    procedure FFormMenuClick(Sender: TObject);
     procedure FScheduleMenuClick(Sender: TObject);
     procedure FAboutMenuClick(Sender: TObject);
     procedure DirectoryMenuItemClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
+    procedure FormCreate(Sender: TObject); override;
     procedure FOpenMenuItemClick(Sender: TObject);
   end;
 
@@ -41,13 +43,14 @@ implementation
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
-  FDBConnection := TDBConnection.Create;
-  FDBConnection.Connect('DataBase.fdb', 'sysdba', 'masterkey');
+  inherited FormCreate(Sender);
+  Connection := TDBConnection.Create;
+  Connection.Connect('DataBase2.fdb', 'sysdba', 'masterkey');
   Constraints.MinHeight := 40;
   Constraints.MinWidth := Width;
   Caption := APP_CAPTION;
-  FStatusBar.SimpleText := FDBConnection.CurrentConnection;
-  FNotifications := TSubscriber.Create(True);
+  FStatusBar.SimpleText := Connection.CurrentConnection;
+  ThisSubscriber := TSubscriber.Create(True);
   LoadDirectoryMenyItems;
 end;
 
@@ -56,23 +59,27 @@ begin
   CreateForm(DBData.TablesByName['Time_Table'], TSchedule);
 end;
 
-procedure TMainForm.CreateForm(Table: TDBTable; FormType: TDBFormType);
+procedure TMainForm.FFormMenuClick(Sender: TObject);
+begin
+  if FormManager = nil then begin
+    Application.CreateForm(TFormManager, FormManager);
+    FormManager.LoadForms(Self, nil);
+  end;
+  FormManager.Show;
+end;
+
+procedure TMainForm.CreateForm(ATable: TDBTable; FormType: TDBFormType);
 var
-  Form: TDBForm;
   NClass: TNClass;
   i: integer;
 begin
-  if FDBConnection.Connected then begin
+  if Connection.Connected then begin
     SetLength(NClass, 0);
-    for i := 0 to Table.Count - 1 do begin
+    for i := 0 to ATable.Count - 1 do begin
       SetLength(NClass, Length(NClass) + 1);
-      NClass[High(NClass)] := Table.Fields[i].ParentTable.Index;
+      NClass[High(NClass)] := ATable.Fields[i].ParentTable.Index;
     end;
-    Application.CreateForm(FormType, Form);
-    Form.InitConnection(FDBConnection);
-    Form.Load(NClass, Table);
-    FNotifications.Subscribe(Form.ThisSubscriber);
-    Form.Show;
+    CreateChildForm(NClass, ATable, FormType, nil, -1);
   end
   else
     ShowMessage('Необходимо подключение к базе данных.');
@@ -99,15 +106,15 @@ begin
   OpenDialog := TOpenDialog.Create(Self);
   OpenDialog.Filter := 'Firebird Database|*.fdb|All Files|*.*';
   if OpenDialog.Execute then begin
-    FDBConnection.Connect(OpenDialog.FileName, 'sysdba', 'masterkey');
-    FStatusBar.SimpleText := FDBConnection.CurrentConnection;
+    Connection.Connect(OpenDialog.FileName, 'sysdba', 'masterkey');
+    FStatusBar.SimpleText := Connection.CurrentConnection;
   end;
   OpenDialog.Free;
 end;
 
 procedure TMainForm.DirectoryMenuItemClick(Sender: TObject);
 begin
-  CreateForm(DBData.Tables[TMenuItem(Sender).Tag], TDirectory)
+  CreateForm(DBData.Tables[TMenuItem(Sender).Tag], TDirectory);
 end;
 
 procedure TMainForm.FAboutMenuClick(Sender: TObject);
