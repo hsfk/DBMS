@@ -40,6 +40,8 @@ type
   private
     procedure UpdateTable;
     procedure LoadInterface; override;
+  public
+    procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
     procedure FApplyBtnClick(Sender: TObject); override;
   end;
@@ -48,6 +50,8 @@ type
   private
     procedure TableInsert;
     procedure LoadInterface; override;
+  public
+    procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
     procedure FApplyBtnClick(Sender: TObject); override;
   end;
@@ -74,7 +78,6 @@ end;
 procedure TCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   Table := ATable;
-  Caption := APP_CAPTION + ' - ' + Table.Name;
   FStatusBar.SimpleText := Connection.CurrentConnection;
   FTop := 20;
   FLeft := 32;
@@ -204,6 +207,12 @@ begin
     FControls.Items[i].Caption := FormQuery.Fields[i + 1].Value;
 end;
 
+procedure TEditCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
+begin
+  inherited Load(ANClass, ATable, Params);
+  Caption := ATable.Name + ', ' + 'Редактирование, ID = ' + IntToStr(FRecordIndex);
+end;
+
 procedure TEditCard.FApplyBtnClick(Sender: TObject);
 begin
   if not Correct then begin
@@ -213,6 +222,12 @@ begin
   UpdateTable;
   ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
   Close;
+end;
+
+procedure TInsertCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
+begin
+  inherited Load(ANClass, ATable, Params);
+  Caption := ATable.Name + ', ' + 'Вставка';
 end;
 
 procedure TInsertCard.TableInsert;
