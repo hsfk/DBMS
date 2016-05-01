@@ -13,14 +13,16 @@ type
   TDBField = UDBObjects.TDBField;
   TDBTable = UDBObjects.TDBTable;
   TDbConnection = UDBConnection.TDBConnection;
-  TDBFormType = class of TDBForm;
   TNClass = UNotifications.TNClass;
   TParams = DB.TParams;
+  TSQLQuery = sqldb.TSQLQuery;
+  TDBForm = class;
+  TDBFormType = class of TDBForm;
+  TDBForms = specialize TVector<TDBForm>;
+
+  { TDBForm }
 
   TDBForm = class(TForm)
-  private
-    type
-    TDBForms = specialize TVector<TDBForm>;
   private
     FID: integer;
     FOnPerform: TEvent;
@@ -37,8 +39,6 @@ type
     FCForms: TDBForms;
     FSelectAll: TQueryContainer;
     procedure ShowQuery(QContainer: TQueryContainer);
-    procedure CloseChildForms;
-    procedure UnSubscribeChilds;
     function PerformQuery(QContainer: TQueryContainer): boolean; virtual;
     function ExecQuery(QContainer: TQueryContainer): boolean; virtual;
     function CreateForm(ANClass: TNClass; ATable: TDBTable;
@@ -49,10 +49,13 @@ type
     procedure InitConnection(DBConnection: TDbConnection); virtual;
     procedure CreateTransaction;
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); virtual;
+    procedure CloseChildForms;
   published
     procedure FormCreate(Sender: TObject); virtual;
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); virtual;
-    property Connection: TDbConnection read FDBConnection;
+    property ChildForms: TDBForms read FCForms;
+    property FormID: integer read FID;
+    property Connection: TDbConnection read FDBConnection write FDBConnection;
     property OnPerformQuery: TEvent write FOnPerform;
     property OnExecQuery: TEvent write FOnExec;
     property ThisSubscriber: TSubscriber read FThisSubscriber write FThisSubscriber;
@@ -64,6 +67,8 @@ type
 function ToNClass(A: array of integer): TNClass;
 
 implementation
+
+uses UFormManager;
 
 {$R *.lfm}
 
@@ -100,7 +105,6 @@ begin
       for i := 0 to Params.Count - 1 do begin
         Str += Params.Items[i].Name + ' ' + string(Params.Items[i].Value) + #13#10;
       end;
-
   ShowMessage(Str);
 end;
 
@@ -117,14 +121,17 @@ begin
 end;
 
 procedure TDBForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
-var
-  i: integer;
 begin
   CloseAction := caFree;
-  for i := 0 to FCForms.Size - 1 do
-    FCForms[i].Close;
+  if FParentForm <> nil then
+    FParentForm.RemoveChildForm(Self);
+  CloseChildForms;
   if FThisSubscriber <> nil then
     FThisSubscriber.Free;
+
+  if FormManager <> nil then
+    FormManager.UpDateTree;
+
   FQuery.Free;
   FDataSource.Free;
   FCForms.Free;
@@ -201,31 +208,29 @@ function TDBForm.CreateChildForm(ANClass: TNClass; ATable: TDBTable;
 var
   i: integer;
 begin
-  for i := 0 to FCForms.Size - 1 do
-    if FCForms[i].FID = ID then begin
-      FCForms[i].BringToFront;
-      Exit(FCForms[i]);
-    end;
+  if ID <> -1 then
+    for i := 0 to FCForms.Size - 1 do
+      if FCForms[i].FID = ID then begin
+        FCForms[i].BringToFront;
+        Exit(FCForms[i]);
+      end;
   Result := CreateForm(ANClass, ATable, FormType, Params);
   Result.FID := ID;
   Result.FParentForm := Self;
   FCForms.PushBack(Result);
+
+  if FormManager <> nil then
+    FormManager.UpDateTree;
+
   Exit(Result);
 end;
 
 procedure TDBForm.CloseChildForms;
 var
-  i: integer = 0;
+  i: integer;
 begin
-  for i := 0 to FCForms.Size - 1 do begin
-    FCForms[i].FParentForm := nil;
+  for i := 0 to FCForms.Size - 1 do
     FCForms[i].Close;
-  end;
-end;
-
-procedure TDBForm.UnSubscribeChilds;
-begin
-
 end;
 
 end.
