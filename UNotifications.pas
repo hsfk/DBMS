@@ -32,7 +32,7 @@ type
     procedure NotifySubscribers(Sender: TObject; ANClass: TNClass);
   public
     constructor Create(RecieveAll: boolean = False);
-    destructor Destroy;
+    destructor Destroy; override;
     procedure Subscribe(Subscriber: TSubscriber);
     procedure UnSubscribe(Subscriber: TSubscriber);
     procedure CreateNotification(Sender: TObject; ANClass: TNClass);
@@ -58,6 +58,7 @@ end;
 constructor TSubscriber.Create(RecieveAll: boolean = False);
 begin
   FParent := nil;
+  FOnRecieve := nil;
   FSubscribers := TSubsribers.Create;
   FRecieveAll := RecieveAll;
   FSendEnable := True;
@@ -69,6 +70,7 @@ begin
   if FParent <> nil then
     FParent.UnSubscribe(Self);
   FSubscribers.Free;
+  inherited Destroy;
 end;
 
 function TSubscriber.Containing(ANotificationClass: TNClass): boolean;
@@ -98,10 +100,8 @@ var
   Index: integer;
 begin
   Index := FSubscribers.FindInd(Subscriber);
-  if Index <> -1 then begin
-    FSubscribers[Index].Free;
+  if Index <> -1 then
     FSubscribers.DeleteInd(Index);
-  end;
 end;
 
 procedure TSubscriber.CreateNotification(Sender: TObject; ANClass: TNClass);
