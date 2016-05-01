@@ -14,6 +14,7 @@ type
     TItems = specialize TVector<TCol>;
   private
     FMatrix: TItems;
+  protected
     procedure SetItem(i, j:integer; const Item: T); virtual;
     function  GetItem (i, j: integer): T;           virtual;
     function  GetWidth:  integer;                   virtual;
