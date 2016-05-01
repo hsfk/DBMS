@@ -7,10 +7,10 @@ interface
 uses
   SysUtils, Classes;
 
-function Param(Index: integer): string;
-function FindInd(Str: string; Strings: TStrings): integer;
 procedure DeleteLastSymbols(var AString: string; n: integer);
 procedure DeleteFirstSymbols(var AString: string; n: integer);
+function Param(Index: integer): string;
+function FindInd(Str: string; Strings: TStrings): integer;
 
 implementation
 
