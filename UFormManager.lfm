@@ -1,0 +1,44 @@
+object TreeViewForm: TTreeViewForm
+  Left = 439
+  Height = 334
+  Top = 278
+  Width = 581
+  ClientHeight = 334
+  ClientWidth = 581
+  OnCreate = FormCreate
+  LCLVersion = '1.6.0.4'
+  object FDBFormsView: TTreeView
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 0
+    Height = 334
+    Top = 0
+    Width = 581
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    DefaultItemHeight = 18
+    ReadOnly = True
+    TabOrder = 0
+    OnMouseUp = FDBFormsViewMouseUp
+    Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoReadOnly, tvoShowButtons, tvoShowLines, tvoShowRoot, tvoToolTips, tvoThemedDraw]
+  end
+  object TreeActionsMenu: TPopupMenu
+    left = 296
+    top = 40
+    object FShowItem: TMenuItem
+      Caption = 'Показать'
+      OnClick = FShowItemClick
+    end
+    object FCloseChildsMenu: TMenuItem
+      Caption = 'Закрыть дочерние окна'
+      OnClick = FCloseChildsMenuClick
+    end
+    object FCloseMenu: TMenuItem
+      Caption = 'Закрыть'
+      OnClick = FCloseMenuClick
+    end
+  end
+end
