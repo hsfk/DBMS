@@ -1,21 +1,19 @@
-object MainForm: TMainForm
+inherited MainForm: TMainForm
   Left = 438
-  Height = 240
   Top = 230
-  Width = 320
+  Width = 372
   ClientHeight = 220
-  ClientWidth = 320
+  ClientWidth = 372
   Menu = FMainMenu
   OnCreate = FormCreate
-  LCLVersion = '1.6.0.4'
-  object FStatusBar: TStatusBar
+  object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23
     Top = 197
-    Width = 320
+    Width = 372
     Panels = <>
   end
-  object FMainMenu: TMainMenu
+  object FMainMenu: TMainMenu[1]
     left = 24
     top = 20
     object FFileMenu: TMenuItem
@@ -31,6 +29,10 @@ object MainForm: TMainForm
     object FScheduleMenu: TMenuItem
       Caption = 'Расписание'
       OnClick = FScheduleMenuClick
+    end
+    object FFormMenu: TMenuItem
+      Caption = 'Окна'
+      OnClick = FFormMenuClick
     end
     object FAboutMenu: TMenuItem
       Caption = 'О программе'

@@ -51,12 +51,11 @@ inherited Schedule: TSchedule
         ExtendedSelect = False
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRowSizing, goColSizing, goSmoothScroll]
         TabOrder = 0
-        OnClick = FDrawGridClick
         OnDblClick = FDrawGridDblClick
         OnDrawCell = FDrawGridDrawCell
         OnMouseDown = FDrawGridMouseDown
         OnMouseMove = FDrawGridMouseMove
-        OnSelectCell = FDrawGridSelectCell
+        OnMouseUp = FDrawGridMouseUp
       end
     end
     object FPairSplitterBot: TPairSplitterSide
@@ -263,22 +262,6 @@ inherited Schedule: TSchedule
     object FPasteMenu: TMenuItem
       Caption = 'Вставить'
       OnClick = FPasteMenuClick
-    end
-  end
-  object FCellBtnActions: TPopupMenu[3]
-    left = 560
-    top = 32
-    object FEditBtnMenu: TMenuItem
-      Caption = 'Редактировать'
-      OnClick = FEditBtnMenuClick
-    end
-    object FCutBtnMenu: TMenuItem
-      Caption = 'Вырезать'
-      OnClick = FCutBtnMenuClick
-    end
-    object FDelBtnMenu: TMenuItem
-      Caption = 'Удалить'
-      OnClick = FDelBtnMenuClick
     end
   end
 end

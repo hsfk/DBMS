@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="18">
+    <Units Count="23">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -127,6 +127,34 @@
         <Filename Value="Utils\UPointUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit17>
+      <Unit18>
+        <Filename Value="Utils\UCanvasUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="Generics\ustack.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UStack"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="UIcons.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Icons"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="DataModule"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="uformmanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="TreeViewForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="UFormManager"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="Utils\URectUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit22>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
