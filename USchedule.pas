@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Grids,
   StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
   UDBObjects, UAbout, UDirectory, DB, UCard, UPointUtils, UFilters,
-  UCanvasUtils, UIcons, URectUtils;
+  UCanvasUtils, UIcons, URectUtils, UConflicts;
 
 const
   DIR_SEED = 123456;
@@ -93,6 +93,7 @@ type
     FSchedule: TSchedule;
     FFieldData: TStringM;
     FExpandable: boolean;
+    FConflicted: boolean;
     FSelected: boolean;
     FCellBtns: TCellBtns;
     procedure DrawBtns(Canvas: TCanvas; ElementID, X, Y, YConstraint: integer);
@@ -125,6 +126,7 @@ type
     TCellMatrix = specialize TObjMatrix<TCell>;
     TCells = specialize TVector<TCell>;
   private
+    FConflicts: TConflicts;
     FDelEmptyLines: boolean;
     FMouseCoords: TPoint;
     FSelectedCell: TCell;
@@ -158,6 +160,8 @@ type
     procedure SetTableSize;
     procedure SetCellsSize(CellW, CellH: integer);
     procedure SelectCell(Mouse: TPoint);
+    procedure CheckConflicts(Cells: TCells);
+    function FindCell(RecID: integer; Cells: TCells): TCell;
     function CreateCard(RowIndex: integer; CardType: TDBFormType): TCard;
     function SelectedCellHash(Seed: integer): integer;
     function GetTitleData(FieldIndex: integer): TDBDataTuple;
@@ -170,17 +174,13 @@ type
   published
     FCheckListBox: TCheckListBox;
     FDrawGrid: TDrawGrid;
-    FFiltersGBox: TGroupBox;
     FVisibleRecsGBox: TGroupBox;
     FPairSplitter: TPairSplitter;
     FPairSplitterTop: TPairSplitterSide;
     FPairSplitterBot: TPairSplitterSide;
     FStatusBar: TStatusBar;
-    FAddFilterBtn: TButton;
     FApplyFilterBtn: TButton;
-    FDelAllFiltersBtn: TButton;
     FDrawEmptyLines: TCheckBox;
-    FFiltersSBox: TScrollBox;
     FHCBox: TComboBox;
     FVLabel: TLabel;
     FScheduleGBox: TGroupBox;
@@ -191,6 +191,15 @@ type
     FInsertMenu: TMenuItem;
     FCutAllMenu: TMenuItem;
     FPasteMenu: TMenuItem;
+    FAddFilterBtn: TButton;
+    FConfSheet: TTabSheet;
+    FDelAllFiltersBtn: TButton;
+    FFiltersSBox: TScrollBox;
+    FFiltersSheet: TTabSheet;
+    FPControl: TPageControl;
+    FAddConflictBtn: TButton;
+    FDelAllConflictsBtn: TButton;
+    FConflictsSBox: TScrollBox;
     procedure FormCreate(Sender: TObject); override;
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); override;
     procedure FCutAllMenuClick(Sender: TObject);
@@ -392,6 +401,7 @@ begin
   FMaxW := 0;
   FSelected := False;
   FExpandable := False;
+  FConflicted := False;
   FTable := Table;
   FFieldData := TStringM.Create;
   FSchedule := Schedule;
@@ -430,7 +440,10 @@ var
   PrevI: integer = -1;
   Offset: TPoint;
 begin
-  Fill(clWhite, Squeeze(Rect, 1), Canvas);
+  if not FConflicted then
+    Fill(clWhite, Squeeze(Rect, 1), Canvas)
+  else
+    Fill(RGBToColor(255, 200, 200), Squeeze(Rect, 1), Canvas);
   FRect := Rect;
   TextH := Canvas.TextHeight('Нрб');
   FieldsAmount := FFieldData.Height - 1;
@@ -446,11 +459,12 @@ begin
         end;
         RowIndex := i * FieldsAmount + i + i + j - InvFieldC;
         Offset := ToPoint(Rect.Left, Rect.Top + TextH * RowIndex);
-        if Offset.Y > Rect.Bottom then begin
+        if (Offset.Y > Rect.Bottom) then begin
           FExpandable := True;
           Exit;
         end;
-        Canvas.TextRect(Rect, Offset.X, Offset.Y, TextOut(i, j));
+        if (Offset.y > -10) and (Offset.y < FSchedule.Height) then
+          Canvas.TextRect(Rect, Offset.X, Offset.Y, TextOut(i, j));
         FExpandable := not Fit(TextOut(i, j), Rect, Canvas) or FExpandable;
         if (i <> PrevI) and FSelected and (FieldsAmount - InvFieldC div
           (i + 1) >= 2) then
@@ -554,6 +568,7 @@ begin
   FSelectedCell := nil;
   FBuffer := nil;
   FCurBtn := nil;
+  FConflicts := nil;
   FDelEmptyLines := True;
   FDrawEmptyLines.Checked := not FDelEmptyLines;
   Constraints.MinHeight := 20;
@@ -678,11 +693,8 @@ begin
   FMouseCoords := ToPoint(X, Y);
   PrevCell := FSelectedCell;
   SelectCell(FMouseCoords);
-  if (FSelectedCell <> nil) and (FSelectedCell <> PrevCell) then begin
-    FSelectedCell.Draw(FSelectedCell.FRect, FDrawGrid.Canvas, FCheckListBox);
-    if PrevCell <> nil then
-      PrevCell.Draw(PrevCell.FRect, FDrawGrid.Canvas, FCheckListBox);
-  end;
+  if (FSelectedCell <> nil) and (FSelectedCell <> PrevCell) then
+    FDrawGrid.Repaint;
   if FCurBtn <> nil then
     FCurBtn.MouseMove;
 end;
@@ -806,6 +818,7 @@ end;
 procedure TSchedule.FreePrevData;
 begin
   FCells.FreeItems;
+  FConflicts.Free;
   FVTitleData := nil;
   FHTitleData := nil;
   FSelectedCell := nil;
@@ -813,12 +826,18 @@ begin
 end;
 
 procedure TSchedule.MakeSchedule;
+var
+  DataTuple: TCells;
 begin
   FreePrevData;
+
+  FConflicts := TConflicts.Create;
   LoadCheckListBoxData;
   FHTitleData := GetTitleData(FHCBox.ItemIndex);
   FVTitleData := GetTitleData(FVCBox.ItemIndex);
-  BuildMatrix(GetCellDataTuple);
+  DataTuple := GetCellDataTuple;
+  CheckConflicts(DataTuple);
+  BuildMatrix(DataTuple);
   if FDelEmptyLines then
     DeleteEmptyLines;
   SetCellsCoords;
@@ -840,7 +859,8 @@ begin
 
   if FSelectedCell <> nil then
     FSelectedCell.FSelected := False;
-  FSelectedCell := FCells[Coord.x, Coord.y];
+  if (Coord.x < FCells.Width) and (Coord.y < FCells.Height) then
+    FSelectedCell := FCells[Coord.x, Coord.y];
   FSelectedCol := Coord.x;
   FSelectedRow := Coord.y;
 
@@ -850,6 +870,37 @@ begin
     SetCellMenuState(True);
     FSelectedCell.FSelected := True;
   end;
+end;
+
+procedure TSchedule.CheckConflicts(Cells: TCells);
+var
+  i: integer;
+  Data: TDataTuple;
+  ConflictedCells: TResultTuple;
+  Cell: TCell;
+begin
+  Data := TDataTuple.Create;
+  for i := 0 to Cells.Size - 1 do
+    Data.PushBack(Cells[i].FFieldData);
+
+  FConflicts.AnalyzeData(Data);
+  ConflictedCells := FConflicts.GetResult;
+  if Length(ConflictedCells) > 0 then;
+  for i := 0 to High(ConflictedCells) do begin
+    Cell := FindCell(ConflictedCells[i].RecID, Cells);
+    if Cell <> nil then
+      Cell.FConflicted := True;
+  end;
+end;
+
+function TSchedule.FindCell(RecID: integer; Cells: TCells): TCell;
+var
+  i: integer;
+begin
+  for i := 0 to Cells.Size - 1 do
+    if RecID = Cells[i].GetID(0) then
+      Exit(Cells[i]);
+  Exit(nil);
 end;
 
 function TSchedule.EmptyRow(Index: integer): boolean;
