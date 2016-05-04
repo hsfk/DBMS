@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Grids,
   StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
   UDBObjects, UAbout, UDirectory, DB, UCard, UPointUtils, UFilters,
-  UCanvasUtils, UIcons, URectUtils, UConflicts;
+  UCanvasUtils, UIcons, URectUtils, UConflicts, UConflictForm;
 
 const
   DIR_SEED = 123456;
@@ -26,7 +26,11 @@ type
 
   TSchedule = class;
   TCell = class;
-
+   {
+   ***************************************
+   * TODO: Use TFrames instead of forms? *
+   ***************************************
+   }
   TCellBtn = class
   private
     FSchedule: TSchedule;
@@ -126,7 +130,7 @@ type
     TCellMatrix = specialize TObjMatrix<TCell>;
     TCells = specialize TVector<TCell>;
   private
-    FConflicts: TConflicts;
+    FConflicts: TConflictPanels;
     FDelEmptyLines: boolean;
     FMouseCoords: TPoint;
     FSelectedCell: TCell;
@@ -138,6 +142,7 @@ type
     FFilters: TFilterPanels;
     FCells: TCellMatrix;
     FCurBtn: TCellBtn;
+    FConflictCard: TConflictForm;
     procedure LoadCBoxData;
     procedure LoadCheckListBoxData;
     procedure LoadStringListData(Items: TStrings);
@@ -152,6 +157,7 @@ type
     procedure CreateDir;
     procedure CreateEditCard(ID: integer);
     procedure CreateInsertCard;
+    procedure CreateInsertConflictCard(Conflict: TConflictPanel = nil);
     procedure PreSelectCardItems(Card: TCard);
     procedure Paste(Col, Row: integer);
     procedure Cut(Cell: TCell; ElementID: integer = -1); // -1 = Cuts all elements
@@ -200,6 +206,8 @@ type
     FAddConflictBtn: TButton;
     FDelAllConflictsBtn: TButton;
     FConflictsSBox: TScrollBox;
+    procedure FAddConflictBtnClick(Sender: TObject);
+    procedure FDelAllConflictsBtnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); override;
     procedure FCutAllMenuClick(Sender: TObject);
@@ -574,6 +582,9 @@ begin
   Constraints.MinHeight := 20;
   Constraints.MinWidth := 350;
   FCells := TCellMatrix.Create;
+  FConflicts := TConflictPanels.Create(FConflictsSBox, 5, 5);
+  FConflicts.OnEditClick := @CreateInsertConflictCard;
+  Application.CreateForm(TConflictForm, FConflictCard);
 end;
 
 procedure TSchedule.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -733,6 +744,16 @@ begin
   FSelectedCell := FCells[FSelectedCol, FSelectedRow];
 end;
 
+procedure TSchedule.FAddConflictBtnClick(Sender: TObject);
+begin
+  CreateInsertConflictCard(nil);
+end;
+
+procedure TSchedule.FDelAllConflictsBtnClick(Sender: TObject);
+begin
+  FConflicts.DeleteAll;
+end;
+
 procedure TSchedule.LoadCBoxData;
 begin
   LoadStringListData(FHCBox.Items);
@@ -818,7 +839,6 @@ end;
 procedure TSchedule.FreePrevData;
 begin
   FCells.FreeItems;
-  FConflicts.Free;
   FVTitleData := nil;
   FHTitleData := nil;
   FSelectedCell := nil;
@@ -830,8 +850,6 @@ var
   DataTuple: TCells;
 begin
   FreePrevData;
-
-  FConflicts := TConflicts.Create;
   LoadCheckListBoxData;
   FHTitleData := GetTitleData(FHCBox.ItemIndex);
   FVTitleData := GetTitleData(FVCBox.ItemIndex);
@@ -1091,6 +1109,12 @@ procedure TSchedule.CreateInsertCard;
 begin
   //Since we have an insert card row index isn't needed
   PreSelectCardItems(CreateCard(0, TInsertCard));
+end;
+
+procedure TSchedule.CreateInsertConflictCard(Conflict: TConflictPanel = nil);
+begin
+  FConflictCard.Load(Table, FConflicts, Conflict);
+  FConflictCard.Show;
 end;
 
 function TSchedule.CreateCard(RowIndex: integer; CardType: TDBFormType): TCard;
