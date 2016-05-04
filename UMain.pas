@@ -45,7 +45,7 @@ procedure TMainForm.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
   Connection := TDBConnection.Create;
-  Connection.Connect('B.fdb', 'sysdba', 'masterkey');
+  Connection.Connect('conf.fdb', 'sysdba', 'masterkey');
   Constraints.MinHeight := 40;
   Constraints.MinWidth := Width;
   Caption := APP_CAPTION;
