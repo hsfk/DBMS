@@ -20,6 +20,7 @@ type
   public
     constructor Create;                            virtual;
     constructor Create  (FirstItem: T);            virtual;
+    constructor Create  (Items: array of T);       virtual;
     destructor Destroy;                            override;
     procedure Resize    (ASize: integer);          virtual;
     procedure DeleteInd (Index: integer);          virtual;
@@ -60,6 +61,11 @@ end;
 constructor TVector.Create(FirstItem: T);
 begin
   PushBack(FirstItem);
+end;
+
+constructor TVector.Create(Items: array of T);
+begin
+  PushBackA(Items);
 end;
 
 destructor TVector.Destroy;
