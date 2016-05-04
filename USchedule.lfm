@@ -191,9 +191,9 @@ inherited Schedule: TSchedule
         Height = 214
         Top = 72
         Width = 734
-        ActivePage = FFiltersSheet
+        ActivePage = FConfSheet
         Anchors = [akTop, akLeft, akRight, akBottom]
-        TabIndex = 0
+        TabIndex = 1
         TabOrder = 2
         object FFiltersSheet: TTabSheet
           Caption = 'Фильтры'
@@ -260,6 +260,7 @@ inherited Schedule: TSchedule
             BorderSpacing.Right = 25
             Caption = 'Удалить конфликты'
             ParentBidiMode = False
+            OnClick = FDelAllConflictsBtnClick
             TabOrder = 0
           end
           object FAddConflictBtn: TButton
@@ -273,6 +274,7 @@ inherited Schedule: TSchedule
             BorderSpacing.Top = 5
             BorderSpacing.Right = 25
             Caption = 'Добавить конфликт'
+            OnClick = FAddConflictBtnClick
             TabOrder = 1
           end
           object FConflictsSBox: TScrollBox

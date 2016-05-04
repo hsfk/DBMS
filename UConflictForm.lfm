@@ -1,0 +1,121 @@
+object ConflictForm: TConflictForm
+  Left = 839
+  Height = 337
+  Top = 329
+  Width = 410
+  Caption = 'ConflictForm'
+  ClientHeight = 337
+  ClientWidth = 410
+  OnCreate = FormCreate
+  LCLVersion = '1.6.0.4'
+  object FNameEdit: TEdit
+    Left = 80
+    Height = 23
+    Top = 8
+    Width = 312
+    TabOrder = 0
+  end
+  object FNameLabel: TLabel
+    Left = 16
+    Height = 15
+    Top = 8
+    Width = 55
+    Caption = 'Название:'
+    ParentColor = False
+  end
+  object FParamsGBox: TGroupBox
+    AnchorSideLeft.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 0
+    Height = 216
+    Top = 80
+    Width = 410
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Caption = 'Параметры'
+    ClientHeight = 196
+    ClientWidth = 406
+    TabOrder = 1
+    object FParamsSBox: TScrollBox
+      AnchorSideLeft.Control = FParamsGBox
+      AnchorSideTop.Control = FParamsGBox
+      AnchorSideRight.Control = FParamsGBox
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = FParamsGBox
+      AnchorSideBottom.Side = asrBottom
+      Left = 0
+      Height = 196
+      Top = 0
+      Width = 406
+      HorzScrollBar.Page = 1
+      VertScrollBar.Page = 1
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      TabOrder = 0
+    end
+  end
+  object FAddParamBtn: TButton
+    AnchorSideRight.Side = asrBottom
+    Left = 16
+    Height = 25
+    Top = 40
+    Width = 118
+    Align = alCustom
+    Anchors = []
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 25
+    Caption = 'Добавить параметр'
+    OnClick = FAddParamBtnClick
+    TabOrder = 2
+  end
+  object FBtnsPanel: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = FParamsGBox
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 0
+    Height = 41
+    Top = 296
+    Width = 410
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ClientHeight = 41
+    ClientWidth = 410
+    TabOrder = 3
+    object FApplyBtn: TButton
+      Left = 40
+      Height = 25
+      Top = 8
+      Width = 118
+      Anchors = [akLeft, akBottom]
+      Caption = 'Применить'
+      OnClick = FApplyBtnClick
+      TabOrder = 0
+    end
+    object FCancelBtn: TButton
+      Left = 256
+      Height = 25
+      Top = 8
+      Width = 118
+      Anchors = [akRight, akBottom]
+      Caption = 'Отмена'
+      OnClick = FCancelBtnClick
+      TabOrder = 1
+    end
+  end
+  object FDelParamsBtn: TButton
+    AnchorSideRight.Side = asrBottom
+    Left = 144
+    Height = 25
+    Top = 40
+    Width = 118
+    Align = alCustom
+    Anchors = []
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 25
+    Caption = 'Удалить параметры'
+    OnClick = FDelParamsBtnClick
+    TabOrder = 4
+  end
+end
