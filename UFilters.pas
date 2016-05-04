@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, StdCtrls, Controls, ExtCtrls, Graphics, DB,
-  UDBObjects, UVector, UStringUtils;
+  UDBObjects, UVector, UStringUtils, UCustomControl;
 
 type
 
@@ -14,7 +14,7 @@ type
   TEvent = procedure of object;
   TParamEvent = procedure(FilterIndex: integer) of object;
 
-  TFilterPanel = class(TPanel)
+  TFilterPanel = class(TCustomControl)
   private
     type
     TOperator = record
@@ -23,20 +23,16 @@ type
     end;
     TOperators = array of TOperator;
   private
-    FIndex: integer;
     FEnabled: boolean;
     FFilter: TDBFilter;
     FTable: TDBTable;
     FFieldsCBox: TComboBox;
     FOpsCBox: TComboBox;
-    FDelBtn: TButton;
     FEdit: TEdit;
     FCurOps: TOperators;
     FNumOps: TOperators;
     FStrOps: TOperators;
     FOnChange: TEvent;
-    FOnDelete: TParamEvent;
-    procedure Init(Component, AParent: TWinControl; ATop, ALeft, AWidth: integer);
     procedure InitOperators;
     procedure AddOperator(var Operators: TOperators; AName, ACOperator: string);
     procedure LoadFieldsCBox;
@@ -45,8 +41,6 @@ type
     procedure OnFieldsCBoxChange(Sender: TObject);
     procedure LoadOpsFromDataType(DataType: TFieldType);
     procedure SetState(AEnabled: boolean);
-    procedure FDelBtnMouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
     function FindOpsInd(Op: string; Ops: TOperators): integer;
   public
     constructor Create(Table: TDBTable);
@@ -55,35 +49,25 @@ type
     procedure SetFilterData(Field, COp, Param: string);
     function Correct: boolean;
   published
-    property OnDelete: TParamEvent write FOnDelete;
     property OnChange: TEvent write FOnChange;
     property Filter: TDBFilter read FFilter;
-    property Index: integer read FIndex write FIndex;
     property Enabled: boolean read FEnabled write SetState;
   end;
 
-  TFilterPanelV = specialize TObjVector<TFilterPanel>;
+  TCustomFilterControls = specialize TCustomControls<TFilterPanel>;
 
-  TFilterPanels = class(TFilterPanelV)
+  TFilterPanels = class(TCustomFilterControls)
   private
-    FParent: TWinControl;
-    FTop: integer;
-    FLeft: integer;
-    FYOffset: integer;
-    FOnDelete: TEvent;
     FOnChange: TEvent;
     FTable: TDBTable;
-    procedure UpdateFilters;
-    //this procedure is called by deleted filter panel
-    procedure OnFilterDelete(FilterIndex: integer);
     procedure SetOnChange(AOnChange: TEvent);
   public
     constructor Create(Table: TDBTable; AParent: TWinControl; ATop, ALeft: integer);
-    procedure DeleteAll;
     procedure AddFilterPanel;
     procedure AddFilterPanel(AFilterPanel: TFilterPanel);
     function FiltersCorrect: boolean;
     function Apply: TQueryContainer;
+    function Correct: boolean;
   published
     property OnDelete: TEvent write FOnDelete;
     property OnChange: TEvent write SetOnChange;
@@ -93,8 +77,8 @@ implementation
 
 constructor TFilterPanel.Create(Table: TDBTable);
 begin
+  inherited Create;
   FOnChange := nil;
-  FOnDelete := nil;
   FEnabled := True;
   FFilter := TDBFilter.Create;
   FTable := Table;
@@ -124,27 +108,23 @@ const
   EDIT_WIDTH = 150;
   TOTAL_WIDTH = SPACE * 4 + FIELDS_CBOX_WIDTH + OPS_CBOX_WIDTH + EDIT_WIDTH + 20;
 begin
-  inherited Create(AParent);
-  Init(Self, AParent, ATop - 1, ALeft, TOTAL_WIDTH);
-  Self.Height := 25;
-  Self.BevelInner := bvNone;
-  Self.BevelOuter := bvNone;
+  inherited Create(AParent, TOTAL_WIDTH, ATop, ALeft);
   FFieldsCBox := TComboBox.Create(Self);
   FOpsCBox := TComboBox.Create(Self);
   FEdit := TEdit.Create(Self);
-  FDelBtn := TButton.Create(Self);
+
   FFieldsCBox.ReadOnly := True;
   FOpsCBox.ReadOnly := True;
-  Init(FFieldsCBox, Self, 1, 0, FIELDS_CBOX_WIDTH);
-  Init(FOpsCBox, Self, 1, FIELDS_CBOX_WIDTH + SPACE, OPS_CBOX_WIDTH);
-  Init(FEdit, Self, 1, FOpsCBox.Left + OPS_CBOX_WIDTH + SPACE, EDIT_WIDTH);
-  Init(FDelBtn, Self, 0, FEdit.Left + FEdit.Width, 20);
+  InitComponent(FFieldsCBox, Self, 1, 0, FIELDS_CBOX_WIDTH);
+  InitComponent(FOpsCBox, Self, 1, FIELDS_CBOX_WIDTH + SPACE, OPS_CBOX_WIDTH);
+  InitComponent(FEdit, Self, 1, FOpsCBox.Left + OPS_CBOX_WIDTH + SPACE, EDIT_WIDTH);
+
+  DelBtn.Left := FEdit.Left + FEdit.Width;
+  DelBtn.Top := 0;
 
   FFieldsCBox.OnSelect := @OnFieldsCBoxChange;
   FOpsCBox.OnChange := @OnChangeEvent;
   FEdit.OnChange := @OnChangeEvent;
-  FDelBtn.OnMouseUp := @FDelBtnMouseUp;
-  FDelBtn.Caption := 'X';
 
   LoadFieldsCBox;
 end;
@@ -174,15 +154,6 @@ begin
   AddOperator(FStrOps, 'Содержит', ' Containing ');
   AddOperator(FStrOps, 'Не содержит', ' Not Containing ');
   AddOperator(FStrOps, 'Начинается с', ' Starting With ');
-end;
-
-procedure TFilterPanel.Init(Component, AParent: TWinControl;
-  ATop, ALeft, AWidth: integer);
-begin
-  Component.Parent := AParent;
-  Component.Top := ATop;
-  Component.Left := ALeft;
-  Component.Width := AWidth;
 end;
 
 procedure TFilterPanel.LoadFieldsCBox;
@@ -218,7 +189,7 @@ end;
 
 procedure TFilterPanel.OnFieldsCBoxChange(Sender: TObject);
 begin
-  LoadOpsFromDataType(FFilter.ParentTable.Fields[FFieldsCBox.ItemIndex].DataType);
+  LoadOpsFromDataType(FTable.Fields[FFieldsCBox.ItemIndex].DataType);
   if FOnChange <> nil then
     FOnChange;
 end;
@@ -241,7 +212,7 @@ begin
   FEdit.Enabled := AEnabled;
   FFieldsCBox.Enabled := AEnabled;
   FOpsCBox.Enabled := AEnabled;
-  FDelBtn.Enabled := AEnabled;
+  DelBtn.Enabled := AEnabled;
 end;
 
 procedure TFilterPanel.AddOperator(var Operators: TOperators; AName, ACOperator: string);
@@ -249,14 +220,6 @@ begin
   SetLength(Operators, Length(Operators) + 1);
   Operators[High(Operators)].Name := AName;
   Operators[High(Operators)].COperator := ACOperator;
-end;
-
-procedure TFilterPanel.FDelBtnMouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  if FOnDelete <> nil then
-    FOnDelete(FIndex);
-  Self.Free;
 end;
 
 function TFilterPanel.FindOpsInd(Op: string; Ops: TOperators): integer;
@@ -273,13 +236,9 @@ end;
 constructor TFilterPanels.Create(Table: TDBTable; AParent: TWinControl;
   ATop, ALeft: integer);
 begin
+  inherited Create(AParent, ATop, ALeft);
   FTable := Table;
-  FParent := AParent;
-  FTop := ATop;
-  FLeft := ALeft;
-  FOnDelete := nil;
   FOnChange := nil;
-  FYOffset := 0;
 end;
 
 procedure TFilterPanels.AddFilterPanel;
@@ -289,34 +248,8 @@ end;
 
 procedure TFilterPanels.AddFilterPanel(AFilterPanel: TFilterPanel);
 begin
-  FYOffset := Size * AFilterPanel.Height;
-  AFilterPanel.Index := Size;
+  inherited AddControlPanel(AFilterPanel);
   AFilterPanel.OnChange := FOnChange;
-  AFilterPanel.OnDelete := @OnFilterDelete;
-  AFilterPanel.Top := AFilterPanel.Top + FYOffset;
-  PushBack(AFilterPanel);
-end;
-
-procedure TFilterPanels.UpdateFilters;
-var
-  i: integer;
-begin
-  FYOffset := 0;
-  for i := 0 to Size - 1 do begin
-    FYOffset := i* Items[i].Height;
-    Items[i].Top := FYOffset;
-    Items[i].Index := i;
-  end;
-end;
-
-procedure TFilterPanels.OnFilterDelete(FilterIndex: integer);
-begin
-  if Size > 0 then begin
-    DeleteIndS(FilterIndex);
-    UpdateFilters;
-    if FOnDelete <> nil then
-      FOnDelete;
-  end;
 end;
 
 procedure TFilterPanels.SetOnChange(AOnChange: TEvent);
@@ -326,28 +259,6 @@ begin
   FOnChange := AOnChange;
   for i := 0 to Size - 1 do
     Items[i].OnChange := AOnChange;
-end;
-
-procedure TFilterPanels.DeleteAll;
-var
-  i: integer = 0;
-  Amount: integer;
-begin
-  if Size > 0 then begin
-    Amount := Size;
-    while i < Amount do begin
-      if Items[i].Enabled then begin
-        Items[i].Free;
-        DeleteIndS(i);
-        Amount -= 1;
-      end
-      else
-        i += 1;
-    end;
-    FYOffset := 0;
-    if FOnDelete <> nil then
-      FOnDelete;
-  end;
 end;
 
 function TFilterPanels.FiltersCorrect: boolean;
@@ -366,6 +277,8 @@ var
   i: integer;
 begin
   if Size > 0 then begin
+    if not Correct then
+      Exit(FTable.Query.Select(nil));
     Filters := TDBFilters.Create;
     for i := 0 to Size - 1 do
       Filters.PushBack(Items[i].Filter);
@@ -374,6 +287,16 @@ begin
     Exit(Result);
   end;
   Exit(FTable.Query.Select(nil));
+end;
+
+function TFilterPanels.Correct: boolean;
+var
+  i: integer;
+begin
+  for i := 0 to Size - 1 do
+    if not Items[i].Correct then
+      Exit(False);
+  Exit(True);
 end;
 
 end.
