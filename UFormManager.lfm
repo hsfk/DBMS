@@ -1,4 +1,4 @@
-object TreeViewForm: TTreeViewForm
+object FormManager: TFormManager
   Left = 439
   Height = 334
   Top = 278
