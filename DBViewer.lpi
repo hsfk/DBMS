@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="23">
+    <Units Count="25">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -144,17 +144,25 @@
         <ResourceBaseClass Value="DataModule"/>
       </Unit20>
       <Unit21>
-        <Filename Value="uformmanager.pas"/>
+        <Filename Value="UFormManager.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="TreeViewForm"/>
+        <ComponentName Value="FormManager"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="UFormManager"/>
       </Unit21>
       <Unit22>
         <Filename Value="Utils\URectUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit22>
+      <Unit23>
+        <Filename Value="UConflicts.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="ucustomcontrol.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UCustomControl"/>
+      </Unit24>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
