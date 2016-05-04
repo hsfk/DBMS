@@ -5,14 +5,17 @@ unit UConflicts;
 interface
 
 uses
-  Classes, SysUtils, UVector, UMatrix, Dialogs, Controls, ExtCtrls, StdCtrls;
+  Classes, SysUtils, UVector, UMatrix, Dialogs, Controls, ExtCtrls,
+  StdCtrls, UCustomControl;
 
 type
 
   TConflictType = class;
+  TConflictPanel = class;
   TDataTuple = specialize TVector<TStringM>;
   TConflictTypes = specialize TObjVector<TConflictType>;
   TData = specialize TVector<TDataTuple>;
+  TEditEvent = procedure(Conflict: TConflictPanel) of object;
 
   TResult = record
     RecID: integer;
@@ -42,61 +45,104 @@ type
     // deletes data tuple item if its NEQRec record occures once
     function DeleteNEQ(Data: TDataTuple; NEQRec: integer): TData;
     function DeleteNEQ(Data: TData; NEQRec: integer): TData;
+  published
+    property EQRecIDs: TIntegerV read FEQRecIDs write FEQRecIDs;
+    property NEQRecIDs: TIntegerV read FNEQRecIDs write FNEQRecIDs;
+    property Name: string read FName;
   end;
 
-  TConflicts = class
+  TConflictPanel = class(TCustomControl)
   private
-    FConflicts: TConflictTypes;
+    FConflict: TConflictType;
+    FEditBtn: TButton;
+    FEdit: TEdit;
+    FOnEdit: TEditEvent;
+    procedure EditClick(Sender: TObject);
   public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Add(Conflict: TConflictType);
+    constructor Create(AName: string);
+    constructor Create(AName: string; AParent: TWinControl; ATop, ALeft: integer);
+    procedure InitControls(AParent: TWinControl; ATop, ALeft: integer);
+  published
+    property Conflict: TConflictType read FConflict write FConflict;
+    property Edit: TEdit read FEdit write FEdit;
+  end;
+
+  TCustomConflictPanels = specialize TCustomControls<TConflictPanel>;
+
+  TConflictPanels = class(TCustomConflictPanels)
+  private
+    FOnEdit: TEditEvent;
+    procedure SetEvent(Event: TEditEvent);
+  public
+    constructor Create(AParent: TWinControl; ATop, ALeft: integer);
+    procedure AddConflict(AName: string; EQRecIDs, NEQRecIDs: TIntegerV);
+    procedure AddConflict(Conflict: TConflictType);
     procedure AnalyzeData(Data: TDataTuple);
     function GetResult: TResultTuple;
+  published
+    property OnEditClick: TEditEvent write SetEvent;
   end;
 
 implementation
 
-constructor TConflicts.Create;
-var
-  Conflict: TConflictType;
-begin
-  FConflicts := TConflictTypes.Create;
-
-  Conflict := TConflictType.Create('Разрыв группы');
-  with TIntegerV do
-    Conflict.AddConditions(Create([9, 8, 6]), Create([7]));
-  Add(Conflict);
-end;
-
-destructor TConflicts.Destroy;
-begin
-  FConflicts.Free;
-  inherited Destroy;
-end;
-
-procedure TConflicts.Add(Conflict: TConflictType);
-begin
-  FConflicts.PushBack(Conflict);
-end;
-
-procedure TConflicts.AnalyzeData(Data: TDataTuple);
+procedure TConflictPanels.SetEvent(Event: TEditEvent);
 var
   i: integer;
 begin
-  for i := 0 to FConflicts.Size - 1 do
-    FConflicts[i].SelectConflicted(Data);
+  FOnEdit := Event;
+  for i := 0 to Size - 1 do
+    Items[i].FOnEdit := Event;
 end;
 
-function TConflicts.GetResult: TResultTuple;
+constructor TConflictPanels.Create(AParent: TWinControl; ATop, ALeft: integer);
+begin
+  FOnEdit := nil;
+  inherited Create(AParent, ATop, ALeft);
+  with TIntegerV do begin
+    AddConflict('Разрыв группы', Create([9, 8, 6]), Create([7]));
+    AddConflict('Разрыв преподавателя', Create([3, 8, 9]), Create([7]));
+    AddConflict('Больше 1 преподавателя в аудитории', Create([7, 8, 9, 6]), Create([3]));
+    AddConflict('Больше 1 группы в аудитории', Create([7, 8, 9]), Create([6]));
+  end;
+end;
+
+procedure TConflictPanels.AddConflict(AName: string; EQRecIDs, NEQRecIDs: TIntegerV);
+var
+  Panel: TConflictPanel;
+begin
+  Panel := TConflictPanel.Create(AName, FParent, FTop, FLeft);
+  Panel.Conflict.AddConditions(EQRecIDs, NEQRecIDs);
+  Panel.FOnEdit := FOnEdit;
+  AddControlPanel(Panel);
+end;
+
+procedure TConflictPanels.AddConflict(Conflict: TConflictType);
+var
+  Panel: TConflictPanel;
+begin
+  Panel := TConflictPanel.Create(Conflict.Name, FParent, FTop, FLeft);
+  Panel.Conflict := Conflict;
+  Panel.FOnEdit := FOnEdit;
+  AddControlPanel(Panel);
+end;
+
+procedure TConflictPanels.AnalyzeData(Data: TDataTuple);
+var
+  i: integer;
+begin
+  for i := 0 to Size - 1 do
+    Items[i].Conflict.SelectConflicted(Data);
+end;
+
+function TConflictPanels.GetResult: TResultTuple;
 var
   Temp: TResultTuple;
   i: integer;
   j: integer;
 begin
   SetLength(Result, 0);
-  for i := 0 to FConflicts.Size - 1 do begin
-    Temp := FConflicts[i].ResultTuple;
+  for i := 0 to Size - 1 do begin
+    Temp := Items[i].Conflict.ResultTuple;
     if Temp <> nil then
       for j := 0 to High(Temp) do begin
         SetLength(Result, Length(Result) + 1);
@@ -284,6 +330,40 @@ var
 begin
   for i := 0 to AData.Size - 1 do
     ShowTuple(AData[i]);
+end;
+
+procedure TConflictPanel.EditClick(Sender: TObject);
+begin
+  if FOnEdit <> nil then
+    FOnEdit(Self);
+end;
+
+constructor TConflictPanel.Create(AName: string);
+begin
+  FConflict := TConflictType.Create(AName);
+  FOnEdit := nil;
+end;
+
+constructor TConflictPanel.Create(AName: string; AParent: TWinControl;
+  ATop, ALeft: integer);
+begin
+  Create(AName);
+  InitControls(AParent, ATop, ALeft);
+end;
+
+procedure TConflictPanel.InitControls(AParent: TWinControl; ATop, ALeft: integer);
+begin
+  inherited Create(AParent, 250 + 20, ATop, ALeft);
+  FEdit := TEdit.Create(Self);
+  FEditBtn := TButton.Create(Self);
+  FEditBtn.Caption := 'Ред.';
+  InitComponent(FEdit, Self, 1, 0, 200);
+  InitComponent(FEditBtn, Self, 0, 200, 50);
+  FEdit.Text := FConflict.FName;
+  FEdit.Enabled := False;
+  FEditBtn.OnClick := @EditClick;
+  DelBtn.Left := 250;
+  DelBtn.Top := 0;
 end;
 
 end.
