@@ -12,6 +12,7 @@ var
   expand_20x20: TIcon;
   drag_20x20: TIcon;
   edit_20x20: TIcon;
+  alert_20x20: TIcon;
 
 implementation
 
@@ -30,6 +31,7 @@ initialization
   expand_20x20 := GetIcon('icons/expand_20x20.ico');
   drag_20x20 := GetIcon('icons/drag_20x20.ico');
   edit_20x20 := GetIcon('icons/edit_20x20.ico');
+  alert_20x20 := GetIcon('icons/alert_20x20.ico');
 
 end.
 
