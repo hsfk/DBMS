@@ -174,9 +174,9 @@ begin
       Result.Query += 'Where ';
       for i := 0 to Filters.Size - 1 do begin
         with Filters do begin
-          Result.Query += Format('%s.%s %s :%s And ',
+          Result.Query += Format('%s.%s %s :%s %s ',
             [Items[i].ParentTable.NativeName, Items[i].NativeName,
-            Items[i].ConditionalOperator, Param(i)]);
+            Items[i].ConditionalOperator, Param(i), Items[i].Connection]);
           Result.Params.CreateParam(Items[i].DataType, Param(i), ptInput);
           Result.Params.ParamByName(Param(i)).Value := Items[i].Param;
         end;
