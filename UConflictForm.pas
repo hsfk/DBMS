@@ -13,8 +13,9 @@ type
   TParamControl = class;
   TParamControls = class;
 
+  { TConflictForm }
+
   TConflictForm = class(TForm)
-    FParamsSBox: TScrollBox;
   private
     FControls: TParamControls;
     FTable: TDBTable;
@@ -26,13 +27,16 @@ type
       EditedConflict: TConflictPanel);
   published
     FNameEdit: TEdit;
-    FAddParamBtn: TButton;
-    FDelParamsBtn: TButton;
     FApplyBtn: TButton;
     FCancelBtn: TButton;
     FParamsGBox: TGroupBox;
     FNameLabel: TLabel;
     FBtnsPanel: TPanel;
+    FParamsSBox: TScrollBox;
+    FTreeViewVisRecCBox: TComboBox;
+    FAddParamBtn: TButton;
+    FDelParamsBtn: TButton;
+    FTreeViewVisRecLabel: TLabel;
     procedure FApplyBtnClick(Sender: TObject);
     procedure FCancelBtnClick(Sender: TObject);
     procedure FAddParamBtnClick(Sender: TObject);
@@ -66,6 +70,7 @@ type
     procedure AddParam(FieldN: integer; IsEQ: boolean);
     procedure AddParam;
     function BuildConflict(Name: string): TConflictType;
+    function EQFieldsCount: integer;
     function Correct: boolean;
   end;
 
@@ -88,6 +93,11 @@ var
   i: integer;
 begin
   FTable := Table;
+  FTreeViewVisRecCBox.Items.Clear;
+  for i := 0 to Table.Count - 1 do
+    FTreeViewVisRecCBox.Items.Add(Table.Fields[i].Name);
+  FTreeViewVisRecCBox.ItemIndex := 0;
+
   FControls.DeleteAll;
   FControls.FTable := FTable;
   FConflicts := Conflicts;
@@ -100,6 +110,7 @@ begin
       FControls.AddParam(FEditedConflict.Conflict.EQRecIDs[i], True);
     for i := 0 to FEditedConflict.Conflict.NEQRecIDs.Size - 1 do
       FControls.AddParam(FEditedConflict.Conflict.NEQRecIDs[i], False);
+    FTreeViewVisRecCBox.ItemIndex := FEditedConflict.TreeViewVisibleRec;
   end
   else
     Caption := 'Редактор конфликтов';
@@ -117,16 +128,23 @@ end;
 
 procedure TConflictForm.FApplyBtnClick(Sender: TObject);
 begin
+  if FControls.EQFieldsCount = 0 then begin
+    ShowMessage('Хотя бы одно поле должно совпадать');
+    Exit;
+  end;
   if not FControls.Correct then begin
     ShowMessage('Нужно заполнить все поля.');
     Exit;
   end;
   if FEditedConflict = nil then
-    FConflicts.AddConflict(FControls.BuildConflict(FNameEdit.Text))
+    FConflicts.AddConflict(FControls.BuildConflict(
+      FNameEdit.Text)).TreeViewVisibleRec :=
+      FTreeViewVisRecCBox.ItemIndex
   else begin
     FEditedConflict.Conflict.Free;
     FEditedConflict.Conflict := FControls.BuildConflict(FNameEdit.Text);
     FEditedConflict.Edit.Text := FEditedConflict.Conflict.Name;
+    FEditedConflict.TreeViewVisibleRec := FTreeViewVisRecCBox.ItemIndex;
   end;
   Close;
 end;
@@ -168,7 +186,7 @@ begin
   InitComponent(FParamCBox, Self, 1, 150, 100);
   DelBtn.Top := 0;
   Delbtn.Left := 250;
-  FOps := TStringV.Create(['Равно', 'Не равно']);
+  FOps := TStringV.Create(['Совпадает', 'Не совпадает']);
   for i := 0 to FOps.Size - 1 do
     FParamCBox.Items.Add(FOps[i]);
   for i := 0 to FTable.Count - 1 do
@@ -233,12 +251,22 @@ begin
       Result.NEQRecIDs.PushBack(Items[i].FieldN);
 end;
 
+function TParamControls.EQFieldsCount: integer;
+var
+  i: integer;
+begin
+  Result := 0;
+  if Size = 0 then
+    Exit;
+  for i := 0 to Size - 1 do
+    if Items[i].ISEq then
+      Result += 1;
+end;
+
 function TParamControls.Correct: boolean;
 var
   i: integer;
 begin
-  if Size = 0 then
-    Exit(False);
   for i := 0 to Size - 1 do
     if not Items[i].Correct then
       Exit(False);
