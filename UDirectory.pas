@@ -26,8 +26,7 @@ type
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
     procedure ApplyFilters;
     procedure AddFilterPanel(AFilterPanel: TFilterPanel);
-    procedure AddFilterPanel(Field, COp, Param: string; AEnabled: boolean);
-    function FilterCount: integer;
+    function AddFilterPanel(Field, COp, Param: string; AEnabled: boolean): TFilterPanel;
   published
     FFiltersGBox: TGroupBox;
     FTableGBox: TGroupBox;
@@ -48,6 +47,7 @@ type
     procedure FApplyBtnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction); override;
+    property Filters: TFilterPanels read FFilters;
   end;
 
 implementation
@@ -88,6 +88,10 @@ procedure TDirectory.ApplyFilters;
 var
   Filtered: TQueryContainer;
 begin
+  if not FFilters.Correct then begin
+    ShowMessage('Нужно заполнить все фильтры.');
+    Exit;
+  end;
   Filtered := FFilters.Apply;
   PerformQuery(Filtered);
   if Filtered.Query <> FSelectAll.Query then
@@ -104,19 +108,12 @@ begin
   FFilters.AddFilterPanel(AFilterPanel);
 end;
 
-procedure TDirectory.AddFilterPanel(Field, COp, Param: string; AEnabled: boolean);
-var
-  FilterPanel: TFilterPanel;
+function TDirectory.AddFilterPanel(Field, COp, Param: string; AEnabled: boolean): TFilterPanel;
 begin
-  FilterPanel := TFilterPanel.Create(Table, FFiltersSBox, 5, 5);
-  FFilters.AddFilterPanel(FilterPanel);
-  FilterPanel.SetFilterData(Field, COp, Param);
-  FilterPanel.Enabled := AEnabled;
-end;
-
-function TDirectory.FilterCount: integer;
-begin
-  Exit(FFilters.Size);
+  Result := TFilterPanel.Create(Table, FFiltersSBox, 5, 5);
+  FFilters.AddFilterPanel(Result);
+  Result.SetFilterData(Field, COp, Param);
+  Result.Enabled := AEnabled;
 end;
 
 procedure TDirectory.FApplyBtnClick(Sender: TObject);
