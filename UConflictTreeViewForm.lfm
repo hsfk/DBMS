@@ -1,0 +1,40 @@
+object ConflictTreeViewForm: TConflictTreeViewForm
+  Left = 439
+  Height = 330
+  Top = 280
+  Width = 579
+  Caption = 'ConflictTreeViewForm'
+  ClientHeight = 330
+  ClientWidth = 579
+  LCLVersion = '1.6.0.4'
+  object FTreeView: TTreeView
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 0
+    Height = 330
+    Top = 0
+    Width = 579
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    DefaultItemHeight = 18
+    ReadOnly = True
+    TabOrder = 0
+    OnMouseUp = FTreeViewMouseUp
+    Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoReadOnly, tvoShowButtons, tvoShowLines, tvoShowRoot, tvoToolTips, tvoThemedDraw]
+  end
+  object FActions: TPopupMenu
+    left = 201
+    top = 31
+    object FExpandChild: TMenuItem
+      Caption = 'Развернуть все'
+      OnClick = FExpandChildClick
+    end
+    object FCollapseChild: TMenuItem
+      Caption = 'Свернуть все'
+      OnClick = FCollapseChildClick
+    end
+  end
+end

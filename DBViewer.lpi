@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="26">
+    <Units Count="27">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -163,13 +163,19 @@
         <IsPartOfProject Value="True"/>
       </Unit24>
       <Unit25>
-        <Filename Value="uconflictform.pas"/>
+        <Filename Value="UConflictForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="ConflictForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="UConflictForm"/>
       </Unit25>
+      <Unit26>
+        <Filename Value="UConflictTreeViewForm.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ConflictTreeViewForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit26>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
