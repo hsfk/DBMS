@@ -15,14 +15,15 @@ type
   private
     FMatrix: TItems;
   protected
-    procedure SetItem(i, j:integer; const Item: T); virtual;
-    function  GetItem (i, j: integer): T;           virtual;
-    function  GetWidth:  integer;                   virtual;
-    function  GetHeight: integer;                   virtual;
+    procedure SetItem (i, j: integer; const Item: T);virtual;
+    function  GetItem (i, j: integer): T;            virtual;
+    function  GetCol  (i: integer): TCol;            virtual;
+    function  GetWidth:  integer;                    virtual;
+    function  GetHeight: integer;                    virtual;
   public
-    procedure SwapCols(IndexA, IndexB: integer);    virtual;
-    procedure SwapRows(IndexA, IndexB: integer);    virtual;
-    procedure Swap    (XA, YA, XB, YB: integer);    virtual;
+    procedure SwapCols(IndexA, IndexB: integer);     virtual;
+    procedure SwapRows(IndexA, IndexB: integer);     virtual;
+    procedure Swap    (XA, YA, XB, YB: integer);     virtual;
   public
     constructor Create;                               virtual;
     destructor  Destroy;                              override;
@@ -35,6 +36,7 @@ type
     property Width:  integer read GetWidth;
     property Height: integer read GetHeight;
     property Items[i, j: integer]: T read GetItem write SetItem; default;
+    property Col[i: integer]: TCol read GetCol;
   end;
 
   TStringM  = specialize TMatrix<string>;
@@ -67,6 +69,11 @@ end;
 function TMatrix.GetItem(i, j: integer): T;
 begin
   Exit(FMatrix[i][j]);
+end;
+
+function TMatrix.GetCol(i: integer): TCol;
+begin
+  Exit(FMatrix[i]);
 end;
 
 function TMatrix.GetWidth: integer;
