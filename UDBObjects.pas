@@ -80,6 +80,7 @@ type
   private
     FParam: string;
     FOperator: string;
+    FConnection: string;
   public
     constructor Create;
     constructor Create(AField: TDBField; COperator, AParam: string);
@@ -87,6 +88,7 @@ type
   published
     property Param: string read FParam write FParam;
     property ConditionalOperator: string read FOperator write FOperator;
+    property Connection: string read FConnection write FConnection;
   end;
 
   TDBOrder = class(TDBField)
@@ -222,11 +224,13 @@ end;
 
 constructor TDBFilter.Create;
 begin
+  FConnection := 'AND';
   { Default empty constructor }
 end;
 
 constructor TDBFilter.Create(AField: TDBField; COperator, AParam: string);
 begin
+  Create;
   Assign(AField);
   FOperator := COperator;
   FParam := AParam;
