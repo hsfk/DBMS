@@ -82,7 +82,7 @@ inherited Schedule: TSchedule
         ClientHeight = 266
         ClientWidth = 228
         TabOrder = 0
-        object FCheckListBox: TCheckListBox
+        object FVisFields: TCheckListBox
           AnchorSideLeft.Control = FVisibleRecsGBox
           AnchorSideTop.Control = FVisibleRecsGBox
           AnchorSideRight.Control = FVisibleRecsGBox
@@ -96,7 +96,7 @@ inherited Schedule: TSchedule
           Anchors = [akTop, akLeft, akRight, akBottom]
           BorderSpacing.Top = 20
           ItemHeight = 0
-          OnClickCheck = FCheckListBoxClickCheck
+          OnClickCheck = FVisFieldsClickCheck
           TabOrder = 0
         end
         object FDrawEmptyLines: TCheckBox
@@ -191,9 +191,9 @@ inherited Schedule: TSchedule
         Height = 214
         Top = 72
         Width = 734
-        ActivePage = FConfSheet
+        ActivePage = FFiltersSheet
         Anchors = [akTop, akLeft, akRight, akBottom]
-        TabIndex = 1
+        TabIndex = 0
         TabOrder = 2
         object FFiltersSheet: TTabSheet
           Caption = 'Фильтры'
@@ -293,6 +293,34 @@ inherited Schedule: TSchedule
             Anchors = [akTop, akLeft, akRight, akBottom]
             BorderSpacing.Top = 35
             TabOrder = 2
+          end
+          object FDirShowConflictBtn: TButton
+            AnchorSideRight.Side = asrBottom
+            Left = 256
+            Height = 25
+            Top = 6
+            Width = 128
+            Align = alCustom
+            Anchors = []
+            BorderSpacing.Top = 5
+            BorderSpacing.Right = 25
+            Caption = 'Найти в справочнике'
+            OnClick = FDirShowConflictBtnClick
+            TabOrder = 3
+          end
+          object FTreeShowConflictBtn: TButton
+            AnchorSideRight.Side = asrBottom
+            Left = 392
+            Height = 25
+            Top = 6
+            Width = 142
+            Align = alCustom
+            Anchors = []
+            BorderSpacing.Right = 25
+            Caption = 'Показать в виде дерева'
+            ParentBidiMode = False
+            OnClick = FTreeShowConflictBtnClick
+            TabOrder = 4
           end
         end
       end

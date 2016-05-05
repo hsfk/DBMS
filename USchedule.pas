@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Grids,
   StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
   UDBObjects, UAbout, UDirectory, DB, UCard, UPointUtils, UFilters,
-  UCanvasUtils, UIcons, URectUtils, UConflicts, UConflictForm;
+  UCanvasUtils, UIcons, URectUtils, UConflicts, UConflictForm, UConflictTreeViewForm;
 
 const
   DIR_SEED = 123456;
@@ -21,16 +21,15 @@ const
   LEFT_MARGIN = 5;
   BTN_SIZE = 20;
   BTN_TAB_OFFSET = BTN_SIZE + 4;
+  MIN_ELEMENTS_TO_DRAW_BTNS = 4;
 
 type
 
   TSchedule = class;
   TCell = class;
-   {
-   ***************************************
-   * TODO: Use TFrames instead of forms? *
-   ***************************************
-   }
+  TCellMatrix = specialize TObjMatrix<TCell>;
+  TCells = specialize TVector<TCell>;
+
   TCellBtn = class
   private
     FSchedule: TSchedule;
@@ -66,6 +65,13 @@ type
     procedure MouseUp; override;
   end;
 
+  TAlertBtn = class(TCellBtn)
+  public
+    constructor Create(Cell: TCell; ElementID: integer; const Schedule: TSchedule);
+      override;
+    procedure MouseUp; override;
+  end;
+
   TDragBtn = class(TCellBtn)
   private
     FDragging: boolean;
@@ -78,60 +84,79 @@ type
     constructor Create(Cell: TCell; ElementID: integer; const Schedule: TSchedule);
       override;
     procedure Draw(Canvas: TCanvas); override;
-    procedure MouseDown; override;
     procedure MouseUp; override;
+    procedure MouseDown; override;
     procedure MouseMove; override;
   end;
 
-  TCell = class
+  TCellBtns = specialize TObjVector<TCellBtn>;
+
+  TCellElement = class
   private
-    type
-    TCellBtns = specialize TObjVector<TCellBtn>;
+    FID: integer;
+    FData: TStringV;
+    FBtns: TCellBtns;
+    FCell: TCell;
+    FRect: TRect;
+    FMaxTextW: integer;
+    procedure SetData(AData: TStringV);
+    procedure SetID(AID: integer);
+    function TextOut(Index: integer): string;
+    function GetHeight: integer;
+  public
+    constructor Create(Cell: TCell);
+    destructor Destroy; override;
+    procedure Draw(var Offset: TPoint; Rect: TRect; Canvas: TCanvas);
+    procedure DrawBtns(TopRight: TPoint; Canvas: TCanvas);
+    procedure AddAlerBtn;
+    function MouseToBtn(Mouse: TPoint): TCellBtn;
+    function Expandable: boolean;
+  published
+    property Data: TStringV read FData write SetData;
+    property ID: integer write SetID;
+    property MaxTextH: integer read GetHeight;
+    property MaxTextW: integer read FMaxTextW;
+  end;
+
+  TElements = specialize TObjVector<TCellElement>;
+
+  TCell = class
   private
     FRow: integer;
     FCol: integer;
-    FMaxH: integer;
-    FMaxW: integer;
     FTable: TDBTable;
     FRect: TRect;
     FSchedule: TSchedule;
-    FFieldData: TStringM;
     FExpandable: boolean;
     FConflicted: boolean;
     FSelected: boolean;
-    FCellBtns: TCellBtns;
-    procedure DrawBtns(Canvas: TCanvas; ElementID, X, Y, YConstraint: integer);
+    FElements: TElements;
+    FFreeElements: boolean;
     function GetID(ElementID: integer): integer;
-    function TextOut(i, j: integer): string;
   public
     constructor Create(Table: TDBTable; Schedule: TSchedule);
     destructor Destroy; override;
-    procedure Copy(Cell: TCell; ElementID: integer);
-    procedure Draw(Rect: TRect; Canvas: TCanvas; VisFields: TCheckListBox);
-    procedure AddData(Data: TStringM);
-    procedure AddData(Data: TStringM; Col: integer);
+    procedure AddElement(Data: TStringV);
+    procedure AddElement(Element: TCellElement);
+    procedure Draw(Rect: TRect; Canvas: TCanvas);
+    function Copy(ElementID: integer): TCell;
+    function MaxTextHeight: integer;
+    function MaxTextWidth: integer;
     function MouseToBtn(Mouse: TPoint): TCellBtn;
-    function MaxTextHeight(VisFields: TCheckListBox; TextH: integer): integer;
-    function MaxTextWidth(Canvas: TCanvas): integer;
   published
     property Table: TDBTable read FTable;
-    property MaxTextH: integer read FMaxH;
-    property MaxTextW: integer read FMaxW;
     property Row: integer read FRow write FRow;
     property Col: integer read FCol write FCol;
-    property FieldData: TStringM read FFieldData write FFieldData;
+    property Elements: TElements read FElements;
   end;
 
   { TSchedule }
 
   TSchedule = class(TDBForm)
   private
-    type
-    TCellMatrix = specialize TObjMatrix<TCell>;
-    TCells = specialize TVector<TCell>;
-  private
     FConflicts: TConflictPanels;
     FDelEmptyLines: boolean;
+    FDrawBtns: boolean;
     FMouseCoords: TPoint;
     FSelectedCell: TCell;
     FBuffer: TCell;
@@ -141,8 +166,14 @@ type
     FVTitleData: TDBDataTuple;
     FFilters: TFilterPanels;
     FCells: TCellMatrix;
+    FHeights: TIntegerV;
     FCurBtn: TCellBtn;
     FConflictCard: TConflictForm;
+    FConflictView: TConflictTreeViewForm;
+    FConflictedCells: TResultTuple;
+    PrevHCBoxInd: integer;
+    PrevVCBoxInd: integer;
+    PrevRowCount: integer;
     procedure LoadCBoxData;
     procedure LoadCheckListBoxData;
     procedure LoadStringListData(Items: TStrings);
@@ -155,6 +186,7 @@ type
     procedure Delete(ID: integer);
     procedure UpDate(Cell: TCell; RecIndex: integer; Data: string);
     procedure CreateDir;
+    procedure CreateConflictDir;
     procedure CreateEditCard(ID: integer);
     procedure CreateInsertCard;
     procedure CreateInsertConflictCard(Conflict: TConflictPanel = nil);
@@ -166,8 +198,10 @@ type
     procedure SetTableSize;
     procedure SetCellsSize(CellW, CellH: integer);
     procedure SelectCell(Mouse: TPoint);
-    procedure CheckConflicts(Cells: TCells);
-    function FindCell(RecID: integer; Cells: TCells): TCell;
+    procedure SetBtnsDrawState;
+    procedure CheckConflicts;
+    procedure LoadHeights;
+    function FindElement(RecID: integer): TCellElement;
     function CreateCard(RowIndex: integer; CardType: TDBFormType): TCard;
     function SelectedCellHash(Seed: integer): integer;
     function GetTitleData(FieldIndex: integer): TDBDataTuple;
@@ -178,7 +212,7 @@ type
   public
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
   published
-    FCheckListBox: TCheckListBox;
+    FVisFields: TCheckListBox;
     FDrawGrid: TDrawGrid;
     FVisibleRecsGBox: TGroupBox;
     FPairSplitter: TPairSplitter;
@@ -206,6 +240,10 @@ type
     FAddConflictBtn: TButton;
     FDelAllConflictsBtn: TButton;
     FConflictsSBox: TScrollBox;
+    FDirShowConflictBtn: TButton;
+    FTreeShowConflictBtn: TButton;
+    procedure FDirShowConflictBtnClick(Sender: TObject);
+    procedure FTreeShowConflictBtnClick(Sender: TObject);
     procedure FAddConflictBtnClick(Sender: TObject);
     procedure FDelAllConflictsBtnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject); override;
@@ -217,7 +255,7 @@ type
     procedure FDrawEmptyLinesChange(Sender: TObject);
     procedure FAddFilterBtnClick(Sender: TObject);
     procedure FDelAllFiltersBtnClick(Sender: TObject);
-    procedure FCheckListBoxClickCheck(Sender: TObject);
+    procedure FVisFieldsClickCheck(Sender: TObject);
     procedure FApplyFilterBtnClick(Sender: TObject);
     procedure FDrawGridDblClick(Sender: TObject);
     procedure FDrawGridDrawCell(Sender: TObject; aCol, aRow: integer;
@@ -281,6 +319,18 @@ begin
   FSchedule.Delete(FCell.GetID(FElementID));
 end;
 
+constructor TAlertBtn.Create(Cell: TCell; ElementID: integer; const Schedule: TSchedule);
+begin
+  inherited Create(Cell, ElementID, Schedule);
+  FIcon := alert_20x20;
+  FColor := clYellow;
+end;
+
+procedure TAlertBtn.MouseUp;
+begin
+
+end;
+
 function TDragBtn.ShiftedBtn: TRect;
 begin
   Exit(Shift(FBtn, FOffset + FAnchor));
@@ -325,8 +375,8 @@ begin
       Cut(FCell, FElementID);
       Paste(FSelectedCol, FSelectedRow);
       MakeSchedule;
-      FDrawGrid.Invalidate;
     end;
+    FDrawGrid.Invalidate;
     FDragging := False;
   end;
 end;
@@ -401,172 +451,214 @@ begin
   Exit(PointInRect(Mouse, ShiftedBtn));
 end;
 
+
+procedure TCellElement.SetData(AData: TStringV);
+begin
+  FBtns.PushBack(TDragBtn.Create(FCell, 0, FCell.FSchedule));
+  FBtns.PushBack(TEditBtn.Create(FCell, 0, FCell.FSchedule));
+  FBtns.PushBack(TDelBtn.Create(FCell, 0, FCell.FSchedule));
+  if FData <> nil then
+    FData.Free;
+  FData := AData;
+end;
+
+procedure TCellElement.SetID(AID: integer);
+var
+  i: integer;
+begin
+  for i := 0 to FBtns.Size - 1 do
+    FBtns[i].FElementID := AID;
+end;
+
+function TCellElement.TextOut(Index: integer): string;
+begin
+  Exit(FCell.FTable.Fields[Index].Name + ': ' + FData[Index]);
+end;
+
+function TCellElement.GetHeight: integer;
+begin
+  Exit(Frect.Bottom - FRect.Top);
+end;
+
+constructor TCellElement.Create(Cell: TCell);
+begin
+  FID := -1;
+  FCell := Cell;
+  FData := TStringV.Create;
+  FBtns := TCellBtns.Create;
+end;
+
+destructor TCellElement.Destroy;
+begin
+  FData.Free;
+  FBtns.Free;
+end;
+
+procedure TCellElement.DrawBtns(TopRight: TPoint; Canvas: TCanvas);
+var
+  i: integer;
+  Anchor: TPoint;
+begin
+  Anchor := ToPoint(TopRight.x - BTN_SIZE, TopRight.y);
+  for i := 0 to FBtns.Size - 1 do begin
+    FBtns[i].FAnchor := Anchor;
+    FBtns[i].Draw(Canvas);
+    Anchor.y += BTN_SIZE;
+  end;
+end;
+
+procedure TCellElement.AddAlerBtn;
+begin
+  if FBtns.Size = 3 then
+    FBtns.PushBack(TAlertBtn.Create(FCell, 0, FCell.FSchedule));
+end;
+
+procedure TCellElement.Draw(var Offset: TPoint; Rect: TRect; Canvas: TCanvas);
+var
+  i: integer;
+  TextH: integer;
+begin
+  FMaxTextW := CELL_W;
+  TextH := Canvas.TextHeight('Нрб');
+  FRect.Top := Offset.y;
+  FRect.Left := Rect.Left;
+  FRect.Right := Rect.Right;
+  for i := 0 to FData.Size - 1 do begin
+    if not FCell.FSchedule.FVisFields.Checked[i] then
+      continue;
+    Canvas.TextRect(Rect, Offset.x, Offset.y, TextOut(i));
+    FMaxTextW := Max(FMaxTextW, Canvas.TextWidth(TextOut(i)));
+    Offset.y += TextH;
+  end;
+  Offset.y += TextH;
+  FRect.Bottom := Offset.y;
+end;
+
+function TCellElement.MouseToBtn(Mouse: TPoint): TCellBtn;
+var
+  i: integer;
+begin
+  for i := 0 to FBtns.Size - 1 do
+    if FBtns[i].UnderMouse(Mouse) then
+      Exit(FBtns[i]);
+  Exit(nil);
+end;
+
+function TCellElement.Expandable: boolean;
+begin
+  Exit(FMaxTextW > CELL_W);
+end;
+
 constructor TCell.Create(Table: TDBTable; Schedule: TSchedule);
 begin
   FRow := -1;
   FCol := -1;
-  FMaxH := 0;
-  FMaxW := 0;
   FSelected := False;
   FExpandable := False;
   FConflicted := False;
   FTable := Table;
-  FFieldData := TStringM.Create;
   FSchedule := Schedule;
-  FCellBtns := TCellBtns.Create;
+  FElements := TElements.Create;
+  FFreeElements := False;
 end;
 
 destructor TCell.Destroy;
 begin
-  FFieldData.Free;
-  FCellBtns.Free;
+  if FFreeElements then
+    FElements.Free;
   inherited Destroy;
 end;
 
-procedure TCell.Copy(Cell: TCell; ElementID: integer);
+procedure TCell.AddElement(Data: TStringV);
+var
+  Element: TCellElement;
 begin
-  FRow := Cell.FRow;
-  FCol := Cell.FCol;
-  FMaxH := Cell.FMaxH;
-  FMaxW := Cell.FMaxW;
-  FTable := Cell.FTable;
-
-  if ElementID = -1 then
-    AddData(Cell.FFieldData)
-  else
-    AddData(Cell.FFieldData, ElementID);
+  Element := TCellElement.Create(Self);
+  Element.Data := Data;
+  Element.ID := FElements.Size;
+  FElements.PushBack(Element);
 end;
 
-procedure TCell.Draw(Rect: TRect; Canvas: TCanvas; VisFields: TCheckListBox);
+procedure TCell.AddElement(Element: TCellElement);
+begin
+  Element.ID := FElements.Size;
+  Element.FCell := Self;
+  FElements.PushBack(Element);
+end;
+
+procedure TCell.Draw(Rect: TRect; Canvas: TCanvas);
 var
   i: integer;
-  j: integer;
-  TextH: integer;
-  FieldsAmount: integer;
-  InvFieldC: integer = 0;
-  RowIndex: integer = 0;
-  PrevI: integer = -1;
   Offset: TPoint;
 begin
-  if not FConflicted then
-    Fill(clWhite, Squeeze(Rect, 1), Canvas)
+  FExpandable := False;
+  if FConflicted then
+    Fill(RGBToColor(255, 225, 225), Squeeze(Rect, 1), Canvas)
   else
-    Fill(RGBToColor(255, 200, 200), Squeeze(Rect, 1), Canvas);
+    Fill(clWhite, Squeeze(Rect, 1), Canvas);
   FRect := Rect;
-  TextH := Canvas.TextHeight('Нрб');
-  FieldsAmount := FFieldData.Height - 1;
-  try
-    FExpandable := False;
-    Rect.Right := Rect.Right - BTN_TAB_OFFSET;
-    Rect.Left := Rect.Left + LEFT_MARGIN;
-    for i := 0 to FFieldData.Width - 1 do begin
-      for j := 0 to FieldsAmount do begin
-        if not VisFields.Checked[j mod FTable.Count] then begin
-          InvFieldC += 1;
-          continue;
-        end;
-        RowIndex := i * FieldsAmount + i + i + j - InvFieldC;
-        Offset := ToPoint(Rect.Left, Rect.Top + TextH * RowIndex);
-        if (Offset.Y > Rect.Bottom) then begin
-          FExpandable := True;
-          Exit;
-        end;
-        if (Offset.y > -10) and (Offset.y < FSchedule.Height) then
-          Canvas.TextRect(Rect, Offset.X, Offset.Y, TextOut(i, j));
-        FExpandable := not Fit(TextOut(i, j), Rect, Canvas) or FExpandable;
-        if (i <> PrevI) and FSelected and (FieldsAmount - InvFieldC div
-          (i + 1) >= 2) then
-          DrawBtns(Canvas, i, Rect.Right + 4, Offset.Y, Rect.Bottom);
-        PrevI := i;
-      end;
-    end;
-  finally
-    if FSelected and FExpandable then
-      Canvas.Draw(Rect.Right + 3, Rect.Bottom - 21, expand_20x20);
+  Offset := ToPoint(Rect.Left, Rect.Top);
+  for i := 0 to Elements.Size - 1 do begin
+    Elements[i].Draw(Offset, Rect, Canvas);
+    FExpandable := FExpandable or Elements[i].Expandable;
+    if FSelected and (FSchedule.FDrawBtns) then
+      with Elements[i] do
+        DrawBtns(ToPoint(Frect.Right, FRect.Top), Canvas);
   end;
+  FExpandable := FExpandable or (Offset.y > Rect.Bottom);
+
+  if FSelected and FExpandable then
+    Canvas.Draw(Rect.Right - BTN_SIZE, Rect.Bottom - BTN_SIZE, expand_20x20);
 end;
 
-procedure TCell.AddData(Data: TStringM);
+function TCell.Copy(ElementID: integer): TCell;
 var
   i: integer;
 begin
-  for i := 0 to Data.Width - 1 do
-    AddData(Data, i);
-end;
-
-procedure TCell.AddData(Data: TStringM; Col: integer);
-var
-  i: integer;
-begin
-  if FFieldData.Width = 0 then
-    FFieldData.Resize(1, Data.Height)
+  Result := TCell.Create(FTable, FSchedule);
+  Result.FRow := FRow;
+  Result.FCol := FCol;
+  if ElementID = -1 then
+    for i := 0 to Elements.Size - 1 do
+      Result.AddElement(FElements[i])
   else
-    FFieldData.AddColumns(1);
-  FCellBtns.PushBack(TDragBtn.Create(Self, FFieldData.Width - 1, FSchedule));
-  FCellBtns.PushBack(TEditBtn.Create(Self, FFieldData.Width - 1, FSchedule));
-  FCellBtns.PushBack(TDelBtn.Create(Self, FFieldData.Width - 1, FSchedule));
-  for i := 0 to Data.Height - 1 do
-    FFieldData[FFieldData.Width - 1, i] := Data[Col, i];
+    Result.AddElement(FElements[ElementID]);
 end;
 
 function TCell.MouseToBtn(Mouse: TPoint): TCellBtn;
 var
   i: integer;
 begin
-  for i := 0 to FCellBtns.Size - 1 do
-    if FCellBtns[i].UnderMouse(Mouse) then
-      Exit(FCellBtns[i]);
-  Exit(nil);
+  if not FSchedule.FDrawBtns then
+    Exit(nil);
+  for i := 0 to FElements.Size - 1 do begin
+    Result := FElements[i].MouseToBtn(Mouse);
+    if Result <> nil then
+      Exit(Result);
+  end;
 end;
 
-function TCell.MaxTextHeight(VisFields: TCheckListBox; TextH: integer): integer;
+function TCell.MaxTextHeight: integer;
 var
   i: integer;
-  InvFieldC: integer = 0;
-begin
-  for i := 0 to VisFields.Count - 1 do
-    if not VisFields.Checked[i] then
-      InvFieldC += 1;
-  Result := FFieldData.Width * FFieldData.Height + FFieldData.Width -
-    InvFieldC * FFieldData.Width;
-  Exit(Result * TextH);
-end;
-
-function TCell.MaxTextWidth(Canvas: TCanvas): integer;
-var
-  i: integer;
-  j: integer;
 begin
   Result := 0;
-  for i := 0 to FFieldData.Width - 1 do
-    for j := 0 to FFieldData.Height - 1 do
-      Result := Max(Result, Canvas.TextWidth(TextOut(i, j)));
-  Result += LEFT_MARGIN + BTN_TAB_OFFSET + 4;
+  for i := 0 to FElements.Size - 1 do
+    Result += FElements[i].MaxTextH;
+end;
+
+function TCell.MaxTextWidth: integer;
+var
+  i: integer;
+begin
+  Result := CELL_W;
+  for i := 0 to FElements.Size - 1 do
+    Result := Max(Result, FElements[i].FMaxTextW);
 end;
 
 function TCell.GetID(ElementID: integer): integer;
 begin
-  Exit(StrToInt(FFieldData[ElementID, ID_FIELD_INDX]));
-end;
-
-function TCell.TextOut(i, j: integer): string;
-begin
-  Exit(FTable.Fields[j mod FTable.Count].Name + ': ' + FFieldData[i, j]);
-end;
-
-procedure TCell.DrawBtns(Canvas: TCanvas; ElementID, X, Y, YConstraint: integer);
-var
-  i: integer;
-  Index: integer;
-begin
-  for i := 0 to 2 do begin
-    if Y >= YConstraint then
-      Exit;
-    Index := ElementID * 3 + i;
-    FCellBtns[Index].FAnchor := ToPoint(X, Y);
-    FCellBtns[Index].Draw(Canvas);
-    Y += BTN_SIZE;
-  end;
+  Exit(StrToInt(FElements[ElementID].Data[ID_FIELD_INDX]));
 end;
 
 procedure TSchedule.FormCreate(Sender: TObject);
@@ -578,13 +670,19 @@ begin
   FCurBtn := nil;
   FConflicts := nil;
   FDelEmptyLines := True;
+  FDrawBtns := True;
   FDrawEmptyLines.Checked := not FDelEmptyLines;
   Constraints.MinHeight := 20;
   Constraints.MinWidth := 350;
+  PrevHCBoxInd := -1;
+  PrevVCBoxInd := -1;
+  PrevRowCount := -1;
   FCells := TCellMatrix.Create;
+  FHeights := TIntegerV.Create;
   FConflicts := TConflictPanels.Create(FConflictsSBox, 5, 5);
   FConflicts.OnEditClick := @CreateInsertConflictCard;
   Application.CreateForm(TConflictForm, FConflictCard);
+  Application.CreateForm(TConflictTreeViewForm, FConflictView);
 end;
 
 procedure TSchedule.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -604,6 +702,7 @@ end;
 procedure TSchedule.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   inherited Load(ANClass, ATable, Params);
+  LoadCheckListBoxData;
   FFilters := TFilterPanels.Create(ATable, FFiltersSBox, 5, 5);
   ThisSubscriber.OnNotificationRecieve := @NotificationRecieve;
   Caption := APP_CAPTION + ' - Расписание(Б.)';
@@ -617,6 +716,7 @@ procedure TSchedule.FDrawGridDrawCell(Sender: TObject; aCol, aRow: integer;
 begin
   if FCells = nil then
     Exit;
+  FHeights[aRow] := FDrawGrid.RowHeights[aRow];
   with FDrawGrid.Canvas do
     if (aCol = 0) and (aRow > 0) then begin
       Pen.Color := clBlack;
@@ -634,7 +734,7 @@ begin
     end
     else if (aCol > 0) and (aRow > 0) then
       if FCells[aCol - 1, aRow - 1] <> nil then
-        FCells[aCol - 1, aRow - 1].Draw(aRect, FDrawGrid.Canvas, FCheckListBox);
+        FCells[aCol - 1, aRow - 1].Draw(aRect, FDrawGrid.Canvas);
 end;
 
 function TSchedule.GetTitleData(FieldIndex: integer): TDBDataTuple;
@@ -654,8 +754,9 @@ begin
   end;
 end;
 
-procedure TSchedule.FCheckListBoxClickCheck(Sender: TObject);
+procedure TSchedule.FVisFieldsClickCheck(Sender: TObject);
 begin
+  SetBtnsDrawState;
   FDrawGrid.Invalidate;
 end;
 
@@ -754,6 +855,17 @@ begin
   FConflicts.DeleteAll;
 end;
 
+procedure TSchedule.FDirShowConflictBtnClick(Sender: TObject);
+begin
+  CreateConflictDir;
+end;
+
+procedure TSchedule.FTreeShowConflictBtnClick(Sender: TObject);
+begin
+  FConflictView.Load(Table, FConflicts);
+  FConflictView.Show;
+end;
+
 procedure TSchedule.LoadCBoxData;
 begin
   LoadStringListData(FHCBox.Items);
@@ -766,12 +878,10 @@ procedure TSchedule.LoadCheckListBoxData;
 var
   i: integer;
 begin
-  LoadStringListData(FCheckListBox.Items);
-  for i := 0 to FCheckListBox.Items.Count - 1 do
-    FCheckListBox.Checked[i] := True;
-  FCheckListBox.Checked[0] := False;
-  FCheckListBox.Checked[FHCBox.ItemIndex] := False;
-  FCheckListBox.Checked[FVCBox.ItemIndex] := False;
+  LoadStringListData(FVisFields.Items);
+  for i := 0 to FVisFields.Items.Count - 1 do
+    FVisFields.Checked[i] := True;
+  FVisFields.Checked[0] := False;
 end;
 
 procedure TSchedule.LoadStringListData(Items: TStrings);
@@ -786,23 +896,42 @@ end;
 procedure TSchedule.BuildMatrix(CellTuple: TCells);
 var
   i: integer;
+  j: integer;
   ColIndex: integer;
   RowIndex: integer;
 begin
   FCells.Resize(Length(FHTitleData), Length(FVTitleData));
   FCells.Fill(nil);
   for i := 0 to CellTuple.Size - 1 do begin
-    ColIndex := FindDBDataInd(FHTitleData, CellTuple[i].FieldData[0, FHCBox.ItemIndex]);
-    RowIndex := FindDBDataInd(FVTitleData, CellTuple[i].FieldData[0, FVCBox.ItemIndex]);
+    ColIndex := FindDBDataInd(FHTitleData,
+      CellTuple[i].Elements[0].Data[FHCBox.ItemIndex]);
+    RowIndex := FindDBDataInd(FVTitleData,
+      CellTuple[i].Elements[0].Data[FVCBox.ItemIndex]);
     if FCells[ColIndex, RowIndex] = nil then
       FCells[ColIndex, RowIndex] := CellTuple[i]
-    else begin
-      FCells[ColIndex, RowIndex].AddData(CellTuple[i].FFieldData);
-      CellTuple[i].Free;
-      CellTuple[i] := nil;
-    end;
+    else
+      with FCells[ColIndex, RowIndex] do begin
+        for j := 0 to CellTuple[i].Elements.Size - 1 do
+          AddElement(CellTuple[i].Elements[j]);
+        CellTuple[i].Free;
+        CellTuple[i] := nil;
+      end;
   end;
   CellTuple.Free;
+end;
+
+procedure TSchedule.LoadHeights;
+var
+  i: integer;
+begin
+  FHeights[0] := TITLE_H;
+  if FHeights.Size > FDrawGrid.RowCount then
+    Exit;
+  for i := 0 to FHeights.Size - 1 do begin
+    if (i > 0) and (FHeights[i] < CELL_H) then
+      FHeights[i] := CELL_H;
+    FDrawGrid.RowHeights[i] := FHeights[i];
+  end;
 end;
 
 procedure TSchedule.SetCellsCoords;
@@ -837,7 +966,14 @@ begin
 end;
 
 procedure TSchedule.FreePrevData;
+var
+  i: integer;
+  j: integer;
 begin
+  for i := 0 to FCells.Width - 1 do
+    for j := 0 to FCells.Height - 1 do
+      if FCells[i, j] <> nil then
+        FCells[i, j].FFreeElements := True;
   FCells.FreeItems;
   FVTitleData := nil;
   FHTitleData := nil;
@@ -850,17 +986,33 @@ var
   DataTuple: TCells;
 begin
   FreePrevData;
-  LoadCheckListBoxData;
+  SetBtnsDrawState;
+
+  if PrevHCBoxInd <> -1 then
+    FVisFields.Checked[PrevHCBoxInd] := True;
+  if PrevVCBoxInd <> -1 then
+    FVisFields.Checked[PrevVCBoxInd] := True;
+
   FHTitleData := GetTitleData(FHCBox.ItemIndex);
   FVTitleData := GetTitleData(FVCBox.ItemIndex);
   DataTuple := GetCellDataTuple;
-  CheckConflicts(DataTuple);
   BuildMatrix(DataTuple);
+  CheckConflicts;
+  FVisFields.Checked[FHCBox.ItemIndex] := False;
+  FVisFields.Checked[FVCBox.ItemIndex] := False;
   if FDelEmptyLines then
     DeleteEmptyLines;
   SetCellsCoords;
   SetTableSize;
-  SetCellsSize(CELL_W, CELL_H);
+  FHeights.Resize(FDrawGrid.RowCount);
+  if (PrevHCBoxInd = FHCBox.ItemIndex) and (PrevVCBoxInd = FVCBox.ItemIndex) and
+    (FHeights.Size = PrevRowCount) then
+    LoadHeights
+  else
+    SetCellsSize(CELL_W, CELL_H);
+  PrevHCBoxInd := FHCBox.ItemIndex;
+  PrevVCBoxInd := FVCBox.ItemIndex;
+  PrevRowCount := FDrawGrid.RowCount;
 end;
 
 procedure TSchedule.SelectCell(Mouse: TPoint);
@@ -890,34 +1042,60 @@ begin
   end;
 end;
 
-procedure TSchedule.CheckConflicts(Cells: TCells);
+procedure TSchedule.CheckConflicts;
 var
   i: integer;
+  j: integer;
+  k: integer;
   Data: TDataTuple;
-  ConflictedCells: TResultTuple;
-  Cell: TCell;
+  Element: TCellElement;
 begin
+  if FCells = nil then
+    Exit;
   Data := TDataTuple.Create;
-  for i := 0 to Cells.Size - 1 do
-    Data.PushBack(Cells[i].FFieldData);
+  for i := 0 to FCells.Width - 1 do
+    for j := 0 to FCells.Height - 1 do begin
+      if FCells[i, j] <> nil then
+        for k := 0 to FCells[i, j].Elements.Size - 1 do
+          Data.PushBack(FCells[i, j].Elements[k].Data);
+    end;
 
   FConflicts.AnalyzeData(Data);
-  ConflictedCells := FConflicts.GetResult;
-  if Length(ConflictedCells) > 0 then;
-  for i := 0 to High(ConflictedCells) do begin
-    Cell := FindCell(ConflictedCells[i].RecID, Cells);
-    if Cell <> nil then
-      Cell.FConflicted := True;
+  FConflictedCells := nil;
+  FConflictedCells := FConflicts.GetResult;
+  if Length(FConflictedCells) > 0 then;
+  for i := 0 to High(FConflictedCells) do begin
+    Element := FindElement(FConflictedCells[i].RecID);
+    if Element <> nil then begin
+      Element.AddAlerBtn;
+      Element.FCell.FConflicted := True;
+    end;
   end;
 end;
 
-function TSchedule.FindCell(RecID: integer; Cells: TCells): TCell;
+procedure TSchedule.SetBtnsDrawState;
 var
   i: integer;
+  VisFieldC: integer = 0;
 begin
-  for i := 0 to Cells.Size - 1 do
-    if RecID = Cells[i].GetID(0) then
-      Exit(Cells[i]);
+  for i := 0 to FVisFields.Count - 1 do
+    if FVisFields.Checked[i] then
+      VisFieldC += 1;
+  FDrawBtns := VisFieldC >= MIN_ELEMENTS_TO_DRAW_BTNS;
+end;
+
+function TSchedule.FindElement(RecID: integer): TCellElement;
+var
+  i: integer;
+  j: integer;
+  k: integer;
+begin
+  for i := 0 to FCells.Width - 1 do
+    for j := 0 to FCells.Height - 1 do
+      if FCells[i, j] <> nil then
+        for k := 0 to FCells[i, j].Elements.Size - 1 do
+          if RecID = FCells[i, j].GetID(k) then
+            Exit(FCells[i, j].Elements[k]);
   Exit(nil);
 end;
 
@@ -980,7 +1158,7 @@ begin
     Exit;
   Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
     TDirectory, nil, SelectedCellHash(DIR_SEED)));
-  if Dir.FilterCount <> 0 then
+  if Dir.Filters.Size <> 0 then
     Exit;
 
   Dir.AddFilterPanel(FHCBox.Items[FHCBox.ItemIndex], ' = ',
@@ -994,6 +1172,28 @@ begin
   Dir.ApplyFilters;
 end;
 
+procedure TSchedule.CreateConflictDir;
+var
+  Dir: TDirectory;
+  FilterPanel: TFilterPanel;
+  i: integer;
+begin
+  if FConflictedCells = nil then
+    Exit;
+  if Length(FConflictedCells) = 0 then
+    Exit;
+  Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
+    TDirectory, nil, 333212333));
+  if Dir.Filters.Size <> 0 then
+    Dir.Filters.DeleteAll;
+  for i := 0 to High(FConflictedCells) do begin
+    FilterPanel := Dir.AddFilterPanel('ID', ' = ',
+      IntToStr(FConflictedCells[i].RecID), True);
+    FilterPanel.Filter.Connection := 'OR';
+  end;
+  Dir.ApplyFilters;
+end;
+
 procedure TSchedule.ExpandSelectedCell;
 var
   MaxW: integer;
@@ -1003,14 +1203,14 @@ begin
     Exit;
   with FDrawGrid do begin
     if FSelectedCell.FExpandable then begin
-      MaxW := FSelectedCell.MaxTextWidth(FDrawGrid.Canvas);
-      MaxH := FSelectedCell.MaxTextHeight(FCheckListBox,
-        FDrawGrid.Canvas.TextHeight('Нрб'));
+      MaxW := FSelectedCell.MaxTextWidth;
+      MaxH := FSelectedCell.MaxTextHeight;
 
       if MaxH > RowHeights[FSelectedRow + 1] then
         RowHeights[FSelectedRow + 1] := MaxH;
       if MaxW > ColWidths[FSelectedCol + 1] then
         ColWidths[FSelectedCol + 1] := MaxW;
+      FSelectedCell.FExpandable := False;
     end
     else begin
       RowHeights[FSelectedRow + 1] := CELL_H;
@@ -1038,7 +1238,7 @@ var
   i: integer;
   NewData: TParam;
 begin
-  for i := 0 to Cell.FFieldData.Width - 1 do begin
+  for i := 0 to Cell.Elements.Size - 1 do begin
     NewData := TParam.Create(nil, ptInput);
     NewData.Value := Data;
     ExecQuery(Table.Fields[RecIndex].Query.Update(Cell.GetID(i), NewData));
@@ -1059,13 +1259,11 @@ begin
   if FBuffer = nil then
     Exit;
 
-  for i := 0 to FBuffer.FieldData.Width - 1 do begin
-    if FBuffer.Col <> Col then begin
-      FBuffer.FieldData[i, FHCBox.ItemIndex] := IntToStr(FHTitleData[Col].ID);
-    end;
-    if FBuffer.Row <> Row then begin
-      FBuffer.FieldData[i, FVCBox.ItemIndex] := IntToStr(FVTitleData[Row].ID);
-    end;
+  for i := 0 to FBuffer.Elements.Size - 1 do begin
+    if FBuffer.Col <> Col then
+      FBuffer.Elements[i].Data[FHCBox.ItemIndex] := IntToStr(FHTitleData[Col].ID);
+    if FBuffer.Row <> Row then
+      FBuffer.Elements[i].Data[FVCBox.ItemIndex] := IntToStr(FVTitleData[Row].ID);
     UpDate(FBuffer, FHCBox.ItemIndex, IntToStr(FHTitleData[Col].ID));
     UpDate(FBuffer, FVCBox.ItemIndex, IntToStr(FVTitleData[Row].ID));
   end;
@@ -1080,15 +1278,14 @@ begin
   if Cell = nil then
     Exit;
   FBuffer.Free;
-  FBuffer := TCell.Create(Table, Self);
-  FBuffer.Copy(Cell, ElementID);
+  FBuffer := Cell.Copy(ElementID);
   if ElementID = -1 then begin
     FCells[Cell.Col, Cell.Row] := nil;
     Cell.Free;
   end
   else begin
-    Cell.FFieldData.DeleteCol(ElementID);
-    if Cell.FFieldData.Width = 0 then begin
+    Cell.Elements.DeleteIndS(ElementID);
+    if Cell.FElements.Size = 0 then begin
       if FSelectedCell = FCells[Cell.Col, Cell.Row] then
         FSelectedCell := nil;
       FCells[Cell.Col, Cell.Row] := nil;
@@ -1132,29 +1329,29 @@ function TSchedule.SelectedCellHash(Seed: integer): integer;
 begin
   Result := 1001 + (Seed + 3) * (Seed - 7);
   Result += Result shl (Seed mod 16) xor Result;
-  Result += word(@(FSelectedCell.FieldData));
+  Result += word(@(FSelectedCell.FElements));
   Result += Result and Result xor Result shl 10;
 end;
+
 
 function TSchedule.GetCellDataTuple: TCells;
 var
   i: integer;
+  Data: TStringV;
   Cell: TCell;
-  Data: TStringM;
 begin
   PerformQuery(FFilters.Apply);
   Result := TCells.Create;
-  Data := TStringM.Create;
-  Data.Resize(1, Table.Count);
+  FormQuery.First;
   while not FormQuery.EOF do begin
     Cell := TCell.Create(Table, Self);
+    Data := TStringV.Create;
     for i := 0 to Table.Count - 1 do
-      Data[0, i] := FormQuery.Fields[i].AsString;
-    Cell.AddData(Data);
+      Data.PushBack(FormQuery.Fields[i].AsString);
+    Cell.AddElement(Data);
     FormQuery.Next;
     Result.PushBack(Cell);
   end;
-  Data.Free;
 end;
 
 function TSchedule.GetMaxTitleWidth: integer;
