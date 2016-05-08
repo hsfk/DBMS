@@ -47,6 +47,9 @@ type
     procedure AddControlPanel(CustomControl: T); virtual;
   published
     property OnDelete: TEvent write FOnDelete;
+    property Parent: TWinControl read FParent;
+    property Top: integer read FTop;
+    property Left: integer read FLeft;
   end;
 
 implementation
