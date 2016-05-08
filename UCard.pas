@@ -5,8 +5,8 @@ unit UCard;
 interface
 
 uses
-  SysUtils, StdCtrls, ComCtrls, sqldb, UCardControls, DB, Forms,
-  UAbout, UDBForm, Dialogs, UDBObjects, UNotifications, Controls;
+  SysUtils, StdCtrls, ComCtrls, sqldb, DB, Forms,
+  UDBForm, Dialogs, UDBObjects, UNotifications, Controls, ExtCtrls, UCardControls;
 
 type
 
@@ -14,13 +14,9 @@ type
   private
     FTop: integer;
     FLeft: integer;
-    FControls: TControls;
+    FControls: TCardControls;
     FRecordIndex: integer;
-    FCboxNotifications: TSubscriber;
-    function Correct: boolean;
-    procedure CreateGUIControls;
     procedure LoadGUIData;
-    procedure SubscribeCBoxes;
     procedure LoadInterface; virtual; abstract;
     procedure OnNotificationRecieve(Sender: TObject);
   public
@@ -29,7 +25,9 @@ type
   published
     FStatusBar: TStatusBar;
     FApplyBtn: TButton;
+    FBtnsPanel: TPanel;
     FCancelBtn: TButton;
+    FControlsSBox: TScrollBox;
     procedure FormCreate(Sender: TObject); override;
     procedure FApplyBtnClick(Sender: TObject); virtual; abstract;
     procedure FCancelBtnClick(Sender: TObject);
@@ -63,10 +61,6 @@ implementation
 procedure TCard.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
-  Constraints.MinWidth := Width;
-  Constraints.MinHeight := Height;
-  Constraints.MaxWidth := Width;
-  Constraints.MaxHeight := Height;
 end;
 
 procedure TCard.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -79,60 +73,23 @@ procedure TCard.Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil);
 begin
   Table := ATable;
   FStatusBar.SimpleText := Connection.CurrentConnection;
-  FTop := 20;
-  FLeft := 32;
-  FControls := TControls.Create;
+  FTop := 5;
+  FLeft := 5;
   FRecordIndex := Params.ParamByName('Target').AsInteger;
+  FControls := TCardControls.Create(FRecordIndex, Table, FControlsSBox, 5, 5);
   inherited Load(ANClass, ATable);
   ThisSubscriber.OnNotificationRecieve := @OnNotificationRecieve;
   FSelectAll := Table.Query.Select(TDBFilters.Create(
     TDBFilter.Create(Table.Front, ' = ', IntToStr(FRecordIndex))));
-  CreateGUIControls;
+  FControls.CreateGUIControls;
   LoadGUIData;
-  SubscribeCBoxes;
+  FControls.SubscribeControlsFromSameTable;
   LoadInterface;
 end;
 
 procedure TCard.Select(ControlIndex: integer; Data: string);
 begin
   FControls[ControlIndex].Caption := Data;
-end;
-
-procedure TCard.SubscribeCBoxes;
-var
-  SameTable: TDBTable = nil;
-  NClass: integer = 1;
-  i: integer = 1;
-begin
-  FCboxNotifications.Free;
-  FCboxNotifications := TSubscriber.Create(True);
-  with Table do
-    while i < Count - 1 do begin
-      if Fields[i].ParentTable = Fields[i + 1].ParentTable then begin
-        SameTable := Fields[i].ParentTable;
-        while (i < Count) and (Fields[i].ParentTable = SameTable) do begin
-          FControls.Items[i - 1].Subscriber.NClass := ToNClass([NClass]);
-          FCboxNotifications.Subscribe(FControls.Items[i - 1].Subscriber);
-          i += 1;
-        end;
-        NClass += 1;
-      end;
-      i += 1;
-    end;
-end;
-
-procedure TCard.CreateGUIControls;
-var
-  i: integer;
-  Control: TCardControl;
-begin
-  with Table do
-    for i := 1 to Count - 1 do begin
-      Control := Fields[i].CreateControl(FRecordIndex);
-      Control.CreateGUI(Self, FTop, FLeft);
-      FControls.PushBack(Control);
-      FTop += 25;
-    end;
 end;
 
 procedure TCard.LoadGUIData;
@@ -143,9 +100,9 @@ var
 begin
   for i := 0 to FControls.Size - 1 do begin
     FControls[i].Clear;
-    PerformQuery(FControls[i].ParentTable.Query.Select(nil));
+    PerformQuery(FControls[i].Field.ParentTable.Query.Select(nil));
     if i > 0 then
-      SameFieldLeft := FControls[i - 1].ParentTable = FControls[i].ParentTable;
+      SameFieldLeft := FControls[i - 1].Field.ParentTable = FControls[i].Field.ParentTable;
     if SameFieldLeft then
       FieldIndex += 1
     else
@@ -160,16 +117,6 @@ begin
   end;
 end;
 
-function TCard.Correct: boolean;
-var
-  i: integer;
-begin
-  for i := 0 to FControls.Size - 1 do
-    if FControls.Items[i].Correct = False then
-      Exit(False);
-  Exit(True);
-end;
-
 procedure TCard.OnNotificationRecieve(Sender: TObject);
 begin
   try
@@ -182,7 +129,7 @@ end;
 
 procedure TCard.FCancelBtnClick(Sender: TObject);
 begin
-  if Correct then
+  if FControls.Correct then
     if MessageDlg('Вы действительно хотите выйти?', mtConfirmation, mbOKCancel, 0) =
       mrCancel then
       Exit;
@@ -215,7 +162,7 @@ end;
 
 procedure TEditCard.FApplyBtnClick(Sender: TObject);
 begin
-  if not Correct then begin
+  if not FControls.Correct then begin
     ShowMessage('Нужно заполнить все поля.');
     Exit;
   end;
@@ -238,9 +185,9 @@ var
 begin
   Values := TParams.Create;
   while i < FControls.Size do begin
-    if SameTable <> FControls[i].ParentTable then begin
+    if SameTable <> FControls[i].Field.ParentTable then begin
       Values.AddParam(FControls[i].Data);
-      SameTable := FControls[i].ParentTable;
+      SameTable := FControls[i].Field.ParentTable;
     end;
     i += 1;
   end;
@@ -257,7 +204,7 @@ end;
 
 procedure TInsertCard.FApplyBtnClick(Sender: TObject);
 begin
-  if not Correct then begin
+  if not FControls.Correct then begin
     ShowMessage('Нужно заполнить все поля.');
     Exit;
   end;

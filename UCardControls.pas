@@ -5,175 +5,176 @@ unit UCardControls;
 interface
 
 uses
-  Classes, SysUtils, StdCtrls, Controls, DB, UDBObjects, UVector;
+  Classes, SysUtils, StdCtrls, Controls, UCustomControl, DB, UDBObjects,
+  UVector, UNotifications, UStringUtils;
 
 type
 
-  TControls = specialize TObjVector<TCardControl>;
+  TCardControl = class(TCustomControl)
+  private
+    FLabel: TLabel;
+    FField: TDBField;
+    FSubscriber: TSubscriber;
+    FRecID: integer;
+    procedure SetCaption(AData: string); virtual; abstract;
+    procedure OnNotificationRecieve(Sender: TObject); virtual;
+    function GetData: TParam; virtual; abstract;
+  public
+    constructor Create(RecID: integer);
+    procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); virtual;
+    procedure Deselect; virtual; abstract;
+    procedure Clear; virtual; abstract;
+    procedure LoadData(Data: string; ID: integer); virtual; abstract;
+    function UpdateTable: TQueryContainer; virtual; abstract;
+    function Correct: boolean; virtual; abstract;
+  published
+    property Subscriber: TSubscriber read FSubscriber write FSubscriber;
+    property Caption: string write SetCaption;
+    property Data: TParam read GetData;
+    property Field: TDBField read FField write FField;
+  end;
 
-  TDBEditControl = class(TCardControl)
+  TFieldControl = class(TCardControl)
   private
     FEdit: TEdit;
-  protected
-    function GetData: TParam; override;
     procedure SetCaption(AData: string); override;
+    function GetData: TParam; override;
   public
-    function UpdateTable: TQueryContainer; override;
-    function Correct: boolean; override;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure Clear; override;
     procedure Deselect; override;
     procedure LoadData(AData: string; ID: integer); override;
+    function UpdateTable: TQueryContainer; override;
+    function Correct: boolean; override;
   end;
 
-  TDBCBoxControl = class(TCardControl)
+  TRefFieldControl = class(TCardControl)
   private
     FCBox: TComboBox;
     FData: array of TDBData;
     procedure OnChange(Sender: TObject);
-  protected
-    function GetData: TParam; override;
     procedure OnNotificationRecieve(Sender: TObject); override;
     procedure SetCaption(AData: string); override;
+    function GetData: TParam; override;
   public
-    function UpdateTable: TQueryContainer; override;
-    function Correct: boolean; override;
     procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure Clear; override;
     procedure Deselect; override;
     procedure LoadData(AData: string; ID: integer); override;
+    function UpdateTable: TQueryContainer; override;
+    function Correct: boolean; override;
+  end;
+
+  TCustomCardControls = specialize TCustomControls<TCardControl>;
+
+  TCardControls = class(TCustomCardControls)
+  private
+    FTable: TDBTable;
+    FRecID: integer;
+    FCboxNotifications: TSubscriber;
+    procedure AddControl(Control: TCardControl);
+  public
+    constructor Create(RecID: integer; Table: TDBTable; AParent: TWinControl;
+      ATop, ALeft: integer);
+    procedure CreateGUIControls;
+    procedure SubscribeControlsFromSameTable;
+    function Correct: boolean;
   end;
 
 implementation
 
-function TDBEditControl.UpdateTable: TQueryContainer;
+procedure TCardControl.OnNotificationRecieve(Sender: TObject);
+begin
+  { Do nothing }
+end;
+
+constructor TCardControl.Create(RecID: integer);
+begin
+  FRecID := RecID;
+end;
+
+procedure TCardControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
+begin
+  inherited Create(AParent, 370, ATop, ALeft);
+  FLabel := TLabel.Create(Self);
+  FLabel.Parent := Self;
+  FLabel.Caption := FField.Name + ':';
+  FLabel.Top := 0;
+  FLabel.Left := 0;
+  DelBtn.Free;
+end;
+
+function TFieldControl.GetData: TParam;
+begin
+  Result := TParam.Create(nil, ptInput);
+  Result.DataType := FField.DataType;
+  Result.Name := FField.NativeName;
+  Result.Value := FEdit.Text;
+end;
+
+procedure TFieldControl.SetCaption(AData: string);
+begin
+  FEdit.Text := AData;
+end;
+
+function TFieldControl.UpdateTable: TQueryContainer;
 var
   NewData: TParam;
 begin
   NewData := TParam.Create(nil, ptInput);
-  NewData.DataType := DataType;
+  NewData.DataType := FField.DataType;
   NewData.Value := FEdit.Text;
-  Exit(Query.Update(FRecID, NewData));
+  Exit(FField.Query.Update(FRecID, NewData));
 end;
 
-procedure TDBEditControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
+function TFieldControl.Correct: boolean;
+begin
+  Exit(FEdit.Text <> '');
+end;
+
+procedure TFieldControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
 begin
   inherited CreateGUI(AParent, ATop, ALeft);
-  FEdit := TEdit.Create(AParent);
-  FEdit.Parent := AParent;
-  FEdit.Top := ATop;
-  FEdit.Left := ALeft + 100;
-  FEdit.Width := 250;
-  FEdit.Anchors := [akRight, akLeft];
-  FEdit.Align := alCustom;
-  if DataType = ftInteger then
+  FEdit := TEdit.Create(Self);
+  InitComponent(FEdit, Self, 0, 120, 250);
+  if FField.DataType = ftInteger then
     FEdit.NumbersOnly := True;
 end;
 
-procedure TDBEditControl.Clear;
+procedure TFieldControl.Clear;
 begin
   Deselect;
 end;
 
-procedure TDBEditControl.Deselect;
+procedure TFieldControl.Deselect;
 begin
   FEdit.Text := '';
 end;
 
-function TDBEditControl.Correct: boolean;
-begin
-  if FEdit.Text = '' then
-    Exit(False);
-  Exit(True);
-end;
-
-procedure TDBEditControl.LoadData(AData: string; ID: integer);
+procedure TFieldControl.LoadData(AData: string; ID: integer);
 begin
   FEdit.Text := AData;
 end;
 
-function TDBEditControl.GetData: TParam;
-begin
-  Result := TParam.Create(nil, ptInput);
-  Result.DataType := DataType;
-  Result.Name := NativeName;
-  Result.Value := FEdit.Text;
-end;
-
-procedure TDBEditControl.SetCaption(AData: string);
-begin
-  FEdit.Text := AData;
-end;
-
-function TDBCBoxControl.GetData: TParam;
-begin
-  Result := TParam.Create(nil, ptInput);
-  Result.DataType := DataType;
-  Result.Name := NativeName;
-  Result.Value := FData[FCBox.ItemIndex].ID;
-end;
-
-procedure TDBCBoxControl.OnChange(Sender: TObject);
+procedure TRefFieldControl.OnChange(Sender: TObject);
 begin
   Subscriber.CreateNotification(FCBox, Subscriber.NClass);
 end;
 
-function TDBCBoxControl.UpdateTable: TQueryContainer;
-var
-  NewData: TParam;
+function TRefFieldControl.GetData: TParam;
 begin
-  NewData := TParam.Create(nil, ptInput);
-  NewData.DataType := ftInteger;
-  NewData.Value := FData[FCBox.ItemIndex].ID;
-  Exit(Query.Update(FRecID, NewData));
+  Result := TParam.Create(nil, ptInput);
+  Result.DataType := FField.DataType;
+  Result.Name := FField.NativeName;
+  Result.Value := FData[FCBox.ItemIndex].ID;
 end;
 
-procedure TDBCBoxControl.OnNotificationRecieve(Sender: TObject);
+procedure TRefFieldControl.OnNotificationRecieve(Sender: TObject);
 begin
-  FCBox.ItemIndex := TCombobox(Sender).ItemIndex;
+  FCBox.ItemIndex := TComboBox(Sender).ItemIndex;
 end;
 
-procedure TDBCBoxControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
-begin
-  inherited CreateGUI(AParent, ATop, ALeft);
-  FCBox := TComboBox.Create(AParent);
-  FCBox.Parent := AParent;
-  FCBox.ReadOnly := True;
-  FCBox.Top := ATop;
-  FCBox.Left := ALeft + 100;
-  FCBox.Width := 250;
-  FCBox.Anchors := [akRight, akLeft];
-  FCBox.Align := alCustom;
-  FCBox.OnChange := @OnChange;
-  Subscriber.OnNotificationRecieve := @OnNotificationRecieve;
-end;
-
-function TDBCBoxControl.Correct: boolean;
-begin
-  if FCBox.ItemIndex = -1 then
-    Exit(False);
-  Exit(True);
-end;
-
-procedure TDBCBoxControl.Clear;
-begin
-  FCBox.Items.Clear;
-end;
-
-procedure TDBCBoxControl.Deselect;
-begin
-  FCBox.ItemIndex := -1;
-end;
-
-procedure TDBCBoxControl.LoadData(AData: string; ID: integer);
-begin
-  SetLength(FData, Length(FData) + 1);
-  FData[High(FData)].Data := AData;
-  FData[High(FData)].ID := ID;
-  FCBox.Items.Add(AData);
-end;
-
-procedure TDBCBoxControl.SetCaption(AData: string);
+procedure TRefFieldControl.SetCaption(AData: string);
 var
   i: integer;
 begin
@@ -182,6 +183,104 @@ begin
       FCBox.ItemIndex := i;
       Exit;
     end;
+end;
+
+function TRefFieldControl.UpdateTable: TQueryContainer;
+var
+  NewData: TParam;
+begin
+  NewData := TParam.Create(nil, ptInput);
+  NewData.DataType := ftInteger;
+  NewData.Value := FData[FCBox.ItemIndex].ID;
+  Exit(FField.Query.Update(FRecID, NewData));
+end;
+
+function TRefFieldControl.Correct: boolean;
+begin
+  Exit(FCBox.ItemIndex <> -1);
+end;
+
+procedure TRefFieldControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
+begin
+  inherited CreateGUI(AParent, ATop, ALeft);
+  FCBox := TComboBox.Create(AParent);
+  InitComponent(FCBox, Self, 0, 120, 250);
+  FCBox.ReadOnly := True;
+  FCBox.OnChange := @OnChange;
+  Subscriber.OnNotificationRecieve := @OnNotificationRecieve;
+end;
+
+procedure TRefFieldControl.Clear;
+begin
+  FCBox.Items.Clear;
+end;
+
+procedure TRefFieldControl.Deselect;
+begin
+  FCBox.ItemIndex := -1;
+end;
+
+procedure TRefFieldControl.LoadData(AData: string; ID: integer);
+begin
+  SetLength(FData, Length(FData) + 1);
+  FData[High(FData)].Data := AData;
+  FData[High(FData)].ID := ID;
+  FCBox.Items.Add(AData);
+end;
+
+constructor TCardControls.Create(RecID: integer; Table: TDBTable;
+  AParent: TWinControl; ATop, ALeft: integer);
+begin
+  FTable := Table;
+  FRecID := RecID;
+  inherited Create(AParent, ATop, ALeft);
+end;
+
+procedure TCardControls.AddControl(Control: TCardControl);
+begin
+  Control.CreateGUI(Parent, Top, Left);
+  AddControlPanel(Control);
+end;
+
+procedure TCardControls.CreateGUIControls;
+var
+  i: integer;
+begin
+  for i := 1 to FTable.Count - 1 do
+    AddControl(TCardControl(FTable.Fields[i].CreateControln(FRecID)));
+end;
+
+procedure TCardControls.SubscribeControlsFromSameTable;
+var
+  SameTable: TDBTable = nil;
+  NClass: integer = 1;
+  i: integer = 1;
+begin
+  FCboxNotifications.Free;
+  FCboxNotifications := TSubscriber.Create(True);
+  with FTable do
+    while i < Count - 1 do begin
+      if Fields[i].ParentTable = Fields[i + 1].ParentTable then begin
+        SameTable := Fields[i].ParentTable;
+        while (i < Count) and (Fields[i].ParentTable = SameTable) do begin
+          Items[i - 1].Subscriber.NClass := ToNClass([NClass]);
+          FCboxNotifications.Subscribe(Items[i - 1].Subscriber);
+          i += 1;
+        end;
+        NClass += 1;
+      end;
+      i += 1;
+    end;
+end;
+
+function TCardControls.Correct: boolean;
+var
+  i: integer;
+begin
+  for i := 0 to Size - 1 do
+    if Items[i].Correct = False then
+      Exit(False);
+  Exit(True);
 end;
 
 end.
