@@ -6,9 +6,11 @@ interface
 
 uses
   SysUtils, Forms, DBGrids, ComCtrls, UAbout, UFilters, StdCtrls, UCard, UDBForm,
-  UDBConnection, DB, UDBObjects, Dialogs, Controls, Classes;
+  UDBConnection, DB, UDBObjects, Dialogs, Controls, PairSplitter, Classes;
 
 type
+
+  { TDirectory }
 
   TDirectory = class(TDBForm)
   private
@@ -28,16 +30,19 @@ type
     procedure AddFilterPanel(AFilterPanel: TFilterPanel);
     function AddFilterPanel(Field, COp, Param: string; AEnabled: boolean): TFilterPanel;
   published
-    FFiltersGBox: TGroupBox;
-    FTableGBox: TGroupBox;
-    FStatusBar: TStatusBar;
-    FDBGrid: TDBGrid;
-    FFiltersSBox: TScrollBox;
+    FAddElement: TButton;
     FAddFilterBtn: TButton;
     FApplyBtn: TButton;
+    FDBGrid: TDBGrid;
     FDelAllFiltersBtn: TButton;
-    FAddElement: TButton;
     FDelElement: TButton;
+    FFiltersGBox: TGroupBox;
+    FFiltersSBox: TScrollBox;
+    FPairSplitter: TPairSplitter;
+    FPairSplitterTop: TPairSplitterSide;
+    FPairSplitterBot: TPairSplitterSide;
+    FTableGBox: TGroupBox;
+    FStatusBar: TStatusBar;
     procedure FDBGridCellClick(Column: TColumn);
     procedure FAddElementClick(Sender: TObject);
     procedure FDBGridDblClick(Sender: TObject);
