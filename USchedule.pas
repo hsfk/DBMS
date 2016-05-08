@@ -99,6 +99,7 @@ type
     FCell: TCell;
     FRect: TRect;
     FMaxTextW: integer;
+    FConflicted: boolean;
     procedure SetData(AData: TStringV);
     procedure SetID(AID: integer);
     procedure SetCell(ACell: TCell);
@@ -111,7 +112,6 @@ type
     procedure DrawBtns(TopRight: TPoint; Canvas: TCanvas);
     procedure AddAlerBtn;
     function MouseToBtn(Mouse: TPoint): TCellBtn;
-    function Expandable: boolean;
   published
     property Data: TStringV read FData write SetData;
     property ID: integer read FID write SetID;
@@ -130,7 +130,6 @@ type
     FRect: TRect;
     FSchedule: TSchedule;
     FExpandable: boolean;
-    FConflicted: boolean;
     FSelected: boolean;
     FElements: TElements;
     FFreeElements: boolean;
@@ -177,6 +176,8 @@ type
     PrevHCBoxInd: integer;
     PrevVCBoxInd: integer;
     PrevRowCount: integer;
+    FVisFieldCounter: integer;
+    FTextH: integer;
     procedure LoadCBoxData;
     procedure LoadCheckListBoxData;
     procedure LoadStringListData(Items: TStrings);
@@ -499,6 +500,7 @@ begin
   FCell := Cell;
   FData := TStringV.Create;
   FBtns := TCellBtns.Create;
+  FConflicted := False;
 end;
 
 destructor TCellElement.Destroy;
@@ -532,19 +534,22 @@ var
   TextH: integer;
 begin
   FMaxTextW := CELL_W;
-  TextH := Canvas.TextHeight('Нрб');
+  TextH := FCell.FSchedule.FTextH;
+  FRect := Rect;
   FRect.Top := Offset.y;
-  FRect.Left := Rect.Left;
-  FRect.Right := Rect.Right;
+  FRect.Bottom := Offset.y + TextH * (FCell.FSchedule.FVisFieldCounter + 1);
+
+  if FConflicted then
+    Fill(RGBToColor(255, 225, 225), Squeeze(FRect, 1), Canvas);
   for i := 0 to FData.Size - 1 do begin
     if not FCell.FSchedule.FVisFields.Checked[i] then
       continue;
+
     Canvas.TextRect(Rect, Offset.x, Offset.y, TextOut(i));
     FMaxTextW := Max(FMaxTextW, Canvas.TextWidth(TextOut(i)));
     Offset.y += TextH;
   end;
   Offset.y += TextH;
-  FRect.Bottom := Offset.y;
 end;
 
 function TCellElement.MouseToBtn(Mouse: TPoint): TCellBtn;
@@ -557,18 +562,12 @@ begin
   Exit(nil);
 end;
 
-function TCellElement.Expandable: boolean;
-begin
-  Exit(FMaxTextW > CELL_W);
-end;
-
 constructor TCell.Create(Table: TDBTable; Schedule: TSchedule);
 begin
   FRow := -1;
   FCol := -1;
   FSelected := False;
   FExpandable := False;
-  FConflicted := False;
   FTable := Table;
   FSchedule := Schedule;
   FElements := TElements.Create;
@@ -605,16 +604,14 @@ var
   Offset: TPoint;
 begin
   FExpandable := False;
-  if FConflicted then
-    Fill(RGBToColor(255, 225, 225), Squeeze(Rect, 1), Canvas)
-  else
-    Fill(clWhite, Squeeze(Rect, 1), Canvas);
+  Fill(clWhite, Squeeze(Rect, 1), Canvas);
+
   FRect := Rect;
   Offset := ToPoint(Rect.Left, Rect.Top);
   for i := 0 to Elements.Size - 1 do begin
     Elements[i].Draw(Offset, Rect, Canvas);
-    FExpandable := FExpandable or Elements[i].Expandable;
-    if FSelected and (FSchedule.FDrawBtns) then
+    FExpandable := FExpandable or (Elements[i].FMaxTextW > Width(Rect));
+    if FSelected and FSchedule.FDrawBtns then
       with Elements[i] do
         DrawBtns(ToPoint(Frect.Right, FRect.Top), Canvas);
   end;
@@ -667,6 +664,7 @@ begin
   Result := CELL_W;
   for i := 0 to FElements.Size - 1 do
     Result := Max(Result, FElements[i].FMaxTextW);
+  Result += LEFT_MARGIN + BTN_SIZE;
 end;
 
 function TCell.GetID(ElementID: integer): integer;
@@ -690,6 +688,7 @@ begin
   PrevHCBoxInd := -1;
   PrevVCBoxInd := -1;
   PrevRowCount := -1;
+  FTextH := 25;
   FCells := TCellMatrix.Create;
   FHeights := TIntegerV.Create;
   FConflicts := TConflictPanels.Create(FConflictsSBox, 5, 5);
@@ -1001,8 +1000,7 @@ var
   DataTuple: TCells;
 begin
   FreePrevData;
-  SetBtnsDrawState;
-
+  FTextH := FDrawGrid.Canvas.TextHeight('Нрб');
   if PrevHCBoxInd <> -1 then
     FVisFields.Checked[PrevHCBoxInd] := True;
   if PrevVCBoxInd <> -1 then
@@ -1028,6 +1026,7 @@ begin
   PrevHCBoxInd := FHCBox.ItemIndex;
   PrevVCBoxInd := FVCBox.ItemIndex;
   PrevRowCount := FDrawGrid.RowCount;
+  SetBtnsDrawState;
 end;
 
 procedure TSchedule.SelectCell(Mouse: TPoint);
@@ -1083,7 +1082,7 @@ begin
     Element := FindElement(FConflictedCells[i].RecID);
     if Element <> nil then begin
       Element.AddAlerBtn;
-      Element.FCell.FConflicted := True;
+      Element.FConflicted := True;
     end;
   end;
 end;
@@ -1091,12 +1090,12 @@ end;
 procedure TSchedule.SetBtnsDrawState;
 var
   i: integer;
-  VisFieldC: integer = 0;
 begin
+  FVisFieldCounter := 0;
   for i := 0 to FVisFields.Count - 1 do
     if FVisFields.Checked[i] then
-      VisFieldC += 1;
-  FDrawBtns := VisFieldC >= MIN_ELEMENTS_TO_DRAW_BTNS;
+      FVisFieldCounter += 1;
+  FDrawBtns := FVisFieldCounter >= MIN_ELEMENTS_TO_DRAW_BTNS;
 end;
 
 function TSchedule.FindElement(RecID: integer): TCellElement;
@@ -1225,7 +1224,6 @@ begin
         RowHeights[FSelectedRow + 1] := MaxH;
       if MaxW > ColWidths[FSelectedCol + 1] then
         ColWidths[FSelectedCol + 1] := MaxW;
-      FSelectedCell.FExpandable := False;
     end
     else begin
       RowHeights[FSelectedRow + 1] := CELL_H;
