@@ -306,12 +306,7 @@ begin
 end;
 
 procedure TEditBtn.MouseUp;
-var
-  e: TCellElement;
-  k: TElements;
 begin
-  k := FCell.Elements;
-  e := FCell.Elements[FElementID];
   FSchedule.CreateEditCard(FCell.GetID(FElementID));
 end;
 
