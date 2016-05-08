@@ -56,7 +56,7 @@ end;
 
 procedure TMainForm.FScheduleMenuClick(Sender: TObject);
 begin
-  CreateForm(DBData.TablesByName['Time_Table'], TSchedule);
+  CreateForm(DBData.TablesByName['TimeTable'], TSchedule);
 end;
 
 procedure TMainForm.FFormMenuClick(Sender: TObject);

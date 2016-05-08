@@ -101,6 +101,7 @@ type
     FMaxTextW: integer;
     procedure SetData(AData: TStringV);
     procedure SetID(AID: integer);
+    procedure SetCell(ACell: TCell);
     function TextOut(Index: integer): string;
     function GetHeight: integer;
   public
@@ -113,7 +114,8 @@ type
     function Expandable: boolean;
   published
     property Data: TStringV read FData write SetData;
-    property ID: integer write SetID;
+    property ID: integer read FID write SetID;
+    property Cell: TCell read FCell write SetCell;
     property MaxTextH: integer read GetHeight;
     property MaxTextW: integer read FMaxTextW;
   end;
@@ -144,6 +146,7 @@ type
     function MaxTextWidth: integer;
     function MouseToBtn(Mouse: TPoint): TCellBtn;
   published
+    property FreeElementsOnRelease: boolean write FFreeElements;
     property Table: TDBTable read FTable;
     property Row: integer read FRow write FRow;
     property Col: integer read FCol write FCol;
@@ -303,7 +306,12 @@ begin
 end;
 
 procedure TEditBtn.MouseUp;
+var
+  e: TCellElement;
+  k: TElements;
 begin
+  k := FCell.Elements;
+  e := FCell.Elements[FElementID];
   FSchedule.CreateEditCard(FCell.GetID(FElementID));
 end;
 
@@ -454,9 +462,9 @@ end;
 
 procedure TCellElement.SetData(AData: TStringV);
 begin
-  FBtns.PushBack(TDragBtn.Create(FCell, 0, FCell.FSchedule));
-  FBtns.PushBack(TEditBtn.Create(FCell, 0, FCell.FSchedule));
-  FBtns.PushBack(TDelBtn.Create(FCell, 0, FCell.FSchedule));
+  FBtns.PushBack(TDragBtn.Create(FCell, FID, FCell.FSchedule));
+  FBtns.PushBack(TEditBtn.Create(FCell, FID, FCell.FSchedule));
+  FBtns.PushBack(TDelBtn.Create(FCell, FID, FCell.FSchedule));
   if FData <> nil then
     FData.Free;
   FData := AData;
@@ -466,8 +474,18 @@ procedure TCellElement.SetID(AID: integer);
 var
   i: integer;
 begin
+  FID := AID;
   for i := 0 to FBtns.Size - 1 do
     FBtns[i].FElementID := AID;
+end;
+
+procedure TCellElement.SetCell(ACell: TCell);
+var
+  i: integer;
+begin
+  FCell := ACell;
+  for i := 0 to FBtns.Size - 1 do
+    FBtns[i].FCell := ACell;
 end;
 
 function TCellElement.TextOut(Index: integer): string;
@@ -582,7 +600,7 @@ end;
 procedure TCell.AddElement(Element: TCellElement);
 begin
   Element.ID := FElements.Size;
-  Element.FCell := Self;
+  Element.Cell := Self;
   FElements.PushBack(Element);
 end;
 
@@ -871,7 +889,7 @@ begin
   LoadStringListData(FHCBox.Items);
   LoadStringListData(FVCBox.Items);
   FHCBox.ItemIndex := 6;
-  FVCBox.ItemIndex := 8;
+  FVCBox.ItemIndex := 10;
 end;
 
 procedure TSchedule.LoadCheckListBoxData;
@@ -881,7 +899,9 @@ begin
   LoadStringListData(FVisFields.Items);
   for i := 0 to FVisFields.Items.Count - 1 do
     FVisFields.Checked[i] := True;
-  FVisFields.Checked[0] := False;
+  FVisFields.Checked[ID_FIELD_INDX] := False;
+  FVisFields.Checked[Table.FieldsByName['Размер группы'].Index] := False;
+  FVisFields.Checked[Table.FieldsByName['Размер аудитории'].Index] := False;
 end;
 
 procedure TSchedule.LoadStringListData(Items: TStrings);
