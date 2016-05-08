@@ -78,103 +78,103 @@
         <ResourceBaseClass Value="Form"/>
       </Unit6>
       <Unit7>
-        <Filename Value="UCardControls.pas"/>
+        <Filename Value="UNotifications.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit7>
       <Unit8>
-        <Filename Value="UNotifications.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit8>
-      <Unit9>
         <Filename Value="UDBForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="DBForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="UMetaDataItems.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit9>
       <Unit10>
-        <Filename Value="UMetaDataItems.pas"/>
+        <Filename Value="UDBObjects.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit10>
       <Unit11>
-        <Filename Value="UDBObjects.pas"/>
+        <Filename Value="UQuery.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit11>
       <Unit12>
-        <Filename Value="UQuery.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit12>
-      <Unit13>
         <Filename Value="USchedule.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="Schedule"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="Generics\UVector.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit13>
       <Unit14>
-        <Filename Value="Generics\UVector.pas"/>
+        <Filename Value="Generics\UMatrix.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit14>
       <Unit15>
-        <Filename Value="Generics\UMatrix.pas"/>
+        <Filename Value="Utils\UStringUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit15>
       <Unit16>
-        <Filename Value="Utils\UStringUtils.pas"/>
+        <Filename Value="Utils\UPointUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit16>
       <Unit17>
-        <Filename Value="Utils\UPointUtils.pas"/>
+        <Filename Value="Utils\UCanvasUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit17>
       <Unit18>
-        <Filename Value="Utils\UCanvasUtils.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit18>
-      <Unit19>
         <Filename Value="Generics\ustack.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UStack"/>
-      </Unit19>
-      <Unit20>
+      </Unit18>
+      <Unit19>
         <Filename Value="UIcons.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="Icons"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="DataModule"/>
-      </Unit20>
-      <Unit21>
+      </Unit19>
+      <Unit20>
         <Filename Value="UFormManager.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="FormManager"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="Utils\URectUtils.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit21>
       <Unit22>
-        <Filename Value="Utils\URectUtils.pas"/>
+        <Filename Value="UConflicts.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit22>
       <Unit23>
-        <Filename Value="UConflicts.pas"/>
+        <Filename Value="UCustomControl.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit23>
       <Unit24>
-        <Filename Value="UCustomControl.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit24>
-      <Unit25>
         <Filename Value="UConflictForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="ConflictForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit25>
-      <Unit26>
+      </Unit24>
+      <Unit25>
         <Filename Value="UConflictTreeViewForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="ConflictTreeViewForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="UCardControls.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit26>
     </Units>
   </ProjectOptions>

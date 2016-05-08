@@ -1,38 +1,73 @@
 inherited Card: TCard
-  Left = 438
-  Height = 339
-  Top = 310
+  Left = 847
+  Height = 384
+  Top = 290
   Width = 411
   Caption = 'Card'
-  ClientHeight = 339
+  ClientHeight = 384
   ClientWidth = 411
   OnClose = FormClose
   OnCreate = FormCreate
-  object FApplyBtn: TButton[0]
-    Left = 32
-    Height = 25
-    Top = 285
-    Width = 118
-    Anchors = [akLeft, akBottom]
-    Caption = 'Применить'
-    OnClick = FApplyBtnClick
-    TabOrder = 0
-  end
-  object FCancelBtn: TButton[1]
-    Left = 264
-    Height = 25
-    Top = 285
-    Width = 118
-    Anchors = [akRight, akBottom]
-    Caption = 'Отмена'
-    OnClick = FCancelBtnClick
-    TabOrder = 1
-  end
-  object FStatusBar: TStatusBar[2]
+  object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23
-    Top = 316
+    Top = 361
     Width = 411
     Panels = <>
+  end
+  object FControlsSBox: TScrollBox[1]
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FBtnsPanel
+    Left = 0
+    Height = 325
+    Top = 0
+    Width = 411
+    HorzScrollBar.Page = 1
+    VertScrollBar.Page = 1
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    TabOrder = 1
+  end
+  object FBtnsPanel: TPanel[2]
+    AnchorSideLeft.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FStatusBar
+    Left = 0
+    Height = 36
+    Top = 325
+    Width = 411
+    Anchors = [akLeft, akRight, akBottom]
+    ClientHeight = 36
+    ClientWidth = 411
+    ParentColor = False
+    TabOrder = 2
+    object FCancelBtn: TButton
+      AnchorSideLeft.Control = FApplyBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideBottom.Control = FApplyBtn
+      AnchorSideBottom.Side = asrBottom
+      Left = 253
+      Height = 25
+      Top = 7
+      Width = 118
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Left = 95
+      Caption = 'Отмена'
+      OnClick = FCancelBtnClick
+      TabOrder = 0
+    end
+    object FApplyBtn: TButton
+      Left = 40
+      Height = 25
+      Top = 7
+      Width = 118
+      Anchors = [akLeft, akBottom]
+      Caption = 'Применить'
+      OnClick = FApplyBtnClick
+      TabOrder = 1
+    end
   end
 end
