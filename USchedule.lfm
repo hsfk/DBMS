@@ -211,7 +211,10 @@ inherited Schedule: TSchedule
             Top = 35
             Width = 726
             HorzScrollBar.Page = 1
+            VertScrollBar.Increment = 1
             VertScrollBar.Page = 1
+            VertScrollBar.Smooth = True
+            VertScrollBar.Tracking = True
             Anchors = [akTop, akLeft, akRight, akBottom]
             BorderSpacing.Top = 35
             TabOrder = 0
@@ -289,7 +292,10 @@ inherited Schedule: TSchedule
             Top = 35
             Width = 726
             HorzScrollBar.Page = 1
+            VertScrollBar.Increment = 1
             VertScrollBar.Page = 1
+            VertScrollBar.Smooth = True
+            VertScrollBar.Tracking = True
             Anchors = [akTop, akLeft, akRight, akBottom]
             BorderSpacing.Top = 35
             TabOrder = 2
