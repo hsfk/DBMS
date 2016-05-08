@@ -6,14 +6,13 @@ interface
 
 uses
   Classes, SysUtils, DBGrids, DB, UMetaDataItems, UVector, UNotifications,
-  StdCtrls, Controls;
+  StdCtrls, Controls, UCustomControl;
 
 type
 
   TDBField = class;
   TDBRefField = class;
   TDBFilter = class;
-  TCardControl = class;
   TDBTable = class;
   TDBMetaData = class;
   TDBFilters = specialize TVector<TDBFilter>;
@@ -55,7 +54,7 @@ type
     constructor Create;
     constructor Create(AName, ANativeName: string; AWidth: integer;
       ADataType: TFieldType; AParentTable: TDBTable = nil);
-    function CreateControl(RecID: integer): TCardControl; virtual;
+    function CreateControln(RecID: integer): TCustomControl; virtual;
     procedure Load(Column: TColumn);
     procedure Assign(Field: TDBField); virtual;
   published
@@ -69,7 +68,7 @@ type
     FRefTable: TDBTable;
   public
     constructor Create(Field: TDBField; RefTable: TDBTable; RefFieldName: string);
-    function CreateControl(RecID: integer): TCardControl; override;
+    function CreateControln(RecID: integer): TCustomControl; override;
     procedure Assign(Field: TDBRefField);
   published
     property RefFieldName: string read FRefFieldName;
@@ -98,29 +97,6 @@ type
     procedure Assign(Field: TDBField); override;
   published
     property Order: string write FOrder;
-  end;
-
-  TCardControl = class(TDBField)
-  private
-    FLabel: TLabel;
-    FSubscriber: TSubscriber;
-  protected
-    FRecID: integer;
-    function GetData: TParam; virtual; abstract;
-    procedure SetCaption(AData: string); virtual; abstract;
-    procedure OnNotificationRecieve(Sender: TObject); virtual;
-  public
-    constructor Create(RecID: integer);
-    function UpdateTable: TQueryContainer; virtual; abstract;
-    function Correct: boolean; virtual; abstract;
-    procedure CreateGUI(AParent: TWinControl; ATop, ALeft: integer); virtual;
-    procedure Deselect; virtual; abstract;
-    procedure Clear; virtual; abstract;
-    procedure LoadData(Data: string; ID: integer); virtual; abstract;
-  published
-    property Subscriber: TSubscriber read FSubscriber write FSubscriber;
-    property Caption: string write SetCaption;
-    property Data: TParam read GetData;
   end;
 
   _TTable = specialize TGData<TDBField>;
@@ -158,7 +134,7 @@ var
 
 implementation
 
-uses UCardControls, UQuery;
+uses UQuery, UCardControls;
 
 constructor TDBField.Create;
 begin
@@ -178,11 +154,14 @@ begin
   Column.Width := Width;
 end;
 
-function TDBField.CreateControl(RecID: integer): TCardControl;
+function TDBField.CreateControln(RecID: integer): TCustomControl;
+var
+  Control: TFieldControl;
 begin
-  Result := TDBEditControl.Create(RecID);
-  Result.Subscriber := TSubscriber.Create(False);
-  Result.Assign(Self);
+  Control := TFieldControl.Create(RecID);
+  Control.Subscriber := TSubscriber.Create;
+  Control.Field := Self;
+  Exit(Control);
 end;
 
 procedure TDBField.Assign(Field: TDBField);
@@ -201,11 +180,14 @@ begin
   FQuery := TDBRefFieldQuery.Create(Self);
 end;
 
-function TDBRefField.CreateControl(RecID: integer): TCardControl;
+function TDBRefField.CreateControln(RecID: integer): TCustomControl;
+var
+  Control: TRefFieldControl;
 begin
-  Result := TDBCBoxControl.Create(RecID);
-  Result.Subscriber := TSubscriber.Create(False);
-  Result.Assign(Self);
+  Control := TRefFieldControl.Create(RecID);
+  Control.Subscriber := TSubscriber.Create(False);
+  Control.Field := Self;
+  Exit(Control);
 end;
 
 procedure TDBRefField.Assign(Field: TDBRefField);
@@ -240,26 +222,6 @@ procedure TDBOrder.Assign(Field: TDBField);
 begin
   inherited Assign(Field);
   FOrder := '';
-end;
-
-procedure TCardControl.OnNotificationRecieve(Sender: TObject);
-begin
-  { Do nothing }
-end;
-
-constructor TCardControl.Create(RecID: integer);
-begin
-  FRecID := RecID;
-end;
-
-procedure TCardControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
-begin
-  FLabel := TLabel.Create(AParent);
-  FLabel.Parent := AParent;
-  FLabel.Top := ATop;
-  FLabel.Left := ALeft;
-  FLabel.Caption := Name;
-  FLabel.Align := alCustom;
 end;
 
 function TDBTable.GetIDField: TDBField;
