@@ -102,6 +102,7 @@ type
     FRect: TRect;
     FMaxTextW: integer;
     FConflicted: boolean;
+    FConflictTypes: TConflictTypeV;
     procedure SetData(AData: TStringV);
     procedure SetID(AID: integer);
     procedure SetCell(ACell: TCell);
@@ -338,8 +339,13 @@ begin
 end;
 
 procedure TAlertBtn.MouseUp;
+var
+  AText: string = '';
+  i: integer;
 begin
-
+  for i := 0 to FCell.Elements[FElementID].FConflictTypes.Size - 1 do
+    AText += FCell.Elements[FElementID].FConflictTypes[i].Name + #13#10;
+  ShowMessage(AText);
 end;
 
 function TDragBtn.ShiftedBtn: TRect;
@@ -509,12 +515,14 @@ begin
   FData := TStringV.Create;
   FBtns := TElementBtns.Create;
   FConflicted := False;
+  FConflictTypes := TConflictTypeV.Create;
 end;
 
 destructor TCellElement.Destroy;
 begin
   FData.Free;
   FBtns.Free;
+  FConflictTypes.Free;
 end;
 
 procedure TCellElement.DrawBtns(TopRight: TPoint; Canvas: TCanvas);
@@ -1098,6 +1106,7 @@ begin
     if Element <> nil then begin
       Element.AddAlerBtn;
       Element.FConflicted := True;
+      Element.FConflictTypes.PushBack(FConflictedCells[i].ConflictType);
     end;
   end;
 end;
