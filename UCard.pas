@@ -102,7 +102,8 @@ begin
     FControls[i].Clear;
     PerformQuery(FControls[i].Field.ParentTable.Query.Select(nil));
     if i > 0 then
-      SameFieldLeft := FControls[i - 1].Field.ParentTable = FControls[i].Field.ParentTable;
+      SameFieldLeft := FControls[i - 1].Field.ParentTable =
+        FControls[i].Field.ParentTable;
     if SameFieldLeft then
       FieldIndex += 1
     else
@@ -110,7 +111,7 @@ begin
     while not FormQuery.EOF do begin
       FControls[i].LoadData(
         FormQuery.Fields[FieldIndex].AsString
-       ,FormQuery.Fields[0].AsInteger
+        , FormQuery.Fields[0].AsInteger
         );
       FormQuery.Next;
     end;
