@@ -5,16 +5,21 @@ unit UConflicts;
 interface
 
 uses
-  Classes, SysUtils, UVector, UMatrix, Dialogs, Controls, ExtCtrls,
-  StdCtrls, UCustomControl;
+  Classes, SysUtils, UVector, Dialogs, Controls, ExtCtrls,
+  StdCtrls, UCustomControl, UElementaryFunctions;
 
 type
 
   TConflictType = class;
   TConflictPanel = class;
+  TDataFilter = class;
+  TExpression = class;
+  TDataFilterType = class of TDataFilter;
+  TEditEvent = procedure(Conflict: TConflictPanel) of object;
+  TExpressions = specialize TObjVector<TExpression>;
+  TDataFilters = specialize TObjVector<TDataFilter>;
   TDataTuple = specialize TVector<TStringV>;
   TData = specialize TVector<TDataTuple>;
-  TEditEvent = procedure(Conflict: TConflictPanel) of object;
 
   TResult = record
     RecID: integer;
@@ -22,34 +27,106 @@ type
   end;
   TResultTuple = array of TResult;
 
+  TDataFilter = class
+  private
+    // priority 0 - separation
+    // priority 1 - deletion
+    FPriority: integer;
+    FFilteredRecs: TIntegerV;
+    procedure DeleteOneElTuples(AData: TData);
+    function FilteredData(AData: TData; RecID: integer): TData; virtual;
+  public
+    constructor Create(RecIDs: TIntegerV); virtual;
+    destructor Destroy; override;
+    procedure Filter(var AData: TData);
+    function FilteredTuple(ADataTuple: TDataTuple; RecID: integer): TData; virtual;
+  published
+    property FilteredRecs: TIntegerV read FFilteredRecs;
+    property Priority: integer read FPriority;
+  end;
+
+  // separates data tuple into set of vectors, each vector represents
+  // set of data with the same equal records
+  TSeparateEqualRecsFilter = class(TDataFilter)
+  private
+    function FilteredData(AData: TData; RecID: integer): TData; override;
+  public
+    constructor Create(FieldIDs: TIntegerV); override;
+    function FilteredTuple(ADataTuple: TDataTuple; RecID: integer): TData; override;
+  end;
+
+  // deletes data tuple item if its records occures once within data tuple
+  TDeleteNotEqualRecsFilter = class(TDataFilter)
+  private
+    function FilteredData(AData: TData; RecID: integer): TData; override;
+  public
+    constructor Create(FieldIDs: TIntegerV); override;
+    function FilteredTuple(ADataTuple: TDataTuple; RecID: integer): TData; override;
+  end;
+
+  // expression: RecA [=\>=\<=\<>\...] [max/min/sum/...] RecB
+  // RecA = FieldIDs[0], RecA is int constant and must be the same within all fields
+  TExpression = class
+  private
+    FCompareF: TIntCompareFunction;
+    FECompareF: EnumIntCompareFunctions;
+    FAggregateF: TIntAggregateFunction;
+    FEAggregateF: EnumIntAggregateFunctions;
+    FRecA: integer;
+    FRecB: integer;
+  public
+    constructor Create(RecA, RecB: integer; ECompareF: EnumIntCompareFunctions;
+      EAgregateF: EnumIntAggregateFunctions);
+    procedure Filter(var AData: TData);
+  published
+    property RecA: integer read FRecA;
+    property RecB: integer read FRecB;
+    property ECompareFunc: EnumIntCompareFunctions read FECompareF write FECompareF;
+    property EAggregateFunc: EnumIntAggregateFunctions
+      read FEAggregateF write FEAggregateF;
+  end;
+
+  TExprFunctions = class
+  private
+    FCompareFs: array of TIntCompareFunctionData;
+    FAggregateFs: array of TIntAggregateFunctionData;
+    procedure AddCmp(AName: string; Cmp: EnumIntCompareFunctions);
+    procedure AddOperation(AName: string; Operation: EnumIntAggregateFunctions);
+    function GetCompareFCount: integer;
+    function GetAggregateFCount: integer;
+    function GetCompareF(AIndex: integer): TIntCompareFunctionData;
+    function GetAggregateF(AIndex: integer): TIntAggregateFunctionData;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function FindInd(ECompareF: EnumIntCompareFunctions): integer;
+    function FindInd(EAggregateF: EnumIntAggregateFunctions): integer;
+
+    property CompareFs[Index: integer]: TIntCompareFunctionData read GetCompareF;
+    property AggregateFs[Index: integer]: TIntAggregateFunctionData read GetAggregateF;
+  published
+    property CompareFCount: integer read GetCompareFCount;
+    property AggregateFCount: integer read GetAggregateFCount;
+  end;
+
   TConflictType = class
   private
     FName: string;
-    FEQRecIDs: TIntegerV;
-    FNEQRecIDs: TIntegerV;
+    FFilters: TDataFilters;
+    FExpressions: TExpressions;
     FData: TData;
-    procedure ShowData(AData: TData);
-    procedure ShowTuple(ATuple: TDataTuple);
-    procedure DeleteOneElTuples(AData: TData);
-    procedure FreeData(AData: TData);
-    // separates data tuple into set of vectors, each vector represents
-    // set of data with the same equal records
-    function SeparateEQ(ADataTuple: TDataTuple; EQRec: integer): TData;
-    function SeparateEQ(AData: TData; EQRec: integer): TData;
-    // deletes data tuple item if its NEQRec record occures once
-    function DeleteNEQ(ADataTuple: TDataTuple; NEQRec: integer): TData;
-    function DeleteNEQ(AData: TData; NEQRec: integer): TData;
   public
     constructor Create(AName: string);
     destructor Destroy; override;
     procedure SelectConflicted(DataTuple: TDataTuple);
-    procedure AddConditions(EQRecIDs, NEQRecIDs: TIntegerV);
+    procedure AddFilter(Filter: TDataFilter);
+    procedure AddFilter(Fields: TIntegerV; FilterType: TDataFilterType);
     function ResultTuple: TResultTuple;
   published
-    property EQRecIDs: TIntegerV read FEQRecIDs write FEQRecIDs;
-    property NEQRecIDs: TIntegerV read FNEQRecIDs write FNEQRecIDs;
     property Name: string read FName;
     property Data: TData read FData;
+    property Filters: TDataFilters read FFilters write FFilters;
+    property Expressions: TExpressions read FExpressions write FExpressions;
   end;
 
   TConflictPanel = class(TCustomControl)
@@ -58,7 +135,6 @@ type
     FEditBtn: TButton;
     FEdit: TEdit;
     FOnEdit: TEditEvent;
-    FTreeViewVisRec: integer;
     procedure EditClick(Sender: TObject);
   public
     constructor Create(AName: string);
@@ -67,7 +143,6 @@ type
   published
     property Conflict: TConflictType read FConflict write FConflict;
     property Edit: TEdit read FEdit write FEdit;
-    property TreeViewVisibleRec: integer read FTreeViewVisRec write FTreeViewVisRec;
   end;
 
   TCustomConflictPanels = specialize TCustomControls<TConflictPanel>;
@@ -77,17 +152,229 @@ type
     FOnEdit: TEditEvent;
     procedure SetEvent(Event: TEditEvent);
   public
-    constructor Create(AParent: TWinControl; ATop, ALeft: integer);
-    procedure AddConflict(AName: string; EQRecIDs, NEQRecIDs: TIntegerV;
-      ATreeViewVisRec: integer = 0);
-    function AddConflict(Conflict: TConflictType): TConflictPanel;
+    constructor Create(AParent: TWinControl; ATop, ALeft: integer); override;
     procedure AnalyzeData(Data: TDataTuple);
+    procedure AddConflictPanel(AName: string; Filters: TDataFilters;
+      Expressions: TExpressions = nil);
+    function AddConflictPanel(Conflict: TConflictType): TConflictPanel;
     function GetResult: TResultTuple;
   published
     property OnEditClick: TEditEvent write SetEvent;
   end;
 
 implementation
+
+procedure FreeData(AData: TData);
+var
+  i: integer;
+begin
+  for i := 0 to AData.Size - 1 do
+    AData[i].Free;
+  AData.Free;
+end;
+
+procedure ShowTuple(ATuple: TDataTuple);
+var
+  i: integer;
+  j: integer;
+  Temp: TStringV;
+  Text: string;
+begin
+  Text := '';
+  for i := 0 to ATuple.Size - 1 do begin
+    Temp := ATuple[i];
+    for j := 0 to Temp.Size - 1 do begin
+      Text += Temp[j];
+      Text += #13#10;
+    end;
+    Text += #13#10;
+  end;
+  ShowMessage(Text);
+end;
+
+procedure ShowData(AData: TData);
+var
+  i: integer;
+begin
+  for i := 0 to AData.Size - 1 do
+    ShowTuple(AData[i]);
+end;
+
+procedure TDataFilter.DeleteOneElTuples(AData: TData);
+var
+  i: integer = 0;
+  Size: integer;
+begin
+  Size := AData.Size;
+  while i < Size do
+    if AData[i].Size <= 1 then begin
+      AData[i].Free;
+      AData.DeleteInd(i);
+      Size -= 1;
+    end
+    else
+      i += 1;
+end;
+
+function TDataFilter.FilteredTuple(ADataTuple: TDataTuple; RecID: integer): TData;
+begin
+  Exit(nil);
+end;
+
+function TDataFilter.FilteredData(AData: TData; RecID: integer): TData;
+begin
+  Exit(nil);
+end;
+
+constructor TDataFilter.Create(RecIDs: TIntegerV);
+begin
+  FPriority := -1;
+  FFilteredRecs := RecIDs;
+end;
+
+destructor TDataFilter.Destroy;
+begin
+  FFilteredRecs.Free;
+  inherited Destroy;
+end;
+
+procedure TDataFilter.Filter(var AData: TData);
+var
+  i: integer;
+begin
+  for i := 0 to FFilteredRecs.Size - 1 do begin
+    AData := FilteredData(AData, FFilteredRecs[i]);
+    if AData = nil then
+      Exit;
+  end;
+end;
+
+function TSeparateEqualRecsFilter.FilteredTuple(ADataTuple: TDataTuple;
+  RecID: integer): TData;
+var
+  i: integer = 1;
+  j: integer;
+  Index: integer;
+begin
+  Result := TData.Create(TDataTuple.Create(ADataTuple[0]));
+  for i := 1 to ADataTuple.Size - 1 do begin
+    Index := -1;
+    for j := 0 to Result.Size - 1 do
+      if Result[j][0][RecID] = ADataTuple[i][RecID] then begin
+        Index := j;
+        break;
+      end;
+    if Index <> -1 then
+      Result[Index].PushBack(ADataTuple[i])
+    else
+      Result.PushBack(TDataTuple.Create(ADataTuple[i]));
+  end;
+  DeleteOneElTuples(Result);
+  Exit(Result);
+end;
+
+function TSeparateEqualRecsFilter.FilteredData(AData: TData; RecID: integer): TData;
+var
+  i: integer = 0;
+  j: integer;
+  Buffer: TData;
+begin
+  Result := TData.Create;
+  for i := 0 to AData.Size - 1 do begin
+    Buffer := FilteredTuple(AData[i], RecID);
+    for j := 0 to Buffer.Size - 1 do
+      Result.PushBack(Buffer[j]);
+    Buffer.Free;
+  end;
+  FreeData(AData);
+end;
+
+constructor TSeparateEqualRecsFilter.Create(FieldIDs: TIntegerV);
+begin
+  inherited Create(FieldIDs);
+  FPriority := 0;
+end;
+
+function TDeleteNotEqualRecsFilter.FilteredTuple(ADataTuple: TDataTuple;
+  RecID: integer): TData;
+var
+  i: integer = 1;
+  j: integer;
+  Counter: integer;
+begin
+  Result := TData.Create(TDataTuple.Create);
+  for i := 0 to ADataTuple.Size - 1 do begin
+    Counter := 0;
+    for j := 0 to ADataTuple.Size - 1 do
+      if (ADataTuple[i][RecID] = ADataTuple[j][RecID]) then begin
+        Counter += 1;
+        if Counter > 1 then
+          break;
+      end;
+    if Counter = 1 then
+      Result[0].PushBack(ADataTuple[i]);
+  end;
+  if Result[0].Empty then begin
+    FreeData(Result);
+    Exit(nil);
+  end;
+  Exit(Result);
+end;
+
+function TDeleteNotEqualRecsFilter.FilteredData(AData: TData; RecID: integer): TData;
+var
+  i: integer;
+  j: integer;
+  Buffer: TData;
+begin
+  Result := TData.Create;
+  for i := 0 to AData.Size - 1 do begin
+    Buffer := FilteredTuple(AData[i], RecID);
+    if Buffer <> nil then
+      for j := 0 to Buffer.Size - 1 do
+        Result.PushBack(Buffer[j]);
+    Buffer.Free;
+  end;
+  if Result.Empty then begin
+    Result.Free;
+    Exit(nil);
+  end;
+  FreeData(AData);
+  DeleteOneElTuples(Result);
+end;
+
+constructor TDeleteNotEqualRecsFilter.Create(FieldIDs: TIntegerV);
+begin
+  inherited Create(FieldIDs);
+  FPriority := 1;
+end;
+
+constructor TExpression.Create(RecA, RecB: integer; ECompareF: EnumIntCompareFunctions;
+  EAgregateF: EnumIntAggregateFunctions);
+begin
+  FRecA := RecA;
+  FrecB := RecB;
+  FECompareF := ECompareF;
+  FEAggregateF := EAgregateF;
+  FCompareF := TIntCompareFunctions.GetFunc(ECompareF);
+  FAggregateF := TIntAggregateFunctions.GetFunc(EAgregateF);
+end;
+
+procedure TExpression.Filter(var AData: TData);
+var
+  OpResult: integer = 0;
+  i: integer;
+  j: integer;
+begin
+  for i := 0 to AData.Size - 1 do
+    for j := 0 to AData[i].Size - 1 do
+      OpResult := FAggregateF(OpResult, StrToInt(AData[i][j][FRecB]));
+
+  if not FCompareF(StrToInt(AData[0][0][FRecA]), OpResult) then begin
+    FreeData(AData);
+    AData := nil;
+  end;
+end;
 
 procedure TConflictPanels.SetEvent(Event: TEditEvent);
 var
@@ -102,28 +389,25 @@ constructor TConflictPanels.Create(AParent: TWinControl; ATop, ALeft: integer);
 begin
   FOnEdit := nil;
   inherited Create(AParent, ATop, ALeft);
-  with TIntegerV do begin
-    AddConflict('Разрыв группы', Create([9, 8, 6]), Create([7]), 6);
-    AddConflict('Разрыв преподавателя', Create([3, 8, 9]), Create([7]), 3);
-    AddConflict('Больше 1 преподавателя в аудитории', Create([7, 8, 9, 6]),
-      Create([3]), 3);
-    AddConflict('Больше 1 группы в аудитории', Create([7, 8, 9]), Create([6]), 6);
-  end;
 end;
 
-procedure TConflictPanels.AddConflict(AName: string; EQRecIDs, NEQRecIDs: TIntegerV;
-  ATreeViewVisRec: integer = 0);
+procedure TConflictPanels.AddConflictPanel(AName: string; Filters: TDataFilters;
+  Expressions: TExpressions = nil);
 var
-  Panel: TConflictPanel;
+  Conflict: TConflictType;
+  i: integer;
 begin
-  Panel := TConflictPanel.Create(AName, FParent, FTop, FLeft);
-  Panel.Conflict.AddConditions(EQRecIDs, NEQRecIDs);
-  Panel.FOnEdit := FOnEdit;
-  Panel.TreeViewVisibleRec := ATreeViewVisRec;
-  AddControlPanel(Panel);
+  Conflict := TConflictType.Create(AName);
+  for i := 0 to Filters.Size - 1 do
+    Conflict.AddFilter(Filters[i]);
+  if Expressions <> nil then begin
+    Conflict.Expressions.Free;
+    Conflict.Expressions := Expressions;
+  end;
+  AddConflictPanel(Conflict);
 end;
 
-function TConflictPanels.AddConflict(Conflict: TConflictType): TConflictPanel;
+function TConflictPanels.AddConflictPanel(Conflict: TConflictType): TConflictPanel;
 begin
   Result := TConflictPanel.Create(Conflict.Name, FParent, FTop, FLeft);
   Result.Conflict := Conflict;
@@ -163,45 +447,46 @@ end;
 constructor TConflictType.Create(AName: string);
 begin
   FName := AName;
+  FFilters := TDataFilters.Create;
+  FExpressions := TExpressions.Create;
 end;
 
 destructor TConflictType.Destroy;
 begin
-  FEQRecIDs.Free;
-  FNEQRecIDs.Free;
+  FFilters.Free;
+  FExpressions.Free;
   FData.Free;
   inherited Destroy;
 end;
 
-procedure TConflictType.AddConditions(EQRecIDs, NEQRecIDs: TIntegerV);
-begin
-  FEQRecIDs := EQRecIDs;
-  FNEQRecIDs := NEQRecIDs;
-end;
-
-procedure TConflictType.DeleteOneElTuples(AData: TData);
-var
-  i: integer = 0;
-  Size: integer;
-begin
-  Size := AData.Size;
-  while i < Size do
-    if AData[i].Size <= 1 then begin
-      AData[i].Free;
-      AData.DeleteInd(i);
-      Size -= 1;
-    end
-    else
-      i += 1;
-end;
-
-procedure TConflictType.FreeData(AData: TData);
+procedure TConflictType.AddFilter(Filter: TDataFilter);
 var
   i: integer;
+  j: integer;
 begin
-  for i := 0 to AData.Size - 1 do
-    AData[i].Free;
-  AData.Free;
+  if FFilters.Empty then begin
+    FFilters.PushBack(Filter);
+    Exit;
+  end;
+
+  for i := 0 to FFilters.Size - 1 do
+    if Filter.Priority < FFilters[i].Priority then begin
+      FFilters.Resize(FFilters.Size + 1);
+      for j := FFilters.Size - 1 to i + 1 do
+        FFilters[j] := FFilters[j + 1];
+      FFilters[i] := Filter;
+      Exit;
+    end;
+
+  FFilters.PushBack(Filter);
+end;
+
+procedure TConflictType.AddFilter(Fields: TIntegerV; FilterType: TDataFilterType);
+var
+  Filter: TDataFilter;
+begin
+  Filter := FilterType.Create(Fields);
+  AddFilter(Filter);
 end;
 
 function TConflictType.ResultTuple: TResultTuple;
@@ -224,131 +509,21 @@ procedure TConflictType.SelectConflicted(DataTuple: TDataTuple);
 var
   i: integer;
 begin
-  if DataTuple.Size = 0 then
+  if DataTuple.Empty or FFilters.Empty then
     Exit;
   if FData <> nil then
     FreeData(FData);
-  FData := SeparateEQ(DataTuple, FEQRecIDs[0]);
-  for i := 0 to FEQRecIDs.Size - 1 do
-    FData := SeparateEQ(FData, FEQRecIDs[i]);
-  for i := 0 to FNEQRecIDs.Size - 1 do begin
-    FData := DeleteNEQ(FData, FNEQRecIDs[i]);
+  FData := FFilters[0].FilteredTuple(DataTuple, FFilters[0].FFilteredRecs[0]);
+  for i := 0 to FFilters.Size - 1 do begin
+    FFilters[i].Filter(FData);
     if FData = nil then
-      Exit; // no conflicts found
+      Exit;
   end;
-end;
-
-function TConflictType.SeparateEQ(ADataTuple: TDataTuple; EQRec: integer): TData;
-var
-  i: integer = 1;
-  j: integer;
-  Index: integer;
-begin
-  Result := TData.Create(TDataTuple.Create(ADataTuple[0]));
-  for i := 1 to ADataTuple.Size - 1 do begin
-    Index := -1;
-    for j := 0 to Result.Size - 1 do
-      if Result[j][0][EQRec] = ADataTuple[i][EQRec] then begin
-        Index := j;
-        break;
-      end;
-    if Index <> -1 then
-      Result[Index].PushBack(ADataTuple[i])
-    else
-      Result.PushBack(TDataTuple.Create(ADataTuple[i]));
+  for i := 0 to FExpressions.Size - 1 do begin
+    FExpressions[i].Filter(FData);
+    if FData = nil then
+      Exit;
   end;
-  DeleteOneElTuples(Result);
-  Exit(Result);
-end;
-
-function TConflictType.SeparateEQ(AData: TData; EQRec: integer): TData;
-var
-  i: integer = 0;
-  j: integer;
-  Buffer: TData;
-begin
-  Result := TData.Create;
-  for i := 0 to AData.Size - 1 do begin
-    Buffer := SeparateEQ(AData[i], EQRec);
-    for j := 0 to Buffer.Size - 1 do
-      Result.PushBack(Buffer[j]);
-    Buffer.Free;
-  end;
-  FreeData(AData);
-end;
-
-function TConflictType.DeleteNEQ(ADataTuple: TDataTuple; NEQRec: integer): TData;
-var
-  i: integer = 1;
-  j: integer;
-  Counter: integer;
-begin
-  Result := TData.Create(TDataTuple.Create);
-  for i := 0 to ADataTuple.Size - 1 do begin
-    Counter := 0;
-    for j := 0 to ADataTuple.Size - 1 do
-      if (ADataTuple[i][NEQRec] = ADataTuple[j][NEQRec]) then begin
-        Counter += 1;
-        if Counter > 1 then
-          break;
-      end;
-    if Counter = 1 then
-      Result[0].PushBack(ADataTuple[i]);
-  end;
-  if Result[0].Size = 0 then begin
-    FreeData(Result);
-    Exit(nil);
-  end;
-  Exit(Result);
-end;
-
-function TConflictType.DeleteNEQ(AData: TData; NEQRec: integer): TData;
-var
-  i: integer;
-  j: integer;
-  Buffer: TData;
-begin
-  Result := TData.Create;
-  for i := 0 to AData.Size - 1 do begin
-    Buffer := DeleteNEQ(AData[i], NEQRec);
-    if Buffer <> nil then
-      for j := 0 to Buffer.Size - 1 do
-        Result.PushBack(Buffer[j]);
-    Buffer.Free;
-  end;
-  if Result.Size = 0 then begin
-    Result.Free;
-    Exit(nil);
-  end;
-  FreeData(AData);
-  DeleteOneElTuples(Result);
-end;
-
-procedure TConflictType.ShowTuple(ATuple: TDataTuple);
-var
-  i: integer;
-  j: integer;
-  TempM: TStringV;
-  Text: string;
-begin
-  Text := '';
-  for i := 0 to ATuple.Size - 1 do begin
-    TempM := ATuple[i];
-    for j := 0 to TempM.Size - 1 do begin
-      Text += TempM[j];
-      Text += #13#10;
-    end;
-    Text += #13#10;
-  end;
-  ShowMessage(Text);
-end;
-
-procedure TConflictType.ShowData(AData: TData);
-var
-  i: integer;
-begin
-  for i := 0 to AData.Size - 1 do
-    ShowTuple(AData[i]);
 end;
 
 procedure TConflictPanel.EditClick(Sender: TObject);
@@ -361,7 +536,6 @@ constructor TConflictPanel.Create(AName: string);
 begin
   FConflict := TConflictType.Create(AName);
   FOnEdit := nil;
-  FTreeViewVisRec := 0;
 end;
 
 constructor TConflictPanel.Create(AName: string; AParent: TWinControl;
@@ -384,6 +558,81 @@ begin
   FEditBtn.OnClick := @EditClick;
   DelBtn.Left := 250;
   DelBtn.Top := 0;
+end;
+
+function TExprFunctions.GetCompareFCount: integer;
+begin
+  Exit(Length(FCompareFs));
+end;
+
+function TExprFunctions.GetAggregateFCount: integer;
+begin
+  Exit(Length(FAggregateFs));
+end;
+
+function TExprFunctions.GetCompareF(AIndex: integer): TIntCompareFunctionData;
+begin
+  Exit(FCompareFs[AIndex]);
+end;
+
+function TExprFunctions.GetAggregateF(AIndex: integer): TIntAggregateFunctionData;
+begin
+  Exit(FAggregateFs[AIndex]);
+end;
+
+procedure TExprFunctions.AddCmp(AName: string; Cmp: EnumIntCompareFunctions);
+begin
+  SetLength(FCompareFs, Length(FCompareFs) + 1);
+  FCompareFs[High(FCompareFs)].Name := AName;
+  FCompareFs[High(FCompareFs)].EFunc := Cmp;
+end;
+
+procedure TExprFunctions.AddOperation(AName: string;
+  Operation: EnumIntAggregateFunctions);
+begin
+  SetLength(FAggregateFs, Length(FAggregateFs) + 1);
+  FAggregateFs[High(FAggregateFs)].Name := AName;
+  FAggregateFs[High(FAggregateFs)].EFunc := Operation;
+end;
+
+constructor TExprFunctions.Create;
+begin
+  AddCmp('Больше', cfGr);
+  AddCmp('Меньше', cfLe);
+  AddCmp('Равно', cfEq);
+  AddCmp('Больше либо равно', cfGrEq);
+  AddCmp('Меньше либо равно', cfLeEq);
+
+  AddOperation('Сумма', afSum);
+  AddOperation('Максимум', afMax);
+  AddOperation('Минимум', afMin);
+end;
+
+destructor TExprFunctions.Destroy;
+begin
+  FCompareFs := nil;
+  FAggregateFs := nil;
+  inherited Destroy;
+end;
+
+function TExprFunctions.FindInd(ECompareF: EnumIntCompareFunctions): integer;
+var
+  i: integer;
+begin
+  for i := 0 to CompareFCount - 1 do
+    if FCompareFs[i].EFunc = ECompareF then
+      Exit(i);
+  Exit(-1);
+end;
+
+function TExprFunctions.FindInd(EAggregateF: EnumIntAggregateFunctions): integer;
+var
+  i: integer;
+begin
+  for i := 0 to AggregateFCount - 1 do
+    if FAggregateFs[i].EFunc = EAggregateF then
+      Exit(i);
+  Exit(-1);
 end;
 
 end.
