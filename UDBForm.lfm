@@ -1,7 +1,7 @@
 object DBForm: TDBForm
-  Left = 1307
+  Left = 1012
   Height = 240
-  Top = 184
+  Top = 246
   Width = 320
   Caption = 'DBForm'
   OnClose = FormClose

@@ -1,7 +1,7 @@
 inherited Directory: TDirectory
-  Left = 438
+  Left = 619
   Height = 563
-  Top = 278
+  Top = 282
   Width = 569
   Caption = 'Directory'
   ClientHeight = 563
@@ -45,12 +45,14 @@ inherited Directory: TDirectory
       object FDBGrid: TDBGrid
         AnchorSideLeft.Control = Owner
         AnchorSideTop.Control = Owner
-        AnchorSideRight.Control = Owner
+        AnchorSideRight.Control = FPairSplitterTop
         AnchorSideRight.Side = asrBottom
+        AnchorSideBottom.Control = FPairSplitterTop
+        AnchorSideBottom.Side = asrBottom
         Left = 0
-        Height = 636
+        Height = 349
         Top = 0
-        Width = 1065
+        Width = 569
         Anchors = [akTop, akLeft, akRight, akBottom]
         BorderSpacing.Bottom = 1
         Color = clWindow

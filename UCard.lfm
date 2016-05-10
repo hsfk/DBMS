@@ -8,6 +8,7 @@ inherited Card: TCard
   ClientWidth = 411
   OnClose = FormClose
   OnCreate = FormCreate
+  Position = poDesktopCenter
   object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23
@@ -26,6 +27,7 @@ inherited Card: TCard
     Top = 0
     Width = 411
     HorzScrollBar.Page = 1
+    VertScrollBar.Increment = 1
     VertScrollBar.Page = 1
     VertScrollBar.Smooth = True
     VertScrollBar.Tracking = True

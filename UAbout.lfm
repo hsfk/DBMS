@@ -1,13 +1,14 @@
 object AboutForm: TAboutForm
-  Left = 437
+  Left = 694
   Height = 240
-  Top = 278
+  Top = 333
   Width = 320
   Caption = 'AboutForm'
   ClientHeight = 240
   ClientWidth = 320
   OnCreate = FormCreate
-  LCLVersion = '1.4.4.0'
+  Position = poDesktopCenter
+  LCLVersion = '1.6.0.4'
   object FAboutLabel: TLabel
     Left = 15
     Height = 1

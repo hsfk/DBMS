@@ -1,12 +1,13 @@
 object ConflictForm: TConflictForm
-  Left = 678
+  Left = 850
   Height = 455
-  Top = 264
+  Top = 296
   Width = 489
   Caption = 'ConflictForm'
   ClientHeight = 455
   ClientWidth = 489
   OnCreate = FormCreate
+  Position = poDesktopCenter
   LCLVersion = '1.6.0.4'
   object FNameEdit: TEdit
     Left = 8

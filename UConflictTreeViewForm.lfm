@@ -1,7 +1,7 @@
 object ConflictTreeViewForm: TConflictTreeViewForm
-  Left = 439
+  Left = 619
   Height = 330
-  Top = 280
+  Top = 283
   Width = 579
   Caption = 'ConflictTreeViewForm'
   ClientHeight = 330

@@ -1,12 +1,13 @@
 inherited Schedule: TSchedule
-  Left = 438
+  Left = 610
   Height = 564
-  Top = 277
+  Top = 254
   Width = 966
   Caption = 'Schedule'
   ClientHeight = 564
   ClientWidth = 966
   OnClose = FormClose
+  Position = poDesktopCenter
   object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23

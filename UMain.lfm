@@ -1,16 +1,18 @@
 inherited MainForm: TMainForm
-  Left = 438
-  Top = 230
-  Width = 372
-  ClientHeight = 220
-  ClientWidth = 372
+  Left = 682
+  Height = 239
+  Top = 239
+  Width = 342
+  ClientHeight = 219
+  ClientWidth = 342
   Menu = FMainMenu
   OnCreate = FormCreate
+  Position = poDesktopCenter
   object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23
-    Top = 197
-    Width = 372
+    Top = 196
+    Width = 342
     Panels = <>
   end
   object FMainMenu: TMainMenu[1]
