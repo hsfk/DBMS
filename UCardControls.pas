@@ -181,6 +181,7 @@ begin
   for i := 0 to High(FData) do
     if AData = FData[i].Data then begin
       FCBox.ItemIndex := i;
+      Subscriber.CreateNotification(FCBox, Subscriber.NClass);
       Exit;
     end;
 end;
@@ -268,8 +269,9 @@ begin
           i += 1;
         end;
         NClass += 1;
-      end;
-      i += 1;
+      end
+      else
+        i += 1;
     end;
 end;
 
