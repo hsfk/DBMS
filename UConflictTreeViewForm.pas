@@ -86,7 +86,6 @@ var
   SameRecs: TStringV;
   i: integer;
   j: integer;
-  AName: string;
 begin
   with ConflictPanel do begin
     if Conflict.Data = nil then
@@ -95,16 +94,14 @@ begin
     Branch.Data := Conflict;
 
     for i := 0 to Conflict.Data.Size - 1 do begin
-      AName := FTable.Fields[TreeViewVisibleRec].Name + ': ' +
-        Conflict.Data[i][0][TreeViewVisibleRec];
-      SecLVL := FTreeView.Items.AddChild(Branch, AName);
+      SecLVL := FTreeView.Items.AddChild(Branch, '');
       SameRecs := FindSameRecs(Conflict.Data[i]);
       for j := 0 to SameRecs.Size - 1 do
         if SameRecs[j] <> '' then
           Cell := FTreeView.Items.AddChild(SecLVL, FTable.Fields[j].Name +
             ': ' + SameRecs[j]);
       for j := 0 to Conflict.Data[i].Size - 1 do
-        MakeLVL(Cell, AName, SameRecs, Conflict.Data[i][j]);
+        MakeLVL(Cell, '', SameRecs, Conflict.Data[i][j]);
       SecLVL.Expanded := True;
       SameRecs.Free;
     end;
