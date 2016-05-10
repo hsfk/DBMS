@@ -11,8 +11,6 @@ uses
 
 type
 
-  { TMainForm }
-
   TMainForm = class(TDBForm)
   private
     procedure CreateForm(ATable: TDBTable; FormType: TDBFormType);
