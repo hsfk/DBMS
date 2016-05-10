@@ -35,6 +35,7 @@ type
     function Containing (Item: T): boolean;        virtual;
     function Find       (Item: T): T;              virtual;
     function FindInd    (Item: T): integer;        virtual;
+    function Empty:      boolean;                  virtual;
 
     property Back:  T read GetBack  write SetBack;
     property Front: T read GetFront write SetFront;
@@ -105,6 +106,11 @@ begin
     if Item = FItems[i] then
       Exit(i);
   Exit(-1);
+end;
+
+function TVector.Empty: boolean;
+begin
+  Exit(Size = 0);
 end;
 
 procedure TVector.Fill(Item: T);
