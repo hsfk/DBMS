@@ -1,22 +1,22 @@
 object ConflictForm: TConflictForm
-  Left = 839
-  Height = 337
-  Top = 329
-  Width = 410
+  Left = 678
+  Height = 455
+  Top = 264
+  Width = 489
   Caption = 'ConflictForm'
-  ClientHeight = 337
-  ClientWidth = 410
+  ClientHeight = 455
+  ClientWidth = 489
   OnCreate = FormCreate
   LCLVersion = '1.6.0.4'
   object FNameEdit: TEdit
-    Left = 152
+    Left = 8
     Height = 23
     Top = 16
-    Width = 240
+    Width = 472
     TabOrder = 0
   end
   object FNameLabel: TLabel
-    Left = 152
+    Left = 8
     Height = 15
     Top = 0
     Width = 55
@@ -28,13 +28,13 @@ object ConflictForm: TConflictForm
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 0
-    Height = 248
+    Height = 176
     Top = 48
-    Width = 410
+    Width = 489
     Anchors = [akTop, akLeft, akRight, akBottom]
     Caption = 'Параметры'
-    ClientHeight = 228
-    ClientWidth = 406
+    ClientHeight = 156
+    ClientWidth = 485
     TabOrder = 1
     object FParamsSBox: TScrollBox
       AnchorSideLeft.Control = FParamsGBox
@@ -44,9 +44,9 @@ object ConflictForm: TConflictForm
       AnchorSideBottom.Control = FParamsGBox
       AnchorSideBottom.Side = asrBottom
       Left = 0
-      Height = 198
+      Height = 126
       Top = 30
-      Width = 406
+      Width = 485
       HorzScrollBar.Page = 1
       VertScrollBar.Page = 1
       Anchors = [akTop, akLeft, akRight, akBottom]
@@ -55,7 +55,7 @@ object ConflictForm: TConflictForm
     end
     object FDelParamsBtn: TButton
       AnchorSideRight.Side = asrBottom
-      Left = 128
+      Left = 144
       Height = 25
       Top = 0
       Width = 118
@@ -72,7 +72,7 @@ object ConflictForm: TConflictForm
       Left = 8
       Height = 25
       Top = 0
-      Width = 118
+      Width = 128
       Align = alCustom
       Anchors = []
       BorderSpacing.Top = 5
@@ -91,17 +91,18 @@ object ConflictForm: TConflictForm
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
     Left = 0
-    Height = 41
-    Top = 296
-    Width = 410
-    Anchors = [akTop, akLeft, akRight, akBottom]
-    ClientHeight = 41
-    ClientWidth = 410
+    Height = 39
+    Top = 416
+    Width = 489
+    Anchors = [akLeft, akRight, akBottom]
+    ClientHeight = 39
+    ClientWidth = 489
+    ParentColor = False
     TabOrder = 2
     object FApplyBtn: TButton
-      Left = 40
+      Left = 56
       Height = 25
-      Top = 8
+      Top = 6
       Width = 118
       Anchors = [akLeft, akBottom]
       Caption = 'Применить'
@@ -109,9 +110,9 @@ object ConflictForm: TConflictForm
       TabOrder = 0
     end
     object FCancelBtn: TButton
-      Left = 256
+      Left = 306
       Height = 25
-      Top = 8
+      Top = 6
       Width = 118
       Anchors = [akRight, akBottom]
       Caption = 'Отмена'
@@ -119,22 +120,66 @@ object ConflictForm: TConflictForm
       TabOrder = 1
     end
   end
-  object FTreeViewVisRecLabel: TLabel
-    Left = 8
-    Height = 15
-    Hint = 'Отображаемое в Tree View поле'
-    Top = 0
-    Width = 117
-    Caption = 'Отображаемое поле:'
-    ParentColor = False
-  end
-  object FTreeViewVisRecCBox: TComboBox
-    Left = 8
-    Height = 23
-    Top = 16
-    Width = 137
-    ItemHeight = 15
-    Style = csDropDownList
+  object FExprGBox: TGroupBox
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = FParamsGBox
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = FBtnsPanel
+    Left = 0
+    Height = 192
+    Top = 224
+    Width = 489
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Caption = 'Выражения'
+    ClientHeight = 172
+    ClientWidth = 485
     TabOrder = 3
+    object FExprSBox: TScrollBox
+      AnchorSideLeft.Control = FExprGBox
+      AnchorSideTop.Control = FExprGBox
+      AnchorSideRight.Control = FExprGBox
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = FExprGBox
+      AnchorSideBottom.Side = asrBottom
+      Left = 0
+      Height = 142
+      Top = 30
+      Width = 485
+      HorzScrollBar.Page = 1
+      VertScrollBar.Page = 1
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Top = 30
+      TabOrder = 0
+    end
+    object FDelExprBtn: TButton
+      AnchorSideRight.Side = asrBottom
+      Left = 144
+      Height = 25
+      Top = 0
+      Width = 118
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 25
+      Caption = 'Удалить выражения'
+      OnClick = FDelExprBtnClick
+      TabOrder = 1
+    end
+    object FAddExprBtn: TButton
+      AnchorSideRight.Side = asrBottom
+      Left = 8
+      Height = 25
+      Top = 0
+      Width = 128
+      Align = alCustom
+      Anchors = []
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 25
+      Caption = 'Добавить выражение'
+      OnClick = FAddExprBtnClick
+      TabOrder = 2
+    end
   end
 end

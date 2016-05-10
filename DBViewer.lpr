@@ -5,7 +5,7 @@ program DBViewer;
 uses {$IFDEF UNIX} {$IFDEF UseCThreads}
   cthreads, {$ENDIF} {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, UMain, UCardControls;
+  Forms, UMain, UCardControls, UElementaryFunctions;
 
 {$R *.res}
 
