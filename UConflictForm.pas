@@ -15,11 +15,7 @@ type
   TExprControl = class;
   TExprControls = class;
 
-  { TConflictForm }
-
   TConflictForm = class(TForm)
-    procedure FAddExprBtnClick(Sender: TObject);
-    procedure FDelExprBtnClick(Sender: TObject);
   private
     FParamControls: TParamControls;
     FExprControls: TExprControls;
@@ -45,6 +41,8 @@ type
     FDelExprBtn: TButton;
     FExprSBox: TScrollBox;
     FExprGBox: TGroupBox;
+    procedure FAddExprBtnClick(Sender: TObject);
+    procedure FDelExprBtnClick(Sender: TObject);
     procedure FApplyBtnClick(Sender: TObject);
     procedure FCancelBtnClick(Sender: TObject);
     procedure FAddParamBtnClick(Sender: TObject);
@@ -132,7 +130,8 @@ begin
   ExprControl := TExprControl.Create(FTable, Parent, Top, Left);
   ExprControl.FRecACbox.ItemIndex := ExprControl.FIntRecIDs.FindInd(RecA);
   ExprControl.FRecBCBox.ItemIndex := ExprControl.FIntRecIDs.FindInd(RecB);
-  ExprControl.FAggregateFCBox.ItemIndex := ExprControl.FExprFunctions.FindInd(EAggregateF);
+  ExprControl.FAggregateFCBox.ItemIndex :=
+    ExprControl.FExprFunctions.FindInd(EAggregateF);
   ExprControl.FCompareFCBox.ItemIndex := ExprControl.FExprFunctions.FindInd(ECompareF);
   AddControlPanel(ExprControl);
 end;
@@ -250,7 +249,7 @@ end;
 
 procedure TConflictForm.FCancelBtnClick(Sender: TObject);
 begin
-  if FParamControls.Correct then
+  if FParamControls.Correct and (FParamControls.Size > 0) then
     if MessageDlg('Вы действительно хотите выйти?', mtConfirmation, mbOKCancel, 0) =
       mrCancel then
       Exit;
@@ -278,13 +277,13 @@ procedure TParamControl.InitControls(AParent: TWinControl; ATop, ALeft: integer)
 var
   i: integer;
 begin
-  inherited Create(AParent, 250 + 20, ATop, ALeft);
+  inherited Create(AParent, 251 + 20, ATop, ALeft);
   FRecCBox := TComboBox.Create(Self);
   FParamCBox := TComboBox.Create(Self);
   InitComponent(FRecCBox, Self, 1, 0, 150);
-  InitComponent(FParamCBox, Self, 1, 150, 100);
+  InitComponent(FParamCBox, Self, 1, 151, 100);
   DelBtn.Top := 0;
-  Delbtn.Left := 250;
+  Delbtn.Left := 251;
   FOps := TStringV.Create(['Совпадает', 'Не совпадает']);
   for i := 0 to FOps.Size - 1 do
     FParamCBox.Items.Add(FOps[i]);
@@ -387,18 +386,18 @@ end;
 
 procedure TExprControl.InitControls(AParent: TWinControl; ATop, ALeft: integer);
 begin
-  inherited Create(AParent, 420 + 20, ATop, ALeft);
+  inherited Create(AParent, 423 + 20, ATop, ALeft);
   FRecACbox := TComboBox.Create(Self);
   FRecBCBox := TComboBox.Create(Self);
   FCompareFCBox := TComboBox.Create(Self);
   FAggregateFCBox := TComboBox.Create(Self);
 
   InitComponent(FRecACbox, Self, 1, 0, 110);
-  InitComponent(FCompareFCBox, Self, 1, 110, 120);
-  InitComponent(FAggregateFCBox, Self, 1, 230, 80);
-  InitComponent(FRecBCBox, Self, 1, 310, 110);
+  InitComponent(FCompareFCBox, Self, 1, 111, 120);
+  InitComponent(FAggregateFCBox, Self, 1, 232, 80);
+  InitComponent(FRecBCBox, Self, 1, 313, 110);
   DelBtn.Top := 0;
-  DelBtn.Left := 420;
+  DelBtn.Left := 423;
 
   InitCBoxData;
 end;
@@ -441,7 +440,8 @@ function TExprControl.BuildExpr: TExpression;
 begin
   Exit(
     TExpression.Create(FIntRecIDs[FRecACbox.ItemIndex],
-    FIntRecIDs[FRecBCbox.ItemIndex], FExprFunctions.CompareFs[FCompareFCBox.ItemIndex].EFunc,
+    FIntRecIDs[FRecBCbox.ItemIndex],
+    FExprFunctions.CompareFs[FCompareFCBox.ItemIndex].EFunc,
     FExprFunctions.AggregateFs[FAggregateFCBox.ItemIndex].EFunc));
 end;
 
