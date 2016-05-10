@@ -20,6 +20,7 @@ type
   TDataFilters = specialize TObjVector<TDataFilter>;
   TDataTuple = specialize TVector<TStringV>;
   TData = specialize TVector<TDataTuple>;
+  TConflictTypeV = specialize TVector<TConflictType>;
 
   TResult = record
     RecID: integer;
@@ -164,13 +165,14 @@ type
 
 implementation
 
-procedure FreeData(AData: TData);
+procedure FreeData(var AData: TData);
 var
   i: integer;
 begin
   for i := 0 to AData.Size - 1 do
     AData[i].Free;
   AData.Free;
+  AData := nil;
 end;
 
 procedure ShowTuple(ATuple: TDataTuple);
@@ -362,15 +364,17 @@ end;
 
 procedure TExpression.Filter(var AData: TData);
 var
-  OpResult: integer = 0;
+  AggregateResult: integer = 0;
   i: integer;
   j: integer;
 begin
+  if AData.Size = 0 then
+    Exit;
   for i := 0 to AData.Size - 1 do
     for j := 0 to AData[i].Size - 1 do
-      OpResult := FAggregateF(OpResult, StrToInt(AData[i][j][FRecB]));
+      AggregateResult := FAggregateF(AggregateResult, StrToInt(AData[i][j][FRecB]));
 
-  if not FCompareF(StrToInt(AData[0][0][FRecA]), OpResult) then begin
+  if not FCompareF(StrToInt(AData[0][0][FRecA]), AggregateResult) then begin
     FreeData(AData);
     AData := nil;
   end;
@@ -496,6 +500,7 @@ var
 begin
   if FData = nil then
     Exit(nil);
+
   Result := nil;
   for i := 0 to FData.Size - 1 do
     for j := 0 to FData[i].Size - 1 do begin
@@ -509,10 +514,11 @@ procedure TConflictType.SelectConflicted(DataTuple: TDataTuple);
 var
   i: integer;
 begin
-  if DataTuple.Empty or FFilters.Empty then
-    Exit;
   if FData <> nil then
     FreeData(FData);
+  if DataTuple.Empty or FFilters.Empty then
+    Exit;
+
   FData := FFilters[0].FilteredTuple(DataTuple, FFilters[0].FFilteredRecs[0]);
   for i := 0 to FFilters.Size - 1 do begin
     FFilters[i].Filter(FData);
