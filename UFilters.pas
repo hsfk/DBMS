@@ -101,25 +101,18 @@ begin
 end;
 
 procedure TFilterPanel.InitControls(AParent: TWinControl; ATop, ALeft: integer);
-const
-  SPACE = 5;
-  FIELDS_CBOX_WIDTH = 150;
-  OPS_CBOX_WIDTH = 100;
-  EDIT_WIDTH = 150;
-  TOTAL_WIDTH = SPACE * 4 + FIELDS_CBOX_WIDTH + OPS_CBOX_WIDTH + EDIT_WIDTH + 20;
 begin
-  inherited Create(AParent, TOTAL_WIDTH, ATop, ALeft);
+  inherited Create(AParent, 402 + 20, ATop, ALeft);
   FFieldsCBox := TComboBox.Create(Self);
   FOpsCBox := TComboBox.Create(Self);
   FEdit := TEdit.Create(Self);
 
   FFieldsCBox.ReadOnly := True;
   FOpsCBox.ReadOnly := True;
-  InitComponent(FFieldsCBox, Self, 1, 0, FIELDS_CBOX_WIDTH);
-  InitComponent(FOpsCBox, Self, 1, FIELDS_CBOX_WIDTH + SPACE, OPS_CBOX_WIDTH);
-  InitComponent(FEdit, Self, 1, FOpsCBox.Left + OPS_CBOX_WIDTH + SPACE, EDIT_WIDTH);
-
-  DelBtn.Left := FEdit.Left + FEdit.Width;
+  InitComponent(FFieldsCBox, Self, 1, 0, 150);
+  InitComponent(FOpsCBox, Self, 1, 151, 100);
+  InitComponent(FEdit, Self, 1, 252, 150);
+  DelBtn.Left := 402;
   DelBtn.Top := 0;
 
   FFieldsCBox.OnSelect := @OnFieldsCBoxChange;
