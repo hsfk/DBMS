@@ -364,7 +364,7 @@ inherited Schedule: TSchedule
         OnClick = FHTMLExportMenuClick
       end
       object FOfficeCalcExportMenu: TMenuItem
-        Caption = 'Экспортировать в ODS'
+        Caption = 'Экспортировать в XLS'
         OnClick = FOfficeCalcExportMenuClick
       end
     end
