@@ -16,7 +16,7 @@ type
     FRoot: TTreeNode;
     FConflicts: TConflictPanels;
     procedure MakeBranch(ConflictPanel: TConflictPanel);
-    procedure MakeLVL(AParent: TTreeNode; AName: string; SameRecs, Recs: TStringV);
+    procedure MakeLVL(AParent: TTreeNode; SameRecs, Recs: TStringV);
     function FindSameRecs(AData: TDataTuple): TStringV;
   public
     procedure Load(Table: TDBTable; Conflicts: TConflictPanels);
@@ -48,19 +48,6 @@ begin
     MakeBranch(FConflicts[i]);
 end;
 
-procedure TConflictTreeViewForm.MakeLVL(AParent: TTreeNode; AName: string;
-  SameRecs, Recs: TStringV);
-var
-  i: integer;
-  NewLVL: TTreeNode;
-begin
-  NewLVL := FTreeView.Items.AddChild(AParent, AName);
-  for i := 0 to Recs.Size - 1 do
-    if SameRecs[i] = '' then
-      FTreeView.Items.AddChild(NewLVL, FTable.Fields[i].Name + ': ' +
-        Recs[i]).Expanded := True;
-end;
-
 procedure TConflictTreeViewForm.FCollapseChildClick(Sender: TObject);
 begin
   FTreeView.Selected.Collapse(True);
@@ -78,32 +65,41 @@ begin
     FActions.PopUp(X + Left, Y + Top);
 end;
 
+procedure TConflictTreeViewForm.MakeLVL(AParent: TTreeNode; SameRecs, Recs: TStringV);
+var
+  AName: string = '';
+  i: integer;
+begin
+  for i := 0 to Recs.Size - 1 do
+    if SameRecs[i] = '' then
+      AName += FTable.Fields[i].Name + ': ' + Recs[i] + ', ';
+  FTreeView.Items.AddChild(AParent, AName);
+end;
+
 procedure TConflictTreeViewForm.MakeBranch(ConflictPanel: TConflictPanel);
 var
   Branch: TTreeNode;
   Cell: TTreeNode;
-  SecLVL: TTreeNode;
   SameRecs: TStringV;
+  AName: string;
   i: integer;
   j: integer;
 begin
   with ConflictPanel do begin
     if Conflict.Data = nil then
       Exit;
+
     Branch := FTreeView.Items.AddChild(FRoot, Conflict.Name);
     Branch.Data := Conflict;
-
     for i := 0 to Conflict.Data.Size - 1 do begin
-      SecLVL := FTreeView.Items.AddChild(Branch, '');
       SameRecs := FindSameRecs(Conflict.Data[i]);
+      AName := '';
       for j := 0 to SameRecs.Size - 1 do
         if SameRecs[j] <> '' then
-          Cell := FTreeView.Items.AddChild(SecLVL, FTable.Fields[j].Name +
-            ': ' + SameRecs[j]);
+          AName += FTable.Fields[j].Name + ': ' + SameRecs[j] + ', ';
+      Cell := FTreeView.Items.AddChild(Branch, AName);
       for j := 0 to Conflict.Data[i].Size - 1 do
-        MakeLVL(Cell, '', SameRecs, Conflict.Data[i][j]);
-      SecLVL.Expanded := True;
-      SameRecs.Free;
+        MakeLVL(Cell, SameRecs, Conflict.Data[i][j]);
     end;
   end;
 end;
