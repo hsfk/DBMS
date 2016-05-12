@@ -9,14 +9,14 @@ uses
   StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
   UDBObjects, UAbout, UDirectory, DB, UCard, UPointUtils, UFilters,
   UCanvasUtils, UIcons, URectUtils, UConflicts, UConflictForm,
-  UConflictTreeViewForm, UElementaryFunctions;
+  UConflictTreeViewForm, UElementaryFunctions, UHTMLExportUtils,UOOUtils;
 
 const
   DIR_SEED = 123456;
   CARD_SEED = 333;
   ID_FIELD_INDX = 0;
   CELL_W = 250;
-  CELL_H = 150;
+  CELL_H = 140;
   TITLE_W = 100;
   TITLE_H = 30;
   LEFT_MARGIN = 5;
@@ -28,8 +28,8 @@ type
 
   TSchedule = class;
   TCell = class;
-  TCellMatrix = specialize TObjMatrix<TCell>;
-  TCells = specialize TVector<TCell>;
+  TCellM = specialize TObjMatrix<TCell>;
+  TCellV = specialize TVector<TCell>;
 
   TElementBtn = class
   private
@@ -156,33 +156,46 @@ type
     property Elements: TElements read FElements;
   end;
 
-  { TSchedule }
+  TScheduleExport = class
+  private
+    FSchedule: TSchedule;
+    procedure HTMLExportTable(var HTMLExport: THTMLExport);
+    procedure HTMLExportFilters(var HTMLExport: THTMLExport);
+    procedure OOPrepare(var OOXLSExport: TOOCalc);
+    procedure OOBuildTable(var OOXLSExport: TOOCalc);
+    procedure OOBuildFilters(var OOXLSExport: TOOCalc);
+  public
+    constructor Create(Schedule: TSchedule);
+    procedure SaveAsXLS(FileName: string);
+    procedure SaveAsHTML(FileName: string);
+  end;
 
   TSchedule = class(TDBForm)
   private
     FConflicts: TConflictPanels;
-    FDelEmptyLines: boolean;
-    FDrawBtns: boolean;
     FMouseCoords: TPoint;
     FSelectedCell: TCell;
     FBuffer: TCell;
-    FSelectedCol: integer;
-    FSelectedRow: integer;
     FHTitleData: TDBDataTuple;
     FVTitleData: TDBDataTuple;
     FFilters: TFilterPanels;
-    FCells: TCellMatrix;
+    FCells: TCellM;
     FHeights: TIntegerV;
     FCurBtn: TElementBtn;
     FConflictCard: TConflictForm;
     FConflictView: TConflictTreeViewForm;
     FConflictedCells: TResultTuple;
+    FExport: TScheduleExport;
+    FDelEmptyLines: boolean;
+    FDrawBtns: boolean;
+    FSelectedCol: integer;
+    FSelectedRow: integer;
     PrevHCBoxInd: integer;
     PrevVCBoxInd: integer;
     PrevRowCount: integer;
     FVisFieldCounter: integer;
     FTextH: integer;
-    procedure BuildMatrix(CellTuple: TCells);
+    procedure BuildMatrix(CellTuple: TCellV);
     procedure FreePrevData;
     procedure MakeSchedule;
     procedure NotificationRecieve(Sender: TObject);
@@ -205,6 +218,7 @@ type
     procedure SetCellsSize(CellW, CellH: integer);
     procedure SelectCell(Mouse: TPoint);
     procedure SetBtnsDrawState;
+    procedure LoadHeights;
     procedure InitCBoxData;
     procedure InitCheckListBoxData;
     procedure InitStringListData(Items: TStrings);
@@ -212,12 +226,11 @@ type
     procedure InitExprConflict(AName: string; EQRecs, NEQRecs: array of integer;
       RecA, RecB: integer; ECompareF: EnumIntCompareFunctions;
       EAggregateF: EnumIntAggregateFunctions);
-    procedure LoadHeights;
     function FindElement(RecID: integer): TCellElement;
     function CreateCard(RowIndex: integer; CardType: TDBFormType): TCard;
     function SelectedCellHash(Seed: integer): integer;
     function GetTitleData(FieldIndex: integer): TDBDataTuple;
-    function GetCellDataTuple: TCells;
+    function GetCellDataTuple: TCellV;
     function GetMaxTitleWidth: integer;
     function EmptyRow(Index: integer): boolean;
     function EmptyCol(Index: integer): boolean;
@@ -254,6 +267,12 @@ type
     FConflictsSBox: TScrollBox;
     FDirShowConflictBtn: TButton;
     FTreeShowConflictBtn: TButton;
+    FMainMenu: TMainMenu;
+    FScheduleMenu: TMenuItem;
+    FHTMLExportMenu: TMenuItem;
+    FOfficeCalcExportMenu: TMenuItem;
+    procedure FHTMLExportMenuClick(Sender: TObject);
+    procedure FOfficeCalcExportMenuClick(Sender: TObject);
     procedure FDirShowConflictBtnClick(Sender: TObject);
     procedure FTreeShowConflictBtnClick(Sender: TObject);
     procedure FAddConflictBtnClick(Sender: TObject);
@@ -294,7 +313,7 @@ begin
   Exit(-1);
 end;
 
-procedure DeleteDBDataInd(DataTuple: TDBDataTuple; Index: integer);
+procedure DeleteDBDataInd(var DataTuple: TDBDataTuple; Index: integer);
 begin
   DataTuple[Index] := DataTuple[High(DataTuple)];
   SetLength(DataTuple, Length(DataTuple) - 1);
@@ -541,7 +560,7 @@ end;
 procedure TCellElement.AddAlerBtn;
 begin
   if FBtns.Size = 3 then
-    FBtns.PushBack(TAlertBtn.Create(FCell, 0, FCell.FSchedule));
+    FBtns.PushBack(TAlertBtn.Create(FCell, FID, FCell.FSchedule));
 end;
 
 procedure TCellElement.Draw(var Offset: TPoint; Rect: TRect; Canvas: TCanvas);
@@ -557,7 +576,7 @@ begin
   Rect.Right -= RIGHT_MARGIN;
 
   if FConflicted then
-    Fill(RGBToColor(255, 225, 225), Squeeze(FRect, 1), Canvas);
+    Fill($E1E1FF, Squeeze(FRect, 1), Canvas);
   for i := 0 to FData.Size - 1 do begin
     if not FCell.FSchedule.FVisFields.Checked[i] then
       continue;
@@ -690,6 +709,183 @@ begin
   Exit(StrToInt(FElements[ElementID].Data[ID_FIELD_INDX]));
 end;
 
+procedure TScheduleExport.HTMLExportTable(var HTMLExport: THTMLExport);
+var
+  i: integer;
+  j: integer;
+  k: integer;
+  l: integer;
+begin
+  with HTMLExport do
+    with FSchedule do begin
+      OpTag('TABLE', 'BORDER = 1');
+      TextOut('<CAPTION>Расписание</CAPTION');
+      OpTag('TR');
+      TextOut('<TD> </TD>');
+      for i := 0 to High(FHTitleData) do
+        TextOut('<TD BGCOLOR = "LightGray">' + FHTitleData[i].Data + '</TD>');
+      ClTag('TR');
+      for j := 0 to FCells.Height - 1 do begin
+        OpTag('TR');
+        TextOut('<TD BGCOLOR = "LightGray">' + FVTitleData[j].Data + '</TD>');
+        for i := 0 to FCells.Width - 1 do begin
+          OpTag('TD', 'NOWRAP VALIGN = "TOP"');
+          if FCells[i, j] <> nil then begin
+            for k := 0 to FCells[i, j].Elements.Size - 1 do begin
+              if FCells[i, j].Elements[k].FConflicted then
+                OpTag('CONFLICT', 'STYLE = "background-color: #FFE1E1"');
+              for l := 0 to FCells[i, j].Elements[k].Data.Size - 1 do
+                if FVisFields.Checked[l] then
+                  TextOut(FCells[i, j].Elements[k].TextOut(l) + '<BR>');
+              TextOut('<BR>');
+              if FCells[i, j].Elements[k].FConflicted then
+                ClTag('CONFLICT');
+            end;
+          end
+          else
+            TextOut('<BR>');
+          ClTag('TD');
+        end;
+        ClTag('TR');
+      end;
+      ClTag('TABLE');
+    end;
+end;
+
+procedure TScheduleExport.HTMLExportFilters(var HTMLExport: THTMLExport);
+var
+  i: integer;
+begin
+  with HTMLExport do
+    with FSchedule do begin
+      if not FFilters.Empty and FFilters.Correct then begin
+        OpTag('TABLE', 'BORDER = 1');
+        TextOut('<CAPTION>Фильтры</CAPTION>');
+        for i := 0 to FFilters.Size - 1 do
+          with FFilters[i].Filter do
+            TextOut('<TR><TD>' + Name + '</TD><TD>' + ConditionalOperator +
+              '</TD><TD>' + Param + '</TD></TR>');
+      end;
+    end;
+end;
+
+procedure TScheduleExport.OOPrepare(var OOXLSExport: TOOCalc);
+var
+  i: word;
+begin
+  with OOXLSExport do
+    with FSchedule do begin
+      TableName := 'Расписание';
+      for i := 0 to FDrawGrid.ColCount - 1 do begin
+        ColWidths[i] := FDrawGrid.ColWidths[i] * 25;
+        CellColor[i, 0] := $F0F0F0;
+      end;
+      for i := 0 to FDrawGrid.RowCount - 1 do begin
+        RowHeights[i] := FDrawGrid.RowHeights[i] * 25;
+        CellColor[0, i] := $F0F0F0;
+      end;
+
+      for i := 0 to High(FHTitleData) do
+        CellText[i + 1, 0] := FHTitleData[i].Data;
+      for i := 0 to High(FVTitleData) do
+        CellText[0, i + 1] := FVTitleData[i].Data;
+    end;
+end;
+
+procedure TScheduleExport.OOBuildTable(var OOXLSExport: TOOCalc);
+var
+  i: word;
+  j: word;
+  k: word;
+  l: word;
+  AText: string;
+begin
+  with OOXLSExport do
+    with FSchedule do begin
+      for j := 0 to FCells.Height - 1 do
+        for i := 0 to FCells.Width - 1 do begin
+          if FCells[i, j] <> nil then begin
+            AText := '';
+            for k := 0 to FCells[i, j].Elements.Size - 1 do begin
+              for l := 0 to FCells[i, j].Elements[k].Data.Size - 1 do
+                if FVisFields.Checked[l] then
+                  AText += FCells[i, j].Elements[k].TextOut(l) + #13#10;
+              AText += #13#10;
+            end;
+          end
+          else
+            AText := ' ';
+          CellText[i + 1, j + 1] := AText;
+        end;
+    end;
+end;
+
+procedure TScheduleExport.OOBuildFilters(var OOXLSExport: TOOCalc);
+var
+  i: word;
+  Row: word;
+begin
+  with OOXLSExport do
+    with FSchedule do begin
+      if not FFilters.Empty and FFilters.Correct then begin
+        Row := FCells.Height + 2;
+        CellText[0, Row] := 'Фильтры';
+        for i := 0 to FFilters.Size - 1 do begin
+          Row += 1;
+          with FFilters[i].Filter do begin
+            CellText[0, Row] := Name;
+            CellText[1, Row] := ConditionalOperator;
+            CellText[2, Row] := Param;
+          end;
+        end;
+      end;
+    end;
+end;
+
+constructor TScheduleExport.Create(Schedule: TSchedule);
+begin
+  FSchedule := Schedule;
+end;
+
+procedure TScheduleExport.SaveAsXLS(FileName: string);
+var
+  XLSTable: TOOCalc;
+begin
+  if Length(FSchedule.FHTitleData) = 0 then
+    Exit;
+  try
+    XLSTable := TOOCalc.Create;
+    XLSTable.Open(False);
+    OOPrepare(XLSTable);
+    OOBuildTable(XLSTable);
+    OOBuildFilters(XLSTable);
+    XLSTable.SaveAs(FileName);
+    XLSTable.Close;
+  finally
+    XLSTable.Free;
+  end;
+end;
+
+procedure TScheduleExport.SaveAsHTML(FileName: string);
+var
+  HTML: THTMLExport;
+begin
+  HTML := THTMLExport.Create(FileName);
+  with HTML do begin
+    OpTag('HTML');
+    OpTag('HEAD');
+    TextOut('<META CHARSET = "UTF-8">');
+    TextOut('<TITLE> Расписание </TITLE>');
+    ClTag('HEAD');
+    OpTag('BODY');
+    HTMLExportTable(HTML);
+    HTMLExportFilters(HTML);
+    ClTag('BODY');
+    ClTag('HTML');
+  end;
+  HTML.Free;
+end;
+
 procedure TSchedule.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
@@ -709,7 +905,8 @@ begin
   PrevVCBoxInd := -1;
   PrevRowCount := -1;
   FTextH := 25;
-  FCells := TCellMatrix.Create;
+  FCells := TCellM.Create;
+  FExport := TScheduleExport.Create(Self);
   FHeights := TIntegerV.Create;
   FConflicts := TConflictPanels.Create(FConflictsSBox, 5, 5);
   FConflicts.OnEditClick := @CreateInsertConflictCard;
@@ -719,7 +916,9 @@ end;
 
 procedure TSchedule.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
+  FExport.Free;
   FFilters.Free;
+  FConflicts.Free;
   FCells.Free;
   FCells := nil;
   inherited FormClose(Sender, CloseAction);
@@ -917,8 +1116,8 @@ begin
   for i := 0 to FVisFields.Items.Count - 1 do
     FVisFields.Checked[i] := True;
   FVisFields.Checked[ID_FIELD_INDX] := False;
-  FVisFields.Checked[Table.FieldsByName['Размер группы'].Index] := False;
-  FVisFields.Checked[Table.FieldsByName['Размер аудитории'].Index] := False;
+  FVisFields.Checked[7] := False;
+  FVisFields.Checked[9] := False;
 end;
 
 procedure TSchedule.InitStringListData(Items: TStrings);
@@ -930,7 +1129,30 @@ begin
     Items.Add(Table.Fields[i].Name);
 end;
 
-procedure TSchedule.BuildMatrix(CellTuple: TCells);
+procedure TSchedule.FHTMLExportMenuClick(Sender: TObject);
+var
+  HTMLSave: TSaveDialog;
+
+begin
+  HTMLSave := TSaveDialog.Create(Self);
+  HTMLSave.Filter := 'HTML files|*.html';
+  if HTMLSave.Execute then
+    FExport.SaveAsHTML(HTMLSave.FileName);
+  HTMLSave.Free;
+end;
+
+procedure TSchedule.FOfficeCalcExportMenuClick(Sender: TObject);
+var
+  XLSSave: TSaveDialog;
+begin
+  XLSSave := TSaveDialog.Create(Self);
+  XLSSave.Filter := 'MS Excel 97|*.xls';
+  if XLSSave.Execute then
+    FExport.SaveAsXLS(XLSSave.FileName);
+  XLSSave.Free;
+end;
+
+procedure TSchedule.BuildMatrix(CellTuple: TCellV);
 var
   i: integer;
   j: integer;
@@ -944,6 +1166,7 @@ begin
       CellTuple[i].Elements[0].Data[FHCBox.ItemIndex]);
     RowIndex := FindDBDataInd(FVTitleData,
       CellTuple[i].Elements[0].Data[FVCBox.ItemIndex]);
+
     if FCells[ColIndex, RowIndex] = nil then
       FCells[ColIndex, RowIndex] := CellTuple[i]
     else
@@ -1011,6 +1234,7 @@ begin
     for j := 0 to FCells.Height - 1 do
       if FCells[i, j] <> nil then
         FCells[i, j].FFreeElements := True;
+
   FCells.FreeItems;
   FVTitleData := nil;
   FHTitleData := nil;
@@ -1020,10 +1244,11 @@ end;
 
 procedure TSchedule.MakeSchedule;
 var
-  DataTuple: TCells;
+  DataTuple: TCellV;
 begin
   FreePrevData;
   FTextH := FDrawGrid.Canvas.TextHeight('Нрб');
+
   if PrevHCBoxInd <> -1 then
     FVisFields.Checked[PrevHCBoxInd] := True;
   if PrevVCBoxInd <> -1 then
@@ -1036,6 +1261,7 @@ begin
   CheckConflicts;
   FVisFields.Checked[FHCBox.ItemIndex] := False;
   FVisFields.Checked[FVCBox.ItemIndex] := False;
+
   if FDelEmptyLines then
     DeleteEmptyLines;
   SetCellsCoords;
@@ -1046,6 +1272,7 @@ begin
     LoadHeights
   else
     SetCellsSize(CELL_W, CELL_H);
+
   PrevHCBoxInd := FHCBox.ItemIndex;
   PrevVCBoxInd := FVCBox.ItemIndex;
   PrevRowCount := FDrawGrid.RowCount;
@@ -1091,11 +1318,11 @@ begin
     Exit;
   Data := TDataTuple.Create;
   for i := 0 to FCells.Width - 1 do
-    for j := 0 to FCells.Height - 1 do begin
+    for j := 0 to FCells.Height - 1 do
       if FCells[i, j] <> nil then
         for k := 0 to FCells[i, j].Elements.Size - 1 do
           Data.PushBack(FCells[i, j].Elements[k].Data);
-    end;
+
 
   FConflicts.AnalyzeData(Data);
   FConflictedCells := nil;
@@ -1142,8 +1369,10 @@ begin
   Filters := TDataFilters.Create(
     [TSeparateEqualRecsFilter.Create(TIntegerV.Create(EQRecs)),
     TDeleteNotEqualRecsFilter.Create(TIntegerV.Create(NEQRecs))]);
-  Expressions := TExpressions.Create(TExpression.Create(RecA, RecB,
-    ECompareF, EAggregateF));
+
+  Expressions := TExpressions.Create(
+    TExpression.Create(RecA, RecB, ECompareF, EAggregateF));
+
   FConflicts.AddConflictPanel(AName, Filters, Expressions);
 end;
 
@@ -1228,6 +1457,7 @@ begin
     FHTitleData[FSelectedCol].Data, True);
   Dir.AddFilterPanel(FVCBox.Items[FVCBox.ItemIndex], ' = ',
     FVTitleData[FSelectedRow].Data, True);
+
   for i := 0 to FFilters.Size - 1 do
     if FFilters[i].Correct then
       with FFilters[i].Filter do
@@ -1245,6 +1475,7 @@ begin
     Exit;
   if Length(FConflictedCells) = 0 then
     Exit;
+
   Dir := TDirectory(CreateChildForm(ThisSubscriber.NClass, Table,
     TDirectory, nil, 333212333));
   if Dir.Filters.Size <> 0 then
@@ -1264,6 +1495,7 @@ var
 begin
   if FSelectedCell = nil then
     Exit;
+
   with FDrawGrid do begin
     if FSelectedCell.FExpandable then begin
       MaxW := FSelectedCell.MaxTextWidth;
@@ -1311,6 +1543,7 @@ procedure TSchedule.CreateEditCard(ID: integer);
 begin
   if FSelectedCell = nil then
     Exit;
+
   CreateCard(ID, TEditCard);
 end;
 
@@ -1329,7 +1562,6 @@ begin
     UpDate(FBuffer, FHCBox.ItemIndex, IntToStr(FHTitleData[Col].ID));
     UpDate(FBuffer, FVCBox.ItemIndex, IntToStr(FVTitleData[Row].ID));
   end;
-
   FBuffer.Free;
   FBuffer := nil;
   ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
@@ -1339,6 +1571,7 @@ procedure TSchedule.Cut(Cell: TCell; ElementID: integer = -1);
 begin
   if Cell = nil then
     Exit;
+
   FBuffer.Free;
   FBuffer := Cell.Copy(ElementID);
   if ElementID = -1 then begin
@@ -1358,6 +1591,8 @@ end;
 
 procedure TSchedule.PreSelectCardItems(Card: TCard);
 begin
+  if FCells.Width = 0 then
+    Exit;
   if FVCBox.ItemIndex <> ID_FIELD_INDX then
     Card.Select(FVCBox.ItemIndex - 1, FVTitleData[FSelectedRow].Data);
   if FHCBox.ItemIndex <> ID_FIELD_INDX then
@@ -1395,15 +1630,14 @@ begin
   Result += Result and Result xor Result shl 10;
 end;
 
-
-function TSchedule.GetCellDataTuple: TCells;
+function TSchedule.GetCellDataTuple: TCellV;
 var
   i: integer;
   Data: TStringV;
   Cell: TCell;
 begin
   PerformQuery(FFilters.Apply);
-  Result := TCells.Create;
+  Result := TCellV.Create;
   FormQuery.First;
   while not FormQuery.EOF do begin
     Cell := TCell.Create(Table, Self);
