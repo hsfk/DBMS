@@ -16,7 +16,7 @@ const
   CARD_SEED = 333;
   ID_FIELD_INDX = 0;
   CELL_W = 250;
-  CELL_H = 140;
+  CELL_H = 135;
   TITLE_W = 100;
   TITLE_H = 30;
   LEFT_MARGIN = 5;

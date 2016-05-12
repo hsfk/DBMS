@@ -187,9 +187,8 @@
         <UnitName Value="UHTMLExportUtils"/>
       </Unit28>
       <Unit29>
-        <Filename Value="Utils\uooutils.pas"/>
+        <Filename Value="Utils\UOOUtils.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UOOUtils"/>
       </Unit29>
     </Units>
   </ProjectOptions>
