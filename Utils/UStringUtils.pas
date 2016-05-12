@@ -10,9 +10,29 @@ uses
 procedure DeleteLastSymbols(var AString: string; n: integer);
 procedure DeleteFirstSymbols(var AString: string; n: integer);
 function Param(Index: integer): string;
+function Spaces(Amount: integer): string;
+function Tabs(Amount: integer): string;
 function FindInd(Str: string; Strings: TStrings): integer;
 
 implementation
+
+function Spaces(Amount: integer): string;
+var
+  i: integer;
+begin
+  Result := '';
+  for i := 1 to Amount do
+    Result += ' ';
+end;
+
+function Tabs(Amount: integer): string;
+var
+  i: integer;
+begin
+  Result := '';
+  for i := 1 to Amount do
+    Result += #9;
+end;
 
 function Param(Index: integer): string;
 begin
