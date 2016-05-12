@@ -364,18 +364,30 @@ end;
 
 procedure TExpression.Filter(var AData: TData);
 var
-  AggregateResult: integer = 0;
-  i: integer;
+  AggregateResult: integer;
+  Size: integer;
+  i: integer = 0;
   j: integer;
 begin
   if AData.Size = 0 then
     Exit;
-  for i := 0 to AData.Size - 1 do
+
+  Size := AData.Size;
+  while i < Size do begin
+    AggregateResult := 0;
     for j := 0 to AData[i].Size - 1 do
       AggregateResult := FAggregateF(AggregateResult, StrToInt(AData[i][j][FRecB]));
+    if not FCompareF(StrToInt(AData[i][0][FRecA]), AggregateResult) then begin
+      AData[i].Free;
+      AData.DeleteInd(i);
+      Size -= 1;
+    end
+    else
+      i += 1;
+  end;
 
-  if not FCompareF(StrToInt(AData[0][0][FRecA]), AggregateResult) then begin
-    FreeData(AData);
+  if AData.Size = 0 then begin
+    AData.Free;
     AData := nil;
   end;
 end;
