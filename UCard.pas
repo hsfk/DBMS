@@ -78,7 +78,6 @@ begin
   FRecordIndex := Params.ParamByName('Target').AsInteger;
   FControls := TCardControls.Create(FRecordIndex, Table, FControlsSBox, 5, 5);
   inherited Load(ANClass, ATable);
-  ThisSubscriber.OnNotificationRecieve := @OnNotificationRecieve;
   FSelectAll := Table.Query.Select(TDBFilters.Create(
     TDBFilter.Create(Table.Front, ' = ', IntToStr(FRecordIndex))));
   FControls.CreateGUIControls;
@@ -111,7 +110,7 @@ begin
     while not FormQuery.EOF do begin
       FControls[i].LoadData(
         FormQuery.Fields[FieldIndex].AsString
-        , FormQuery.Fields[0].AsInteger
+       ,FormQuery.Fields[0].AsInteger
         );
       FormQuery.Next;
     end;
@@ -120,12 +119,8 @@ end;
 
 procedure TCard.OnNotificationRecieve(Sender: TObject);
 begin
-  try
-    LoadGUIData;
-    LoadInterface;
-  except
-    Close;
-  end;
+  LoadGUIData;
+  LoadInterface;
 end;
 
 procedure TCard.FCancelBtnClick(Sender: TObject);
