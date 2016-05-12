@@ -1,17 +1,18 @@
 inherited Schedule: TSchedule
-  Left = 610
+  Left = 870
   Height = 564
-  Top = 254
+  Top = 249
   Width = 966
   Caption = 'Schedule'
-  ClientHeight = 564
+  ClientHeight = 544
   ClientWidth = 966
+  Menu = FMainMenu
   OnClose = FormClose
   Position = poDesktopCenter
   object FStatusBar: TStatusBar[0]
     Left = 0
     Height = 23
-    Top = 541
+    Top = 521
     Width = 966
     Panels = <>
   end
@@ -23,7 +24,7 @@ inherited Schedule: TSchedule
     AnchorSideBottom.Control = FStatusBar
     Cursor = crVSplit
     Left = 0
-    Height = 541
+    Height = 521
     Top = 0
     Width = 966
     Anchors = [akTop, akLeft, akRight, akBottom]
@@ -63,11 +64,11 @@ inherited Schedule: TSchedule
     object FPairSplitterBot: TPairSplitterSide
       Cursor = crArrow
       Left = 0
-      Height = 286
+      Height = 266
       Top = 255
       Width = 966
       ClientWidth = 966
-      ClientHeight = 286
+      ClientHeight = 266
       object FVisibleRecsGBox: TGroupBox
         AnchorSideLeft.Control = Owner
         AnchorSideTop.Control = FPairSplitterBot
@@ -75,12 +76,12 @@ inherited Schedule: TSchedule
         AnchorSideBottom.Control = FPairSplitterBot
         AnchorSideBottom.Side = asrBottom
         Left = 0
-        Height = 286
+        Height = 266
         Top = 0
         Width = 232
         Anchors = [akTop, akLeft, akRight, akBottom]
         Caption = 'Видимые записи'
-        ClientHeight = 266
+        ClientHeight = 246
         ClientWidth = 228
         TabOrder = 0
         object FVisFields: TCheckListBox
@@ -91,7 +92,7 @@ inherited Schedule: TSchedule
           AnchorSideBottom.Control = FVisibleRecsGBox
           AnchorSideBottom.Side = asrBottom
           Left = 0
-          Height = 246
+          Height = 226
           Top = 20
           Width = 228
           Anchors = [akTop, akLeft, akRight, akBottom]
@@ -189,7 +190,7 @@ inherited Schedule: TSchedule
         AnchorSideBottom.Control = FPairSplitterBot
         AnchorSideBottom.Side = asrBottom
         Left = 232
-        Height = 214
+        Height = 194
         Top = 72
         Width = 734
         ActivePage = FFiltersSheet
@@ -198,7 +199,7 @@ inherited Schedule: TSchedule
         TabOrder = 2
         object FFiltersSheet: TTabSheet
           Caption = 'Фильтры'
-          ClientHeight = 186
+          ClientHeight = 166
           ClientWidth = 726
           object FFiltersSBox: TScrollBox
             AnchorSideLeft.Control = FFiltersSheet
@@ -208,7 +209,7 @@ inherited Schedule: TSchedule
             AnchorSideBottom.Control = FFiltersSheet
             AnchorSideBottom.Side = asrBottom
             Left = 0
-            Height = 151
+            Height = 131
             Top = 35
             Width = 726
             HorzScrollBar.Page = 1
@@ -351,6 +352,21 @@ inherited Schedule: TSchedule
     object FPasteMenu: TMenuItem
       Caption = 'Вставить'
       OnClick = FPasteMenuClick
+    end
+  end
+  object FMainMenu: TMainMenu[3]
+    left = 392
+    top = 32
+    object FScheduleMenu: TMenuItem
+      Caption = 'Расписание'
+      object FHTMLExportMenu: TMenuItem
+        Caption = 'Экспортировать в HTML'
+        OnClick = FHTMLExportMenuClick
+      end
+      object FOfficeCalcExportMenu: TMenuItem
+        Caption = 'Экспортировать в ODS'
+        OnClick = FOfficeCalcExportMenuClick
+      end
     end
   end
 end

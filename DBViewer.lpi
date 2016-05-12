@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="28">
+    <Units Count="30">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -181,6 +181,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UElementaryFunctions"/>
       </Unit27>
+      <Unit28>
+        <Filename Value="Utils\uhtmlexportutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UHTMLExportUtils"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="Utils\uooutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UOOUtils"/>
+      </Unit29>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
