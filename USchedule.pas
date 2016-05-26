@@ -9,7 +9,7 @@ uses
   StdCtrls, ComCtrls, CheckLst, PairSplitter, Menus, UDBForm, UVector, UMatrix,
   UDBObjects, UAbout, UDirectory, DB, UCard, UPointUtils, UFilters,
   UCanvasUtils, UIcons, URectUtils, UConflicts, UConflictForm,
-  UConflictTreeViewForm, UElementaryFunctions, UHTMLExportUtils,UOOUtils;
+  UConflictTreeViewForm, UElementaryFunctions;
 
 const
   DIR_SEED = 123456;
@@ -106,7 +106,6 @@ type
     procedure SetData(AData: TStringV);
     procedure SetID(AID: integer);
     procedure SetCell(ACell: TCell);
-    function TextOut(Index: integer): string;
     function GetHeight: integer;
   public
     constructor Create(Cell: TCell);
@@ -114,6 +113,7 @@ type
     procedure Draw(var Offset: TPoint; Rect: TRect; Canvas: TCanvas);
     procedure DrawBtns(TopRight: TPoint; Canvas: TCanvas);
     procedure AddAlerBtn;
+    function TextOut(Index: integer): string;
     function MouseToBtn(Mouse: TPoint): TElementBtn;
   published
     property Data: TStringV read FData write SetData;
@@ -121,6 +121,7 @@ type
     property Cell: TCell read FCell write SetCell;
     property MaxTextH: integer read GetHeight;
     property MaxTextW: integer read FMaxTextW;
+    property Conflicted: boolean read FConflicted;
   end;
 
   TCell = class
@@ -156,20 +157,6 @@ type
     property Elements: TElements read FElements;
   end;
 
-  TScheduleExport = class
-  private
-    FSchedule: TSchedule;
-    procedure HTMLExportTable(var HTMLExport: THTMLExport);
-    procedure HTMLExportFilters(var HTMLExport: THTMLExport);
-    procedure OOPrepare(var OOXLSExport: TOOCalc);
-    procedure OOBuildTable(var OOXLSExport: TOOCalc);
-    procedure OOBuildFilters(var OOXLSExport: TOOCalc);
-  public
-    constructor Create(Schedule: TSchedule);
-    procedure SaveAsXLS(FileName: string);
-    procedure SaveAsHTML(FileName: string);
-  end;
-
   TSchedule = class(TDBForm)
   private
     FConflicts: TConflictPanels;
@@ -185,7 +172,6 @@ type
     FConflictCard: TConflictForm;
     FConflictView: TConflictTreeViewForm;
     FConflictedCells: TResultTuple;
-    FExport: TScheduleExport;
     FDelEmptyLines: boolean;
     FDrawBtns: boolean;
     FSelectedCol: integer;
@@ -231,11 +217,13 @@ type
     function SelectedCellHash(Seed: integer): integer;
     function GetTitleData(FieldIndex: integer): TDBDataTuple;
     function GetCellDataTuple: TCellV;
-    function GetMaxTitleWidth: integer;
     function EmptyRow(Index: integer): boolean;
     function EmptyCol(Index: integer): boolean;
   public
     procedure Load(ANClass: TNClass; ATable: TDBTable; Params: TParams = nil); override;
+    function MaxTitleWidth: integer;
+    function MaxRowHeight(Index: integer): integer;
+    function MaxColWidth(Index: integer): integer;
   published
     FVisFields: TCheckListBox;
     FDrawGrid: TDrawGrid;
@@ -297,9 +285,16 @@ type
       X, Y: integer);
     procedure FDrawGridMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+
+    property Filters: TFilterPanels read FFilters;
+    property Cells: TCellM read FCells;
+    property HTitleData: TDBDataTuple read FHTitleData;
+    property VTitleData: TDBDataTuple read FVTitleData;
   end;
 
 implementation
+
+uses UExport;
 
 {$R *.lfm}
 
@@ -524,7 +519,7 @@ end;
 
 function TCellElement.GetHeight: integer;
 begin
-  Exit(Frect.Bottom - FRect.Top);
+  Exit((FCell.FSchedule.FVisFieldCounter + 1) * FCell.FSchedule.FTextH);
 end;
 
 constructor TCellElement.Create(Cell: TCell);
@@ -709,183 +704,6 @@ begin
   Exit(StrToInt(FElements[ElementID].Data[ID_FIELD_INDX]));
 end;
 
-procedure TScheduleExport.HTMLExportTable(var HTMLExport: THTMLExport);
-var
-  i: integer;
-  j: integer;
-  k: integer;
-  l: integer;
-begin
-  with HTMLExport do
-    with FSchedule do begin
-      OpTag('TABLE', 'BORDER = 1');
-      TextOut('<CAPTION>Расписание</CAPTION');
-      OpTag('TR');
-      TextOut('<TD> </TD>');
-      for i := 0 to High(FHTitleData) do
-        TextOut('<TD BGCOLOR = "LightGray">' + FHTitleData[i].Data + '</TD>');
-      ClTag('TR');
-      for j := 0 to FCells.Height - 1 do begin
-        OpTag('TR');
-        TextOut('<TD BGCOLOR = "LightGray">' + FVTitleData[j].Data + '</TD>');
-        for i := 0 to FCells.Width - 1 do begin
-          OpTag('TD', 'NOWRAP VALIGN = "TOP"');
-          if FCells[i, j] <> nil then begin
-            for k := 0 to FCells[i, j].Elements.Size - 1 do begin
-              if FCells[i, j].Elements[k].FConflicted then
-                OpTag('CONFLICT', 'STYLE = "background-color: #FFE1E1"');
-              for l := 0 to FCells[i, j].Elements[k].Data.Size - 1 do
-                if FVisFields.Checked[l] then
-                  TextOut(FCells[i, j].Elements[k].TextOut(l) + '<BR>');
-              TextOut('<BR>');
-              if FCells[i, j].Elements[k].FConflicted then
-                ClTag('CONFLICT');
-            end;
-          end
-          else
-            TextOut('<BR>');
-          ClTag('TD');
-        end;
-        ClTag('TR');
-      end;
-      ClTag('TABLE');
-    end;
-end;
-
-procedure TScheduleExport.HTMLExportFilters(var HTMLExport: THTMLExport);
-var
-  i: integer;
-begin
-  with HTMLExport do
-    with FSchedule do begin
-      if not FFilters.Empty and FFilters.Correct then begin
-        OpTag('TABLE', 'BORDER = 1');
-        TextOut('<CAPTION>Фильтры</CAPTION>');
-        for i := 0 to FFilters.Size - 1 do
-          with FFilters[i].Filter do
-            TextOut('<TR><TD>' + Name + '</TD><TD>' + ConditionalOperator +
-              '</TD><TD>' + Param + '</TD></TR>');
-      end;
-    end;
-end;
-
-procedure TScheduleExport.OOPrepare(var OOXLSExport: TOOCalc);
-var
-  i: word;
-begin
-  with OOXLSExport do
-    with FSchedule do begin
-      TableName := 'Расписание';
-      for i := 0 to FDrawGrid.ColCount - 1 do begin
-        ColWidths[i] := FDrawGrid.ColWidths[i] * 25;
-        CellColor[i, 0] := $F0F0F0;
-      end;
-      for i := 0 to FDrawGrid.RowCount - 1 do begin
-        RowHeights[i] := FDrawGrid.RowHeights[i] * 25;
-        CellColor[0, i] := $F0F0F0;
-      end;
-
-      for i := 0 to High(FHTitleData) do
-        CellText[i + 1, 0] := FHTitleData[i].Data;
-      for i := 0 to High(FVTitleData) do
-        CellText[0, i + 1] := FVTitleData[i].Data;
-    end;
-end;
-
-procedure TScheduleExport.OOBuildTable(var OOXLSExport: TOOCalc);
-var
-  i: word;
-  j: word;
-  k: word;
-  l: word;
-  AText: string;
-begin
-  with OOXLSExport do
-    with FSchedule do begin
-      for j := 0 to FCells.Height - 1 do
-        for i := 0 to FCells.Width - 1 do begin
-          if FCells[i, j] <> nil then begin
-            AText := '';
-            for k := 0 to FCells[i, j].Elements.Size - 1 do begin
-              for l := 0 to FCells[i, j].Elements[k].Data.Size - 1 do
-                if FVisFields.Checked[l] then
-                  AText += FCells[i, j].Elements[k].TextOut(l) + #13#10;
-              AText += #13#10;
-            end;
-          end
-          else
-            AText := ' ';
-          CellText[i + 1, j + 1] := AText;
-        end;
-    end;
-end;
-
-procedure TScheduleExport.OOBuildFilters(var OOXLSExport: TOOCalc);
-var
-  i: word;
-  Row: word;
-begin
-  with OOXLSExport do
-    with FSchedule do begin
-      if not FFilters.Empty and FFilters.Correct then begin
-        Row := FCells.Height + 2;
-        CellText[0, Row] := 'Фильтры';
-        for i := 0 to FFilters.Size - 1 do begin
-          Row += 1;
-          with FFilters[i].Filter do begin
-            CellText[0, Row] := Name;
-            CellText[1, Row] := ConditionalOperator;
-            CellText[2, Row] := Param;
-          end;
-        end;
-      end;
-    end;
-end;
-
-constructor TScheduleExport.Create(Schedule: TSchedule);
-begin
-  FSchedule := Schedule;
-end;
-
-procedure TScheduleExport.SaveAsXLS(FileName: string);
-var
-  XLSTable: TOOCalc;
-begin
-  if Length(FSchedule.FHTitleData) = 0 then
-    Exit;
-  try
-    XLSTable := TOOCalc.Create;
-    XLSTable.Open(False);
-    OOPrepare(XLSTable);
-    OOBuildTable(XLSTable);
-    OOBuildFilters(XLSTable);
-    XLSTable.SaveAs(FileName);
-    XLSTable.Close;
-  finally
-    XLSTable.Free;
-  end;
-end;
-
-procedure TScheduleExport.SaveAsHTML(FileName: string);
-var
-  HTML: THTMLExport;
-begin
-  HTML := THTMLExport.Create(FileName);
-  with HTML do begin
-    OpTag('HTML');
-    OpTag('HEAD');
-    TextOut('<META CHARSET = "UTF-8">');
-    TextOut('<TITLE> Расписание </TITLE>');
-    ClTag('HEAD');
-    OpTag('BODY');
-    HTMLExportTable(HTML);
-    HTMLExportFilters(HTML);
-    ClTag('BODY');
-    ClTag('HTML');
-  end;
-  HTML.Free;
-end;
-
 procedure TSchedule.FormCreate(Sender: TObject);
 begin
   inherited FormCreate(Sender);
@@ -906,7 +724,6 @@ begin
   PrevRowCount := -1;
   FTextH := 25;
   FCells := TCellM.Create;
-  FExport := TScheduleExport.Create(Self);
   FHeights := TIntegerV.Create;
   FConflicts := TConflictPanels.Create(FConflictsSBox, 5, 5);
   FConflicts.OnEditClick := @CreateInsertConflictCard;
@@ -916,7 +733,6 @@ end;
 
 procedure TSchedule.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
-  FExport.Free;
   FFilters.Free;
   FConflicts.Free;
   FCells.Free;
@@ -1137,7 +953,7 @@ begin
   HTMLSave := TSaveDialog.Create(Self);
   HTMLSave.Filter := 'HTML files|*.html';
   if HTMLSave.Execute then
-    FExport.SaveAsHTML(HTMLSave.FileName);
+    TScheduleExport.SaveAsHTML(Self, HTMLSave.FileName);
   HTMLSave.Free;
 end;
 
@@ -1148,7 +964,7 @@ begin
   XLSSave := TSaveDialog.Create(Self);
   XLSSave.Filter := 'MS Excel 97|*.xls';
   if XLSSave.Execute then
-    FExport.SaveAsXLS(XLSSave.FileName);
+    TScheduleExport.SaveAsXLS(Self, XLSSave.FileName);
   XLSSave.Free;
 end;
 
@@ -1211,7 +1027,7 @@ procedure TSchedule.SetCellsSize(CellW, CellH: integer);
 var
   i: integer;
 begin
-  FDrawGrid.ColWidths[0] := GetMaxTitleWidth;
+  FDrawGrid.ColWidths[0] := MaxTitleWidth;
   FDrawGrid.RowHeights[0] := TITLE_H;
   for i := 1 to FDrawGrid.ColCount - 1 do
     FDrawGrid.ColWidths[i] := CellW;
@@ -1351,29 +1167,29 @@ end;
 
 procedure TSchedule.InitDefConflict(AName: string; EQRecs, NEQRecs: array of integer);
 var
-  Filters: TDataFilters;
+  DataFilters: TDataFilters;
 begin
-  Filters := TDataFilters.Create(
+  DataFilters := TDataFilters.Create(
     [TSeparateEqualRecsFilter.Create(TIntegerV.Create(EQRecs)),
     TDeleteNotEqualRecsFilter.Create(TIntegerV.Create(NEQRecs))]);
-  FConflicts.AddConflictPanel(AName, Filters);
+  FConflicts.AddConflictPanel(AName, DataFilters);
 end;
 
 procedure TSchedule.InitExprConflict(AName: string; EQRecs, NEQRecs: array of integer;
   RecA, RecB: integer; ECompareF: EnumIntCompareFunctions;
   EAggregateF: EnumIntAggregateFunctions);
 var
-  Filters: TDataFilters;
+  DataFilters: TDataFilters;
   Expressions: TExpressions;
 begin
-  Filters := TDataFilters.Create(
+  DataFilters := TDataFilters.Create(
     [TSeparateEqualRecsFilter.Create(TIntegerV.Create(EQRecs)),
     TDeleteNotEqualRecsFilter.Create(TIntegerV.Create(NEQRecs))]);
 
   Expressions := TExpressions.Create(
     TExpression.Create(RecA, RecB, ECompareF, EAggregateF));
 
-  FConflicts.AddConflictPanel(AName, Filters, Expressions);
+  FConflicts.AddConflictPanel(AName, DataFilters, Expressions);
 end;
 
 function TSchedule.FindElement(RecID: integer): TCellElement;
@@ -1409,6 +1225,26 @@ begin
     if FCells[Index, i] <> nil then
       Exit(False);
   Exit(True);
+end;
+
+function TSchedule.MaxRowHeight(Index: integer): integer;
+var
+  i: integer;
+begin
+  Result := CELL_H;
+  for i := 0 to FCells.Width - 1 do
+    if FCells[i, Index] <> nil then
+      Result := Max(Result, FCells[i, Index].MaxTextHeight);
+end;
+
+function TSchedule.MaxColWidth(Index: integer): integer;
+var
+  i: integer;
+begin
+  Result := CELL_W;
+  for i := 0 to FCells.Height - 1 do
+    if FCells[Index, i] <> nil then
+      Result := Max(Result, FCells[Index, i].MaxTextWidth);
 end;
 
 procedure TSchedule.DeleteEmptyLines;
@@ -1650,7 +1486,7 @@ begin
   end;
 end;
 
-function TSchedule.GetMaxTitleWidth: integer;
+function TSchedule.MaxTitleWidth: integer;
 var
   i: integer;
 begin
