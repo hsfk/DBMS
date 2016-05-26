@@ -20,6 +20,7 @@ type
     procedure SetCellText(i, j: word; AText: string);
     procedure SetCellColor(i, j: word; AColor: TColor);
     procedure SetTableName(AName: string);
+    function GetCell(i, j: word): variant;
     function CreateProperty(AName: string; AVal: variant): variant;
     function ToURL(FileName: string): string;
   public
@@ -28,6 +29,7 @@ type
     procedure SaveAs(FileName: string);
 
     property TableName: string write SetTableName;
+    property Cells[i, j: word]: variant read GetCell;
     property CellColor[i, j: word]: TColor write SetCellColor;
     property CellText[i, j: word]: string write SetCellText;
     property ColWidths[i: word]: word write SetColWidth;
@@ -113,6 +115,11 @@ begin
   for i := FDoc.GetSheets.Count - 1 downto 1 do
     FDoc.GetSheets.RemoveByName(WideString(FDoc.GetSheets.GetByIndex(i).GetName));
   FSheet := FDoc.GetSheets.GetByIndex(0);
+end;
+
+function TOOCalc.GetCell(i, j: word): variant;
+begin
+  Exit(FSheet.GetCellByPosition(i, j));
 end;
 
 function TOOCalc.CreateProperty(AName: string; AVal: variant): variant;
