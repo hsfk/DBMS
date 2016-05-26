@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="30">
+    <Units Count="31">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -190,6 +190,11 @@
         <Filename Value="Utils\UOOUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit29>
+      <Unit30>
+        <Filename Value="uexport.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UExport"/>
+      </Unit30>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
