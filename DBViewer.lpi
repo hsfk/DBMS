@@ -191,9 +191,8 @@
         <IsPartOfProject Value="True"/>
       </Unit29>
       <Unit30>
-        <Filename Value="uexport.pas"/>
+        <Filename Value="UExport.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UExport"/>
       </Unit30>
     </Units>
   </ProjectOptions>
