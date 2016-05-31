@@ -292,87 +292,93 @@ initialization
   with DBData do begin
     with TDBTable do begin
       SetTables([
-         Create( 'Расписание'     ,'TimeTable'   )
-        ,Create( 'Группы'         ,'Groups'      )
-        ,Create( 'Предметы'       ,'Lessons'     )
-        ,Create( 'Преподаватели'  ,'Teachers'    )
-        ,Create( 'Аудитории'      ,'ClassRooms'  )
-        ,Create( 'Времена занятий','LessonTimes' )
-        ,Create( 'Дни недели'     ,'WeekDays'    )
-        ,Create( 'Виды предметов' ,'LessonTypes' )
+         Create('Расписание'     ,'TimeTable'   )
+        ,Create('Группы'         ,'Groups'      )
+        ,Create('Предметы'       ,'Lessons'     )
+        ,Create('Преподаватели'  ,'Teachers'    )
+        ,Create('Аудитории'      ,'ClassRooms'  )
+        ,Create('Времена занятий','LessonTimes' )
+        ,Create('Дни недели'     ,'WeekDays'    )
+        ,Create('Виды предметов' ,'LessonTypes' )
       ]);
     end;
 
     with TDBField do begin
       TablesByName
       ['Groups'].SetFields([
-         Create( 'ID'            ,'ID'   ,40  ,ftInteger )
-        ,Create( 'Группа'        ,'Name' ,100 ,ftString  )
-        ,Create( 'Размер группы' ,'Size' ,90 ,ftInteger )
+         Create('ID'              ,'ID'           ,40  ,ftInteger )
+        ,Create('Группа'          ,'Name'         ,100 ,ftString  )
+        ,Create('Размер группы'   ,'Size'         ,90  ,ftInteger )
+        ,Create('Начало обучения' ,'StartingDate' ,150 ,ftDate    )
+        ,Create('Конец обучения'  ,'EndingDate'   ,150 ,ftDate    )
       ]);
       TablesByName
       ['Lessons'].SetFields([
-         Create( 'ID'      ,'ID'   ,40  ,ftInteger )
-        ,Create( 'Предмет' ,'Name' ,300 ,ftString  )
+         Create('ID'                  ,'ID'           ,40  ,ftInteger )
+        ,Create('Предмет'             ,'Name'         ,300 ,ftString  )
+        ,Create('Начало преподавания' ,'StartingDate' ,150 ,ftDate    )
+        ,Create('Конец преподавания'  ,'EndingDate'   ,150 ,ftDate    )
       ]);
       TablesByName
       ['Teachers'].SetFields([
-         Create( 'ID'       ,'ID'         ,40  ,ftInteger )
-        ,Create( 'Фамилия'  ,'LastName'   ,100 ,ftString  )
-        ,Create( 'Имя'      ,'FirstName'  ,100 ,ftString  )
-        ,Create( 'Отчество' ,'MiddleName' ,100 ,ftString  )
+         Create('ID'                  ,'ID'           ,40  ,ftInteger )
+        ,Create('Фамилия'             ,'LastName'     ,100 ,ftString  )
+        ,Create('Имя'                 ,'FirstName'    ,100 ,ftString  )
+        ,Create('Отчество'            ,'MiddleName'   ,100 ,ftString  )
+        ,Create('Начало преподавания' ,'StartingDate' ,150 ,ftDate    )
+        ,Create('Конец преподавания'  ,'EndingDate'   ,150 ,ftDate    )
       ]);
       TablesByName
-      [ 'ClassRooms'].SetFields([
-         Create( 'ID'                  ,'ID'   ,40  ,ftInteger )
-        ,Create( 'Аудитория'           ,'Name' ,100 ,ftString  )
-        ,Create( 'Размер аудитории'    ,'Size' ,110 ,ftInteger )
+      ['ClassRooms'].SetFields([
+         Create('ID'                  ,'ID'   ,40  ,ftInteger )
+        ,Create('Аудитория'           ,'Name' ,100 ,ftString  )
+        ,Create('Размер аудитории'    ,'Size' ,110 ,ftInteger )
       ]);
       TablesByName
       ['LessonTimes'].SetFields([
-         Create( 'ID'     ,'ID'           ,40  ,ftInteger )
-        ,Create( 'Начало' ,'StartingTime' ,100 ,ftString  )
-        ,Create( 'Конец'  ,'EndingTime'   ,100 ,ftString  )
+         Create('ID'     ,'ID'           ,40  ,ftInteger )
+        ,Create('Начало' ,'StartingTime' ,100 ,ftString  )
+        ,Create('Конец'  ,'EndingTime'   ,100 ,ftString  )
       ]);
       TablesByName
       ['WeekDays'].SetFields([
-         Create( 'ID'          ,'ID'   ,40  ,ftInteger )
-        ,Create( 'День недели' ,'Name' ,100 ,ftString  )
+         Create('ID'          ,'ID'   ,40  ,ftInteger )
+        ,Create('День недели' ,'Name' ,100 ,ftString  )
       ]);
       TablesByName
       ['LessonTypes'].SetFields([
-         Create( 'ID'  ,'ID'   ,40  ,ftInteger )
-        ,Create( 'Тип' ,'Name' ,130 ,ftString  )
+         Create('ID'  ,'ID'   ,40  ,ftInteger )
+        ,Create('Тип' ,'Name' ,130 ,ftString  )
       ]);
     end;
 
     With TDBRefField do begin
       TablesByName['TimeTable'].SetFields([
          TDBField.Create('ID','ID', 40, ftInteger)
-        ,Create( TablesByName[ 'Lessons'     ].FieldsByName[ 'Name'         ]
-                ,TablesByName[ 'TimeTable'   ],'LessonID'                   )
-        ,Create( TablesByName[ 'LessonTypes' ].FieldsByName[ 'Name'         ]
-                ,TablesByName[ 'TimeTable'   ],'LessonTypeID'               )
-        ,Create( TablesByName[ 'Teachers'    ].FieldsByName[ 'LastName'     ]
-                ,TablesByName[ 'TimeTable'   ],'TeacherID'                  )
-        ,Create( TablesByName[ 'Teachers'    ].FieldsByName[ 'FirstName'    ]
-                ,TablesByName[ 'TimeTable'   ],'TeacherID'                  )
-        ,Create( TablesByName[ 'Teachers'    ].FieldsByName[ 'MiddleName'   ]
-                ,TablesByName[ 'TimeTable'   ],'TeacherID'                  )
-        ,Create( TablesByName[ 'Groups'      ].FieldsByName[ 'Name'         ]
-                ,TablesByName[ 'TimeTable'   ],'GroupID'                    )
-        ,Create( TablesByName[ 'Groups'      ].FieldsByName[ 'Size'         ]
-                ,TablesByName[ 'TimeTable'   ],'GroupID'                    )
-        ,Create( TablesByName[ 'ClassRooms'  ].FieldsByName[ 'Name'         ]
-                ,TablesByName[ 'TimeTable'   ],'ClassRoomID'                )
-        ,Create( TablesByName[ 'ClassRooms'  ].FieldsByName[ 'Size'         ]
-                ,TablesByName[ 'TimeTable'   ],'ClassRoomID'                )
-        ,Create( TablesByName[ 'WeekDays'    ].FieldsByName[ 'Name'         ]
-                ,TablesByName[ 'TimeTable'   ],'WeekDayID'                  )
-        ,Create( TablesByName[ 'LessonTimes' ].FieldsByName[ 'StartingTime' ]
-                ,TablesByName[ 'TimeTable'   ],'LessonTimeID'               )
-        ,Create( TablesByName[ 'LessonTimes' ].FieldsByName[ 'EndingTime'   ]
-                ,TablesByName[ 'TimeTable'   ],'LessonTimeID'               )
+        ,Create( TablesByName['Lessons'     ].FieldsByName['Name'         ]
+                ,TablesByName['TimeTable'   ],'LessonID'                  )
+        ,Create( TablesByName['LessonTypes' ].FieldsByName['Name'         ]
+                ,TablesByName['TimeTable'   ],'LessonTypeID'              )
+        ,Create( TablesByName['Teachers'    ].FieldsByName['LastName'     ]
+                ,TablesByName['TimeTable'   ],'TeacherID'                 )
+        ,Create( TablesByName['Teachers'    ].FieldsByName['FirstName'    ]
+                ,TablesByName['TimeTable'   ],'TeacherID'                 )
+        ,Create( TablesByName['Teachers'    ].FieldsByName['MiddleName'   ]
+                ,TablesByName['TimeTable'   ],'TeacherID'                 )
+        ,Create( TablesByName['Groups'      ].FieldsByName['Name'         ]
+                ,TablesByName['TimeTable'   ],'GroupID'                   )
+        ,Create( TablesByName['Groups'      ].FieldsByName['Size'         ]
+                ,TablesByName['TimeTable'   ],'GroupID'                   )
+        ,Create( TablesByName['ClassRooms'  ].FieldsByName['Name'         ]
+                ,TablesByName['TimeTable'   ],'ClassRoomID'               )
+        ,Create( TablesByName['ClassRooms'  ].FieldsByName['Size'         ]
+                ,TablesByName['TimeTable'   ],'ClassRoomID'               )
+        ,Create( TablesByName['WeekDays'    ].FieldsByName['Name'         ]
+                ,TablesByName['TimeTable'   ],'WeekDayID'                 )
+        ,Create( TablesByName['LessonTimes' ].FieldsByName['StartingTime' ]
+                ,TablesByName['TimeTable'   ],'LessonTimeID'              )
+        ,Create( TablesByName['LessonTimes' ].FieldsByName['EndingTime'   ]
+                ,TablesByName['TimeTable'   ],'LessonTimeID'              )
       ]);
     end;
   end;
