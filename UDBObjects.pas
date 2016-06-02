@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, DBGrids, DB, UMetaDataItems, UVector, UNotifications,
-  StdCtrls, Controls, UCustomControl;
+  StdCtrls, Controls, UCustomControl, UPair;
 
 type
 
@@ -22,12 +22,10 @@ type
     Params: TParams;
   end;
 
-  TDBData = record
+  TFieldData = record
     Data: string;
     ID: integer;
   end;
-
-  TDBDataTuple = array of TDBData;
 
   IFieldConstructor = interface
     function RealName: string;
@@ -46,6 +44,13 @@ type
     function Select(Filters: TDBFilters): TQueryContainer;
   end;
 
+  _TFieldDataV = specialize TCustomVector<TFieldData>;
+
+  TFieldDataV = class(_TFieldDataV)
+  private
+    function Equal(A, B: TFieldData): boolean; override;
+  end;
+
   TDBField = class(TField)
   protected
     FQuery: IFieldQuery;
@@ -53,7 +58,7 @@ type
   public
     constructor Create;
     constructor Create(AName, ANativeName: string; AWidth: integer;
-      ADataType: TFieldType; AParentTable: TDBTable = nil);
+      ADataType: TFieldType; AVisible: boolean = True; AParentTable: TDBTable = nil);
     function CreateControln(RecID: integer): TCustomControl; virtual;
     procedure Load(Column: TColumn);
     procedure Assign(Field: TDBField); virtual;
@@ -129,6 +134,8 @@ type
     property TablesByName[AName: string]: TDBTable read GetItemByName;
   end;
 
+function ToFieldData(ID: integer; Data: string): TFieldData;
+
 var
   DBData: TDBMetaData;
 
@@ -136,16 +143,28 @@ implementation
 
 uses UQuery, UCardControls;
 
+function ToFieldData(ID: integer; Data: string): TFieldData;
+begin
+  Result.ID := ID;
+  Result.Data := Data;
+end;
+
+function TFieldDataV.Equal(A, B: TFieldData): boolean;
+begin
+  Exit(A.Data = B.Data);
+end;
+
 constructor TDBField.Create;
 begin
   { An empty constructor for descendant classes }
 end;
 
 constructor TDBField.Create(AName, ANativeName: string; AWidth: integer;
-  ADataType: TFieldType; AParentTable: TDBTable = nil);
+  ADataType: TFieldType; AVisible: boolean = True; AParentTable: TDBTable = nil);
 begin
   inherited Create(AName, ANativeName, AWidth, ADataType);
   FQuery := TDBFieldQuery.Create(Self);
+  Visible := AVisible;
 end;
 
 procedure TDBField.Load(Column: TColumn);
@@ -156,9 +175,9 @@ end;
 
 function TDBField.CreateControln(RecID: integer): TCustomControl;
 var
-  Control: TFieldControl;
+  Control: TEditControl;
 begin
-  Control := TFieldControl.Create(RecID);
+  Control := TEditControl.Create(RecID);
   Control.Subscriber := TSubscriber.Create;
   Control.Field := Self;
   Exit(Control);
@@ -182,9 +201,9 @@ end;
 
 function TDBRefField.CreateControln(RecID: integer): TCustomControl;
 var
-  Control: TRefFieldControl;
+  Control: TCBoxControl;
 begin
-  Control := TRefFieldControl.Create(RecID);
+  Control := TCBoxControl.Create(RecID);
   Control.Subscriber := TSubscriber.Create(False);
   Control.Field := Self;
   Exit(Control);
@@ -306,27 +325,27 @@ initialization
     with TDBField do begin
       TablesByName
       ['Groups'].SetFields([
-         Create('ID'              ,'ID'           ,40  ,ftInteger )
-        ,Create('Группа'          ,'Name'         ,100 ,ftString  )
-        ,Create('Размер группы'   ,'Size'         ,90  ,ftInteger )
-        ,Create('Начало обучения' ,'StartingDate' ,150 ,ftDate    )
-        ,Create('Конец обучения'  ,'EndingDate'   ,150 ,ftDate    )
+         Create('ID'              ,'ID'           ,40  ,ftInteger       )
+        ,Create('Группа'          ,'Name'         ,100 ,ftString        )
+        ,Create('Размер группы'   ,'Size'         ,90  ,ftInteger ,False)
+        ,Create('Начало обучения' ,'StartingDate' ,150 ,ftDate    ,False)
+        ,Create('Конец обучения'  ,'EndingDate'   ,150 ,ftDate    ,False)
       ]);
       TablesByName
       ['Lessons'].SetFields([
-         Create('ID'                  ,'ID'           ,40  ,ftInteger )
-        ,Create('Предмет'             ,'Name'         ,300 ,ftString  )
-        ,Create('Начало преподавания' ,'StartingDate' ,150 ,ftDate    )
-        ,Create('Конец преподавания'  ,'EndingDate'   ,150 ,ftDate    )
+         Create('ID'                      ,'ID'           ,40  ,ftInteger       )
+        ,Create('Предмет'                 ,'Name'         ,300 ,ftString        )
+        ,Create('Начало преподавания (П)' ,'StartingDate' ,150 ,ftDate    ,False)
+        ,Create('Конец преподавания (П)'  ,'EndingDate'   ,150 ,ftDate    ,False)
       ]);
       TablesByName
       ['Teachers'].SetFields([
-         Create('ID'                  ,'ID'           ,40  ,ftInteger )
-        ,Create('Фамилия'             ,'LastName'     ,100 ,ftString  )
-        ,Create('Имя'                 ,'FirstName'    ,100 ,ftString  )
-        ,Create('Отчество'            ,'MiddleName'   ,100 ,ftString  )
-        ,Create('Начало преподавания' ,'StartingDate' ,150 ,ftDate    )
-        ,Create('Конец преподавания'  ,'EndingDate'   ,150 ,ftDate    )
+         Create('ID'                      ,'ID'           ,40  ,ftInteger       )
+        ,Create('Фамилия'                 ,'LastName'     ,100 ,ftString        )
+        ,Create('Имя'                     ,'FirstName'    ,100 ,ftString        )
+        ,Create('Отчество'                ,'MiddleName'   ,100 ,ftString        )
+        ,Create('Начало преподавания (У)' ,'StartingDate' ,150 ,ftDate    ,False)
+        ,Create('Конец преподавания (У)'  ,'EndingDate'   ,150 ,ftDate    ,False)
       ]);
       TablesByName
       ['ClassRooms'].SetFields([
@@ -357,24 +376,42 @@ initialization
          TDBField.Create('ID','ID', 40, ftInteger)
         ,Create( TablesByName['Lessons'     ].FieldsByName['Name'         ]
                 ,TablesByName['TimeTable'   ],'LessonID'                  )
+        ,Create( TablesByName['Lessons'     ].FieldsByName['StartingDate' ]
+                ,TablesByName['TimeTable'   ],'LessonID'                  )
+        ,Create( TablesByName['Lessons'     ].FieldsByName['EndingDate'   ]
+                ,TablesByName['TimeTable'   ],'LessonID'                  )
+
         ,Create( TablesByName['LessonTypes' ].FieldsByName['Name'         ]
                 ,TablesByName['TimeTable'   ],'LessonTypeID'              )
+
         ,Create( TablesByName['Teachers'    ].FieldsByName['LastName'     ]
                 ,TablesByName['TimeTable'   ],'TeacherID'                 )
         ,Create( TablesByName['Teachers'    ].FieldsByName['FirstName'    ]
                 ,TablesByName['TimeTable'   ],'TeacherID'                 )
         ,Create( TablesByName['Teachers'    ].FieldsByName['MiddleName'   ]
                 ,TablesByName['TimeTable'   ],'TeacherID'                 )
+        ,Create( TablesByName['Teachers'    ].FieldsByName['StartingDate' ]
+                ,TablesByName['TimeTable'   ],'TeacherID'                 )
+        ,Create( TablesByName['Teachers'    ].FieldsByName['EndingDate'   ]
+                ,TablesByName['TimeTable'   ],'TeacherID'                 )
+
         ,Create( TablesByName['Groups'      ].FieldsByName['Name'         ]
                 ,TablesByName['TimeTable'   ],'GroupID'                   )
         ,Create( TablesByName['Groups'      ].FieldsByName['Size'         ]
                 ,TablesByName['TimeTable'   ],'GroupID'                   )
+        ,Create( TablesByName['Groups'      ].FieldsByName['StartingDate' ]
+                ,TablesByName['TimeTable'   ],'GroupID'                   )
+        ,Create( TablesByName['Groups'      ].FieldsByName['EndingDate'   ]
+                ,TablesByName['TimeTable'   ],'GroupID'                   )
+
         ,Create( TablesByName['ClassRooms'  ].FieldsByName['Name'         ]
                 ,TablesByName['TimeTable'   ],'ClassRoomID'               )
         ,Create( TablesByName['ClassRooms'  ].FieldsByName['Size'         ]
                 ,TablesByName['TimeTable'   ],'ClassRoomID'               )
+
         ,Create( TablesByName['WeekDays'    ].FieldsByName['Name'         ]
                 ,TablesByName['TimeTable'   ],'WeekDayID'                 )
+
         ,Create( TablesByName['LessonTimes' ].FieldsByName['StartingTime' ]
                 ,TablesByName['TimeTable'   ],'LessonTimeID'              )
         ,Create( TablesByName['LessonTimes' ].FieldsByName['EndingTime'   ]

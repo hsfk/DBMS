@@ -26,6 +26,7 @@ type
   private
     FDataType: TFieldType;
     FWidth: integer;
+    FVisible: boolean;
   public
     constructor Create(AName, ANativeName: string; AWidth: integer;
       DataType: TFieldType);
@@ -33,6 +34,7 @@ type
   published
     property DataType: TFieldType read FDataType write FDataType;
     property Width: integer read FWidth write FWidth;
+    property Visible: boolean read FVisible write FVisible;
   end;
 
   generic TGData<T: TObject> = class(TPrimaryObject)
@@ -85,6 +87,7 @@ begin
   inherited Create(AName, ANativeName);
   FWidth := AWidth;
   FDataType := DataType;
+  FVisible := True;
 end;
 
 procedure TField.Assign(Field: TField);
@@ -92,6 +95,7 @@ begin
   inherited Assign(Field);
   FDataType := Field.DataType;
   FWidth := Field.Width;
+  FVisible := Field.Visible;
 end;
 
 function TGData.Cast(AItem: TObject): T;
