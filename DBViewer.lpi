@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="31">
+    <Units Count="33">
       <Unit0>
         <Filename Value="DBViewer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -194,6 +194,14 @@
         <Filename Value="UExport.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit30>
+      <Unit31>
+        <Filename Value="Generics\UArray.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit31>
+      <Unit32>
+        <Filename Value="Generics\UPair.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit32>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
