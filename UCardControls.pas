@@ -34,7 +34,7 @@ type
     property Field: TDBField read FField write FField;
   end;
 
-  TFieldControl = class(TCardControl)
+  TEditControl = class(TCardControl)
   private
     FEdit: TEdit;
     procedure SetCaption(AData: string); override;
@@ -48,10 +48,10 @@ type
     function Correct: boolean; override;
   end;
 
-  TRefFieldControl = class(TCardControl)
+  TCBoxControl = class(TCardControl)
   private
     FCBox: TComboBox;
-    FData: array of TDBData;
+    FData: array of TFieldData;
     procedure OnChange(Sender: TObject);
     procedure OnNotificationRecieve(Sender: TObject); override;
     procedure SetCaption(AData: string); override;
@@ -104,7 +104,7 @@ begin
   DelBtn.Free;
 end;
 
-function TFieldControl.GetData: TParam;
+function TEditControl.GetData: TParam;
 begin
   Result := TParam.Create(nil, ptInput);
   Result.DataType := FField.DataType;
@@ -112,12 +112,12 @@ begin
   Result.Value := FEdit.Text;
 end;
 
-procedure TFieldControl.SetCaption(AData: string);
+procedure TEditControl.SetCaption(AData: string);
 begin
   FEdit.Text := AData;
 end;
 
-function TFieldControl.UpdateTable: TQueryContainer;
+function TEditControl.UpdateTable: TQueryContainer;
 var
   NewData: TParam;
 begin
@@ -127,12 +127,12 @@ begin
   Exit(FField.Query.Update(FRecID, NewData));
 end;
 
-function TFieldControl.Correct: boolean;
+function TEditControl.Correct: boolean;
 begin
   Exit(FEdit.Text <> '');
 end;
 
-procedure TFieldControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
+procedure TEditControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
 begin
   inherited CreateGUI(AParent, ATop, ALeft);
   FEdit := TEdit.Create(Self);
@@ -141,27 +141,27 @@ begin
     FEdit.NumbersOnly := True;
 end;
 
-procedure TFieldControl.Clear;
+procedure TEditControl.Clear;
 begin
   Deselect;
 end;
 
-procedure TFieldControl.Deselect;
+procedure TEditControl.Deselect;
 begin
   FEdit.Text := '';
 end;
 
-procedure TFieldControl.LoadData(AData: string; ID: integer);
+procedure TEditControl.LoadData(AData: string; ID: integer);
 begin
   FEdit.Text := AData;
 end;
 
-procedure TRefFieldControl.OnChange(Sender: TObject);
+procedure TCBoxControl.OnChange(Sender: TObject);
 begin
   Subscriber.CreateNotification(FCBox, Subscriber.NClass);
 end;
 
-function TRefFieldControl.GetData: TParam;
+function TCBoxControl.GetData: TParam;
 begin
   Result := TParam.Create(nil, ptInput);
   Result.DataType := FField.DataType;
@@ -169,12 +169,12 @@ begin
   Result.Value := FData[FCBox.ItemIndex].ID;
 end;
 
-procedure TRefFieldControl.OnNotificationRecieve(Sender: TObject);
+procedure TCBoxControl.OnNotificationRecieve(Sender: TObject);
 begin
   FCBox.ItemIndex := TComboBox(Sender).ItemIndex;
 end;
 
-procedure TRefFieldControl.SetCaption(AData: string);
+procedure TCBoxControl.SetCaption(AData: string);
 var
   i: integer;
 begin
@@ -186,7 +186,7 @@ begin
     end;
 end;
 
-function TRefFieldControl.UpdateTable: TQueryContainer;
+function TCBoxControl.UpdateTable: TQueryContainer;
 var
   NewData: TParam;
 begin
@@ -196,12 +196,12 @@ begin
   Exit(FField.Query.Update(FRecID, NewData));
 end;
 
-function TRefFieldControl.Correct: boolean;
+function TCBoxControl.Correct: boolean;
 begin
   Exit(FCBox.ItemIndex <> -1);
 end;
 
-procedure TRefFieldControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
+procedure TCBoxControl.CreateGUI(AParent: TWinControl; ATop, ALeft: integer);
 begin
   inherited CreateGUI(AParent, ATop, ALeft);
   FCBox := TComboBox.Create(AParent);
@@ -211,17 +211,17 @@ begin
   Subscriber.OnNotificationRecieve := @OnNotificationRecieve;
 end;
 
-procedure TRefFieldControl.Clear;
+procedure TCBoxControl.Clear;
 begin
   FCBox.Items.Clear;
 end;
 
-procedure TRefFieldControl.Deselect;
+procedure TCBoxControl.Deselect;
 begin
   FCBox.ItemIndex := -1;
 end;
 
-procedure TRefFieldControl.LoadData(AData: string; ID: integer);
+procedure TCBoxControl.LoadData(AData: string; ID: integer);
 begin
   SetLength(FData, Length(FData) + 1);
   FData[High(FData)].Data := AData;

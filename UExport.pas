@@ -5,7 +5,7 @@ unit UExport;
 interface
 
 uses
-  Classes, SysUtils, USchedule, UHTMLExportUtils, UOOUtils;
+  Classes, SysUtils, USchedule, UHTMLExportUtils, UOOUtils, UDBObjects;
 
 type
 
@@ -27,7 +27,7 @@ class procedure TScheduleExport.SaveAsXLS(Schedule: TSchedule; FileName: string)
 var
   XLSTable: TOOCalc;
 begin
-  if Length(Schedule.HTitleData) = 0 then
+  if Schedule.HTitleData.Empty then
     Exit;
   try
     XLSTable := TOOCalc.Create;
@@ -76,7 +76,7 @@ begin
       TextOut('<CAPTION>Расписание</CAPTION');
       OpTag('TR');
       TextOut('<TD> </TD>');
-      for i := 0 to High(HTitleData) do
+      for i := 0 to HTitleData.Size - 1 do
         TextOut('<TD BGCOLOR = "LightGray">' + HTitleData[i].Data + '</TD>');
       ClTag('TR');
       for j := 0 to Cells.Height - 1 do begin
@@ -140,9 +140,9 @@ begin
         CellColor[0, i] := $F0F0F0;
       end;
 
-      for i := 0 to High(HTitleData) do
+      for i := 0 to HTitleData.Size - 1 do
         CellText[i + 1, 0] := HTitleData[i].Data;
-      for i := 0 to High(VTitleData) do begin
+      for i := 0 to VTitleData.Size - 1 do begin
         CellText[0, i + 1] := VTitleData[i].Data;
         OOXLSExport.Cells[0, i + 1].VertJustify := 1;
       end;
