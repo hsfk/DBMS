@@ -216,7 +216,7 @@ begin
     end;
     for i := 0 to Expressions.Size - 1 do
       with Expressions[i] do
-        FExprControls.AddExpr(RecA, RecB, ECompareFunc, EAggregateFunc);
+        FExprControls.AddExpr(FieldA, FieldB, ECompareFunc, EAggregateFunc);
   end;
 end;
 
