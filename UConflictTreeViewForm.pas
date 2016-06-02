@@ -72,7 +72,8 @@ var
 begin
   for i := 0 to Recs.Size - 1 do
     if SameRecs[i] = '' then
-      AName += FTable.Fields[i].Name + ': ' + Recs[i] + ', ';
+      if FTable.Fields[i].Visible then
+        AName += FTable.Fields[i].Name + ': ' + Recs[i] + ', ';
   FTreeView.Items.AddChild(AParent, AName);
 end;
 
