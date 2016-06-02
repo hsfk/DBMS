@@ -157,14 +157,16 @@ type
     property Elements: TElements read FElements;
   end;
 
+  { TSchedule }
+
   TSchedule = class(TDBForm)
   private
     FConflicts: TConflictPanels;
     FMouseCoords: TPoint;
     FSelectedCell: TCell;
     FBuffer: TCell;
-    FHTitleData: TDBDataTuple;
-    FVTitleData: TDBDataTuple;
+    FHTitleData: TFieldDataV;
+    FVTitleData: TFieldDataV;
     FFilters: TFilterPanels;
     FCells: TCellM;
     FHeights: TIntegerV;
@@ -191,6 +193,7 @@ type
     procedure Paste(Col, Row: integer);
     procedure DeleteEmptyLines;
     procedure Delete(ID: integer);
+    procedure Deselect(A: array of integer);
     procedure CheckConflicts;
     procedure Cut(Cell: TCell; ElementID: integer = -1); // -1 = Cuts all elements
     procedure CreateDir;
@@ -215,7 +218,7 @@ type
     function FindElement(RecID: integer): TCellElement;
     function CreateCard(RowIndex: integer; CardType: TDBFormType): TCard;
     function SelectedCellHash(Seed: integer): integer;
-    function GetTitleData(FieldIndex: integer): TDBDataTuple;
+    function GetTitleData(FieldIndex: integer): TFieldDataV;
     function GetCellDataTuple: TCellV;
     function EmptyRow(Index: integer): boolean;
     function EmptyCol(Index: integer): boolean;
@@ -288,8 +291,8 @@ type
 
     property Filters: TFilterPanels read FFilters;
     property Cells: TCellM read FCells;
-    property HTitleData: TDBDataTuple read FHTitleData;
-    property VTitleData: TDBDataTuple read FVTitleData;
+    property HTitleData: TFieldDataV read FHTitleData;
+    property VTitleData: TFieldDataV read FVTitleData;
   end;
 
 implementation
@@ -297,29 +300,6 @@ implementation
 uses UExport;
 
 {$R *.lfm}
-
-function FindDBDataInd(DataTuple: TDBDataTuple; Data: string): integer;
-var
-  i: integer;
-begin
-  for i := 0 to High(DataTuple) do
-    if Data = DataTuple[i].Data then
-      Exit(i);
-  Exit(-1);
-end;
-
-procedure DeleteDBDataInd(var DataTuple: TDBDataTuple; Index: integer);
-begin
-  DataTuple[Index] := DataTuple[High(DataTuple)];
-  SetLength(DataTuple, Length(DataTuple) - 1);
-end;
-
-function Max(A, B: integer): integer;
-begin
-  if A > B then
-    Exit(A);
-  Exit(B);
-end;
 
 constructor TEditBtn.Create(Cell: TCell; ElementID: integer; const Schedule: TSchedule);
 begin
@@ -576,7 +556,7 @@ begin
     if not FCell.FSchedule.FVisFields.Checked[i] then
       continue;
     Canvas.TextRect(Rect, Offset.x, Offset.y, TextOut(i));
-    FMaxTextW := Max(FMaxTextW, Canvas.TextWidth(TextOut(i)));
+    FMaxTextW := TIntAggregateFunctions.Max(FMaxTextW, Canvas.TextWidth(TextOut(i)));
     Offset.y += TextH;
   end;
   Offset.y += TextH;
@@ -695,7 +675,7 @@ var
 begin
   Result := CELL_W;
   for i := 0 to FElements.Size - 1 do
-    Result := Max(Result, FElements[i].FMaxTextW);
+    Result := TIntAggregateFunctions.Max(Result, FElements[i].FMaxTextW);
   Result += LEFT_MARGIN + BTN_SIZE;
 end;
 
@@ -755,9 +735,9 @@ begin
   Caption := APP_CAPTION + ' - Расписание(Б.)';
   FStatusBar.SimpleText := Connection.CurrentConnection;
   InitCBoxData;
-  InitDefConflict('Разрыв группы', [10, 11, 6], [8]);
-  InitDefConflict('Разрыв преподавателя', [10, 11, 3, 4, 5], [8]);
-  InitExprConflict('Переполнение аудитории', [8, 10, 11], [], 9, 7, cfLe, afSum);
+  InitDefConflict('Разрыв группы', [10, 16, 17], [8]);
+  InitDefConflict('Разрыв преподавателя', [5, 6, 7, 16, 17], [14]);
+  InitExprConflict('Переполнение аудитории', [14, 16, 17], [], 15, 11, cfLe, afSum);
   MakeSchedule;
 end;
 
@@ -787,19 +767,18 @@ begin
         FCells[aCol - 1, aRow - 1].Draw(aRect, FDrawGrid.Canvas);
 end;
 
-function TSchedule.GetTitleData(FieldIndex: integer): TDBDataTuple;
+function TSchedule.GetTitleData(FieldIndex: integer): TFieldDataV;
 var
   Field: TDBField;
-  Item: TDBData;
+  Item: TFieldData;
 begin
-  SetLength(Result, 0);
+  Result := TFieldDataV.Create;
   Field := Table.Fields[FieldIndex];
   PerformQuery(Field.ParentTable.Query.Select(nil));
   while not FormQuery.EOF do begin
     Item.Data := FormQuery.Fields[Field.Index].AsString;
     Item.ID := FormQuery.Fields[ID_FIELD_INDX].AsInteger;
-    SetLength(Result, Length(Result) + 1);
-    Result[High(Result)] := Item;
+    Result.PushBack(Item);
     FormQuery.Next;
   end;
 end;
@@ -920,20 +899,20 @@ procedure TSchedule.InitCBoxData;
 begin
   InitStringListData(FHCBox.Items);
   InitStringListData(FVCBox.Items);
-  FHCBox.ItemIndex := 6;
-  FVCBox.ItemIndex := 10;
+  FHCBox.ItemIndex := 10;
+  FVCBox.ItemIndex := 16;
 end;
 
 procedure TSchedule.InitCheckListBoxData;
 var
   i: integer;
 begin
-  InitStringListData(FVisFields.Items);
-  for i := 0 to FVisFields.Items.Count - 1 do
-    FVisFields.Checked[i] := True;
-  FVisFields.Checked[ID_FIELD_INDX] := False;
-  FVisFields.Checked[7] := False;
-  FVisFields.Checked[9] := False;
+  FVisFields.Items.Clear;
+  for i := 0 to Table.Count - 1 do begin
+    FVisFields.Items.Add(IntToStr(i) + '. ' + Table.Fields[i].Name);
+    FVisFields.Checked[i] := Table.Fields[i].Visible;
+  end;
+  Deselect([ID_FIELD_INDX]);
 end;
 
 procedure TSchedule.InitStringListData(Items: TStrings);
@@ -975,13 +954,13 @@ var
   ColIndex: integer;
   RowIndex: integer;
 begin
-  FCells.Resize(Length(FHTitleData), Length(FVTitleData));
+  FCells.Resize(FHTitleData.Size, FVTitleData.Size);
   FCells.Fill(nil);
   for i := 0 to CellTuple.Size - 1 do begin
-    ColIndex := FindDBDataInd(FHTitleData,
-      CellTuple[i].Elements[0].Data[FHCBox.ItemIndex]);
-    RowIndex := FindDBDataInd(FVTitleData,
-      CellTuple[i].Elements[0].Data[FVCBox.ItemIndex]);
+    ColIndex := FHTitleData.FindInd(
+      ToFieldData(-1, CellTuple[i].Elements[0].Data[FHCBox.ItemIndex]));
+    RowIndex := FVTitleData.FindInd(
+      ToFieldData(-1, CellTuple[i].Elements[0].Data[FVCBox.ItemIndex]));
 
     if FCells[ColIndex, RowIndex] = nil then
       FCells[ColIndex, RowIndex] := CellTuple[i]
@@ -1052,8 +1031,8 @@ begin
         FCells[i, j].FFreeElements := True;
 
   FCells.FreeItems;
-  FVTitleData := nil;
-  FHTitleData := nil;
+  FVTitleData.Free;
+  FHTitleData.Free;
   FSelectedCell := nil;
   FBuffer := nil;
 end;
@@ -1234,7 +1213,7 @@ begin
   Result := CELL_H;
   for i := 0 to FCells.Width - 1 do
     if FCells[i, Index] <> nil then
-      Result := Max(Result, FCells[i, Index].MaxTextHeight);
+      Result := TIntAggregateFunctions.Max(Result, FCells[i, Index].MaxTextHeight);
 end;
 
 function TSchedule.MaxColWidth(Index: integer): integer;
@@ -1244,7 +1223,7 @@ begin
   Result := CELL_W;
   for i := 0 to FCells.Height - 1 do
     if FCells[Index, i] <> nil then
-      Result := Max(Result, FCells[Index, i].MaxTextWidth);
+      Result := TIntAggregateFunctions.Max(Result, FCells[Index, i].MaxTextWidth);
 end;
 
 procedure TSchedule.DeleteEmptyLines;
@@ -1254,7 +1233,7 @@ begin
   while i < FCells.Height do begin
     if EmptyRow(i) then begin
       FCells.DeleteRow(i);
-      DeleteDBDataInd(FVTitleData, i);
+      FVTitleData.DeleteInd(i);
     end
     else
       i += 1;
@@ -1264,7 +1243,7 @@ begin
   while i < FCells.Width do begin
     if EmptyCol(i) then begin
       FCells.DeleteCol(i);
-      DeleteDBDataInd(FHTitleData, i);
+      FHTitleData.DeleteInd(i);
     end
     else
       i += 1;
@@ -1297,7 +1276,7 @@ begin
   for i := 0 to FFilters.Size - 1 do
     if FFilters[i].Correct then
       with FFilters[i].Filter do
-        Dir.AddFilterPanel(Name, ConditionalOperator, Param, True);
+        Dir.AddFilterPanel(Name, ConditionalOperator, Param, False);
   Dir.ApplyFilters;
 end;
 
@@ -1316,11 +1295,13 @@ begin
     TDirectory, nil, 333212333));
   if Dir.Filters.Size <> 0 then
     Dir.Filters.DeleteAll;
+
   for i := 0 to High(FConflictedCells) do begin
     FilterPanel := Dir.AddFilterPanel('ID', ' = ',
       IntToStr(FConflictedCells[i].RecID), True);
     FilterPanel.Filter.Connection := 'OR';
   end;
+
   Dir.ApplyFilters;
 end;
 
@@ -1361,6 +1342,14 @@ begin
     Exit;
   ExecQuery(Table.Query.Delete(ID));
   ThisSubscriber.CreateNotification(nil, ThisSubscriber.NClass);
+end;
+
+procedure TSchedule.Deselect(A: array of integer);
+var
+  i: integer;
+begin
+  for i := 0 to High(A) do
+    FVisFields.Checked[A[i]] := False;
 end;
 
 procedure TSchedule.UpDate(Cell: TCell; RecIndex: integer; Data: string);
@@ -1491,8 +1480,9 @@ var
   i: integer;
 begin
   Result := TITLE_W;
-  for i := 0 to High(FVTitleData) do
-    Result := Max(Result, FDrawGrid.Canvas.TextWidth(FVTitleData[i].Data));
+  for i := 0 to FVTitleData.Size - 1 do
+    Result := TIntAggregateFunctions.Max(Result,
+      FDrawGrid.Canvas.TextWidth(FVTitleData[i].Data));
 end;
 
 end.

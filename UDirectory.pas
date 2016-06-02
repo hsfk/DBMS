@@ -98,6 +98,7 @@ begin
     Exit;
   end;
   Filtered := FFilters.Apply;
+  ShowQuery(Filtered);
   PerformQuery(Filtered);
   if Filtered.Query <> FSelectAll.Query then
     FApplyBtn.Enabled := False;

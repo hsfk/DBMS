@@ -15,7 +15,9 @@ type
   TDataFilter = class;
   TExpression = class;
   TDataFilterType = class of TDataFilter;
+
   TEditEvent = procedure(Conflict: TConflictPanel) of object;
+
   TExpressions = specialize TObjVector<TExpression>;
   TDataFilters = specialize TObjVector<TDataFilter>;
   TDataTuple = specialize TVector<TStringV>;
@@ -30,8 +32,6 @@ type
 
   TDataFilter = class
   private
-    // priority 0 - separation
-    // priority 1 - deletion
     FPriority: integer;
     FFilteredRecs: TIntegerV;
     procedure DeleteOneElTuples(AData: TData);
@@ -65,23 +65,26 @@ type
     function FilteredTuple(ADataTuple: TDataTuple; RecID: integer): TData; override;
   end;
 
-  // expression: RecA [=\>=\<=\<>\...] [max/min/sum/...] RecB
-  // RecA = FieldIDs[0], RecA is int constant and must be the same within all fields
+  // checks conflicts within fields of a record
+  TInnerFilter = class(TDataFilter)
+
+  end;
+
   TExpression = class
   private
     FCompareF: TIntCompareFunction;
     FECompareF: EnumIntCompareFunctions;
     FAggregateF: TIntAggregateFunction;
     FEAggregateF: EnumIntAggregateFunctions;
-    FRecA: integer;
-    FRecB: integer;
+    FFieldA: integer;
+    FFieldB: integer;
   public
-    constructor Create(RecA, RecB: integer; ECompareF: EnumIntCompareFunctions;
+    constructor Create(FieldA, FieldB: integer; ECompareF: EnumIntCompareFunctions;
       EAgregateF: EnumIntAggregateFunctions);
     procedure Filter(var AData: TData);
   published
-    property RecA: integer read FRecA;
-    property RecB: integer read FRecB;
+    property FieldA: integer read FFieldA;
+    property FieldB: integer read FFieldB;
     property ECompareFunc: EnumIntCompareFunctions read FECompareF write FECompareF;
     property EAggregateFunc: EnumIntAggregateFunctions
       read FEAggregateF write FEAggregateF;
@@ -351,11 +354,11 @@ begin
   FPriority := 1;
 end;
 
-constructor TExpression.Create(RecA, RecB: integer; ECompareF: EnumIntCompareFunctions;
+constructor TExpression.Create(FieldA, FieldB: integer; ECompareF: EnumIntCompareFunctions;
   EAgregateF: EnumIntAggregateFunctions);
 begin
-  FRecA := RecA;
-  FrecB := RecB;
+  FFieldA := FieldA;
+  FFieldB := FieldB;
   FECompareF := ECompareF;
   FEAggregateF := EAgregateF;
   FCompareF := TIntCompareFunctions.GetFunc(ECompareF);
@@ -376,8 +379,8 @@ begin
   while i < Size do begin
     AggregateResult := 0;
     for j := 0 to AData[i].Size - 1 do
-      AggregateResult := FAggregateF(AggregateResult, StrToInt(AData[i][j][FRecB]));
-    if not FCompareF(StrToInt(AData[i][0][FRecA]), AggregateResult) then begin
+      AggregateResult := FAggregateF(AggregateResult, StrToInt(AData[i][j][FFieldB]));
+    if not FCompareF(StrToInt(AData[i][0][FFieldA]), AggregateResult) then begin
       AData[i].Free;
       AData.DeleteInd(i);
       Size -= 1;
